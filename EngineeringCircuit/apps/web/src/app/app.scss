@@ -41,6 +41,13 @@ app-part-palette {
 	min-height: 0;
 }
 
+.stage {
+	display: grid;
+	grid-template-rows: 1fr auto;
+	min-width: 0;
+	min-height: 0;
+}
+
 @media (max-width: 760px) {
 	.toolbar {
 		flex-wrap: wrap;

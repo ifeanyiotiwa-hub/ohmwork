@@ -34,6 +34,8 @@ const POWERING_TYPES: ReadonlySet<ComponentType> = new Set([
 	"voltage-rail",
 	"logic-input",
 	"clock",
+	"op-amp",
+	"timer-555",
 	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 ])
 
@@ -96,7 +98,10 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		const model = dcModelOf(component)
 		return model === "not-simulated" ? [] : model(component, context)
 	})
-	const nets = withGround(buildNets(circuit), raw.some((branch) => branch.pins.includes(GROUND_PIN)))
+	const usesGround = raw.some(
+		(branch) => branch.pins.includes(GROUND_PIN) || (branch.kind === "device" && branch.device.terminals.includes(GROUND_PIN)),
+	)
+	const nets = withGround(buildNets(circuit), usesGround)
 	const netOf = netLookup(nets)
 	const modelled: NetBranch[] = raw
 		.map((branch): NetBranch => {

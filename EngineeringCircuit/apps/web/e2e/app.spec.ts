@@ -297,3 +297,50 @@ test("logic: clicking an input flips the indicator through a NOT gate", async ({
 	await page.locator('[data-part="IN1"]').click()
 	await expect.poll(lit).toBe(1)
 })
+
+test("a 555 astable shows a square wave on the oscilloscope", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-rail", 380, 90],
+		["resistor", 160, 160],
+		["resistor", 160, 280],
+		["capacitor", 160, 400],
+		["timer-555", 420, 300],
+		["ground", 420, 470],
+		// Last: the probe opens the oscilloscope panel, which makes the canvas shorter.
+		["scope-probe", 680, 300],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["VR1:terminal", "IC1:vcc"],
+		["VR1:terminal", "R1:a"],
+		["R1:b", "IC1:discharge"],
+		["IC1:discharge", "R2:a"],
+		["R2:b", "IC1:threshold"],
+		["IC1:threshold", "IC1:trigger"],
+		["IC1:trigger", "C1:a"],
+		["C1:b", "GND1:terminal"],
+		["IC1:ground", "GND1:terminal"],
+		["IC1:reset", "IC1:vcc"],
+		["IC1:output", "P1:positive"],
+		["P1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const scope = page.locator("[data-scope]")
+	await expect(scope).toBeVisible()
+	await expect(scope.locator('[data-trace="P1"]')).toBeVisible()
+	// The trace must reach both the low and the high level of the square wave.
+	await expect
+		.poll(async () => {
+			const points = (await scope.locator("polyline").getAttribute("points")) ?? ""
+			const heights = new Set(points.split(" ").map((pair) => Math.round(Number(pair.split(",")[1]) / 20)))
+			return heights.size
+		})
+		.toBeGreaterThan(1)
+})

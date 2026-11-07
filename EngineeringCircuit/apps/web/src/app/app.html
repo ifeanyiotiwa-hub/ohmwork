@@ -14,7 +14,12 @@
 	</div>
 </header>
 <main class="workspace">
-	<app-circuit-canvas />
+	<div class="stage">
+		<app-circuit-canvas />
+		@if (store.scopeProbes().length > 0) {
+			<app-scope-view />
+		}
+	</div>
 	<app-part-inspector />
 </main>
 <app-sim-status />

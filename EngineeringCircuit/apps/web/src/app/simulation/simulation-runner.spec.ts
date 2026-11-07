@@ -1,6 +1,7 @@
-import { createCircuit } from "@engineering-circuit/format"
+import { type Circuit, createCircuit } from "@engineering-circuit/format"
 import { expect, test } from "vitest"
 import { kvlExample } from "../circuit/examples"
+import { MAX_SAMPLES_PER_FRAME } from "./simulation-protocol"
 import { SimulationRunner } from "./simulation-runner"
 
 const rc = () => ({
@@ -74,4 +75,27 @@ test("nothing to report before a circuit is loaded; errors come back as results"
 	runner.handle({ type: "load", circuit: shorted, circuitId: 3 })
 	const frame = runner.handle({ type: "advance", seconds: 1e-3, maxSteps: 10 })
 	expect(frame?.result.ok).toBe(false)
+})
+
+test("scope probes are sampled evenly within each frame, at most the frame limit", () => {
+	const circuit: Circuit = rc()
+	circuit.components.push({ id: "P1", type: "scope-probe", position: { x: 300, y: 0 }, rotation: 0, params: {} })
+	circuit.wires.push(
+		{ id: "w5", from: { componentId: "P1", pin: "positive" }, to: { componentId: "C1", pin: "a" }, bends: [] },
+		{ id: "w6", from: { componentId: "P1", pin: "negative" }, to: { componentId: "GND1", pin: "terminal" }, bends: [] },
+	)
+	const runner = new SimulationRunner()
+	runner.handle({ type: "load", circuit, circuitId: 1 })
+	const frame = runner.handle({ type: "advance", seconds: 1e-3, maxSteps: 1000 })
+	const samples = frame?.samples ?? []
+	expect(samples.length).toBe(MAX_SAMPLES_PER_FRAME)
+	expect(samples.at(-1)?.time).toBeCloseTo(1e-3, 9)
+	expect(samples.at(-1)?.values["P1"]).toBeCloseTo(3.1606, 3)
+	expect(samples.every((sample, index) => index === 0 || sample.time > (samples[index - 1]?.time ?? 0))).toBe(true)
+})
+
+test("without scope probes nothing is sampled", () => {
+	const runner = new SimulationRunner()
+	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
+	expect(runner.handle({ type: "advance", seconds: 1e-4, maxSteps: 1000 })?.samples).toEqual([])
 })

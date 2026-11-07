@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { ICS } from "./ics"
 import { LOGIC } from "./logic"
 import { MEASUREMENT } from "./measurement"
 import { PASSIVES } from "./passives"
@@ -6,7 +7,7 @@ import { SEMICONDUCTORS } from "./semiconductors"
 import { SOURCES } from "./sources"
 import { SWITCHES } from "./switches"
 
-export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS, ...LOGIC, ...MEASUREMENT] as const
+export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS, ...LOGIC, ...ICS, ...MEASUREMENT] as const
 
 /** The category files, in palette order. */
 export const COMPONENT_CATEGORIES: readonly { name: string; types: readonly ComponentType[] }[] = [
@@ -15,6 +16,7 @@ export const COMPONENT_CATEGORIES: readonly { name: string; types: readonly Comp
 	{ name: "Switches", types: SWITCHES.map((definition) => definition.type) },
 	{ name: "Semiconductors", types: SEMICONDUCTORS.map((definition) => definition.type) },
 	{ name: "Logic", types: LOGIC.map((definition) => definition.type) },
+	{ name: "ICs", types: ICS.map((definition) => definition.type) },
 	{ name: "Meters", types: MEASUREMENT.map((definition) => definition.type) },
 ]
 

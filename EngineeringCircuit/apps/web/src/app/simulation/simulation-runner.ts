@@ -1,6 +1,6 @@
 import { type DcResult, type TransientState, initialTransientState, stepTransient } from "@engineering-circuit/engine"
 import type { Circuit } from "@engineering-circuit/format"
-import type { FromWorker, ToWorker } from "./simulation-protocol"
+import { type FromWorker, MAX_SAMPLES_PER_FRAME, type ScopeSample, type ToWorker } from "./simulation-protocol"
 
 /** The simulation worker's logic, kept free of worker APIs so it can be tested directly. */
 export class SimulationRunner {
@@ -41,7 +41,11 @@ export class SimulationRunner {
 		const slowed = wanted > maxSteps
 		this.owed = slowed ? 0 : this.owed - steps * timeStep
 
-		for (let step = 0; step < steps; step++) {
+		const probes = circuit.components.filter((component) => component.type === "scope-probe").map((probe) => probe.id)
+		const sampleCount = probes.length > 0 ? Math.min(steps, MAX_SAMPLES_PER_FRAME) : 0
+		const sampleSteps = new Set(Array.from({ length: sampleCount }, (_, index) => Math.round(((index + 1) * steps) / sampleCount)))
+		const samples: ScopeSample[] = []
+		for (let step = 1; step <= steps; step++) {
 			const result = stepTransient(circuit, this.state, { timeStep, pressed: this.pressed })
 			if (!result.ok) {
 				this.last = result
@@ -49,9 +53,16 @@ export class SimulationRunner {
 			}
 			this.state = result.state
 			this.last = { ok: true, solution: result.solution }
+			if (sampleSteps.has(step)) {
+				const readings = result.solution.readings
+				samples.push({
+					time: this.state.time,
+					values: Object.fromEntries(probes.map((id) => [id, readings[id]?.voltage ?? 0])),
+				})
+			}
 		}
 		const result = this.last ?? this.preview(circuit)
-		return { type: "frame", circuitId: this.circuitId, time: this.state.time, result, slowed }
+		return { type: "frame", circuitId: this.circuitId, time: this.state.time, result, slowed, samples }
 	}
 
 	/** What one step from now would show, without moving time on (for frames shorter than a step). */

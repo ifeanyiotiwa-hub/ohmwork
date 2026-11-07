@@ -72,6 +72,14 @@ export class CircuitStore {
 		const frame = this.clock.frame()
 		return this.timeDependent() && frame?.circuitId === this.idOf(this.circuit()) ? frame.time : undefined
 	})
+	/** Scope probes in the circuit, in order; the oscilloscope shows one trace each. */
+	readonly scopeProbes = computed(() =>
+		this.circuit()
+			.components.filter((component) => component.type === "scope-probe")
+			.map((component) => component.id),
+	)
+	readonly scopeSamples = this.clock.samples.asReadonly()
+
 	readonly slowed = computed(() => this.time() !== undefined && this.clock.frame()?.slowed === true)
 	readonly solution = computed(() => {
 		const result = this.result()

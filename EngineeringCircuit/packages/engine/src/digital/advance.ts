@@ -1,23 +1,24 @@
 import { type Circuit, pinKey } from "@engineering-circuit/format"
-import { type LogicMemory, initialMemory, logicPartOf } from "./logic"
+import type { LogicMemory } from "./logic"
+import { sequentialOf } from "./sequential"
 
 /** Every logic part's memory, keyed by component id. */
 export type LogicMemories = Readonly<Record<string, LogicMemory>>
 
-export const hasLogic = (circuit: Circuit) => circuit.components.some((component) => logicPartOf(component.type))
+export const hasLogic = (circuit: Circuit) => circuit.components.some((component) => sequentialOf(component.type))
 
 export function initialMemories(circuit: Circuit): LogicMemories {
 	return Object.fromEntries(
 		circuit.components.flatMap((component) => {
-			const part = logicPartOf(component.type)
-			return part ? [[component.id, initialMemory(part)]] : []
+			const part = sequentialOf(component.type)
+			return part ? [[component.id, part.initial()]] : []
 		}),
 	)
 }
 
 /**
- * Reads each logic part's input pins (1 above half the logic level, as CircuitJS1) and steps it. The new outputs
- * drive the next solve, so every logic part has one solve (one time step) of delay.
+ * Reads each sequential part's pins after a solve and steps it. The new outputs drive the next solve, so every
+ * such part has one solve (one time step) of delay.
  */
 export function advanceLogic(
 	circuit: Circuit,
@@ -25,15 +26,12 @@ export function advanceLogic(
 	previous: LogicMemories,
 	logicHigh: number,
 ): LogicMemories {
-	const threshold = logicHigh / 2
 	return Object.fromEntries(
 		circuit.components.flatMap((component) => {
-			const part = logicPartOf(component.type)
+			const part = sequentialOf(component.type)
 			if (!part) return []
-			const memory = previous[component.id] ?? initialMemory(part)
-			const bits = part.inputs.map((pin) => (pinVoltages[pinKey({ componentId: component.id, pin })] ?? 0) > threshold)
-			const { outputs, state } = part.step(bits, memory.state)
-			return [[component.id, { state, outputs }]]
+			const voltageOf = (pin: string) => pinVoltages[pinKey({ componentId: component.id, pin })] ?? 0
+			return [[component.id, part.next(previous[component.id] ?? part.initial(), voltageOf, logicHigh)]]
 		}),
 	)
 }

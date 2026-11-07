@@ -84,8 +84,8 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 ## ICs, converters and displays
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `op-amp` (ideal) | nonInverting, inverting, output | gain, supplyHigh (V), supplyLow (V) | high-gain VCVS, output clamped to rails | EC, CJS | D9 | planned |
-| `timer-555` | ground, trigger, output, reset, control, threshold, discharge, vcc | – | comparators + SR latch + discharge transistor | EC, CJS | D9 | planned |
+| `op-amp` (ideal) | nonInverting, inverting, output | gain, supplyHigh (V), supplyLow (V) | high-gain source with a smooth tanh limit to the rails (ADR-019) | EC, CJS | D9 | simulated |
+| `timer-555` | ground, trigger, output, reset, control, threshold, discharge, vcc | – | comparators + SR latch + discharge transistor | EC, CJS | D9 | simulated |
 | `seven-segment` | a, b, c, d, e, f, g, dp, common | commonCathode | 8 LEDs | EC, CJS | D9 | planned |
 | `bcd-to-seven-segment` | d0, d1, d2, d3, a, b, c, d, e, f, g | – | logic decoder | EC, CJS | D9 | planned |
 | `adc` | in, vref, clk?, d0…dN | bits, referenceVoltage | sample + quantise | EC, CJS | D9 | planned |
@@ -97,7 +97,7 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 | `voltmeter` | positive, negative | – | open circuit, reads voltage (CJS `ProbeElm`, infinite resistance) | EC, CJS | D6 | simulated |
 | `ammeter` | positive, negative | – | 0 V source, reads current (CJS `AmmeterElm`); across a battery it is a short circuit | EC, CJS | D6 | simulated |
 | `ohmmeter` | a, b | – | 1 mA test current out of `a`, reads V/I (CJS `OhmMeterElm`); "OL (open)" with nothing between its leads; warns on a powered circuit; needs no ground | EC, CJS | D6 | simulated |
-| `scope-probe` | positive, negative | channel, label | records voltage over time | CJS (Voltmeter/Scope Probe) | D9 | planned |
+| `scope-probe` | positive, negative | – (one trace per probe, named by id) | records voltage over time | CJS (Voltmeter/Scope Probe) | D9 | simulated |
 
 ## Not a component, but needed
 | Item | Why | Seen in | Deliverable |

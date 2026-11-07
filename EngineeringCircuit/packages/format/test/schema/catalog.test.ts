@@ -46,5 +46,5 @@ test("wave sources need a positive frequency and a duty cycle between 0 and 1", 
 test("every type belongs to exactly one palette category", () => {
 	const listed = COMPONENT_CATEGORIES.flatMap((category) => category.types)
 	expect([...listed].sort()).toEqual([...types].sort())
-	expect(COMPONENT_CATEGORIES.map((category) => category.name)).toEqual(["Sources", "Passive", "Switches", "Semiconductors", "Logic", "Meters"])
+	expect(COMPONENT_CATEGORIES.map((category) => category.name)).toEqual(["Sources", "Passive", "Switches", "Semiconductors", "Logic", "ICs", "Meters"])
 })

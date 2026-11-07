@@ -5,13 +5,14 @@ import { CircuitCanvas } from "./canvas/circuit-canvas"
 import { CircuitStore } from "./circuit/circuit-store"
 import { PartInspector } from "./inspector/part-inspector"
 import { PartPalette } from "./palette/part-palette"
+import { ScopeView } from "./scope/scope-view"
 import { SimStatus } from "./status/sim-status"
 
 const TYPING_ELEMENTS = new Set(["INPUT", "SELECT", "TEXTAREA"])
 
 @Component({
 	selector: "app-root",
-	imports: [CircuitCanvas, PartInspector, PartPalette, SimStatus],
+	imports: [CircuitCanvas, PartInspector, PartPalette, ScopeView, SimStatus],
 	templateUrl: "./app.html",
 	styleUrl: "./app.scss",
 	host: { "(document:keydown)": "onKey($event)" },

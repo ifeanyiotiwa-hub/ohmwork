@@ -5,6 +5,8 @@ import { bipolarDevice } from "../nonlinear/bipolar"
 import type { Device } from "../nonlinear/device"
 import { diodeDevice } from "../nonlinear/diode"
 import { mosfetDevice } from "../nonlinear/mosfet"
+import { opAmpDevice } from "../nonlinear/op-amp"
+import { TIMER_555 } from "../digital/timer-555"
 import { acVoltage, squareVoltage } from "../transient/waveforms"
 
 export type Pins = [first: string, second: string]
@@ -58,6 +60,8 @@ export const GROUND_PIN = "@ground"
 /** Parts whose behaviour depends on time; a circuit without any is the same at every instant. */
 export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<ComponentType>([
 	"clock",
+	"timer-555",
+	"scope-probe",
 	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 	"capacitor",
 	"polarized-capacitor",
@@ -280,6 +284,20 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	"t-flip-flop": logicModel(LOGIC_PARTS["t-flip-flop"]),
 	"jk-flip-flop": logicModel(LOGIC_PARTS["jk-flip-flop"]),
 	"counter-4bit": logicModel(LOGIC_PARTS["counter-4bit"]),
+	"op-amp": ({ id, params }) => [deviceBranch(id, opAmpDevice(params, GROUND_PIN))],
+	// CircuitJS1 TimerElm: 5 kΩ / 10 kΩ divider puts control at ⅔ vcc; output through 1 Ω to vcc or ground;
+	// while the output is low, discharge is pulled to ground through 10 Ω. The latch is in digital/timer-555.ts.
+	"timer-555": ({ id }, { logic }) => {
+		const high = (logic?.[id] ?? TIMER_555.initial()).outputs[0] ?? true
+		const resistor = (pins: Pins, resistance: number): Branch => ({ kind: "resistor", componentId: id, pins, resistance })
+		return [
+			resistor(["vcc", "control"], 5000),
+			resistor(["control", "ground"], 10000),
+			high ? resistor(["vcc", "output"], 1) : resistor(["output", "ground"], 1),
+			...(high ? [] : [resistor(["discharge", "ground"], 10)]),
+		]
+	},
+	"scope-probe": () => [],
 	voltmeter: () => [],
 	ammeter: ({ id }) => [wire(id, ["positive", "negative"])],
 	ohmmeter: ({ id }) => [{ kind: "current", componentId: id, pins: ["a", "b"], current: OHMMETER_TEST_CURRENT, test: true }],

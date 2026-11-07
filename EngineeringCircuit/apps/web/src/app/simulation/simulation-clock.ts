@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from "@angular/core"
 import type { Circuit } from "@engineering-circuit/format"
 import { UI_CONFIG } from "../circuit/ui-config"
-import type { FromWorker, ToWorker } from "./simulation-protocol"
+import type { FromWorker, ScopeSample, ToWorker } from "./simulation-protocol"
 
 /**
  * Runs the time simulation in a Web Worker, one request per animation frame: real seconds since the last
@@ -11,6 +11,8 @@ import type { FromWorker, ToWorker } from "./simulation-protocol"
 export class SimulationClock {
 	private readonly config = inject(UI_CONFIG)
 	readonly frame = signal<FromWorker | undefined>(undefined)
+	/** Recent scope probe samples, oldest first, bounded by the scope window and `maxSamples`. */
+	readonly samples = signal<readonly ScopeSample[]>([])
 	/** Set if the worker itself failed (a bug, not a circuit problem). */
 	readonly failure = signal<string | undefined>(undefined)
 
@@ -38,6 +40,7 @@ export class SimulationClock {
 	}
 
 	restart(): void {
+		this.samples.set([])
 		if (!this.worker) return
 		this.post({ type: "restart" })
 		this.pendingSeconds = 0
@@ -77,6 +80,13 @@ export class SimulationClock {
 		this.pendingSeconds = 0
 	}
 
+	private record(fresh: readonly ScopeSample[], now: number): void {
+		const window = this.config.scope.windowRealSeconds * (this.circuit?.simulation.speed ?? 0)
+		this.samples.update((previous) =>
+			[...previous, ...fresh].filter((sample) => sample.time >= now - window).slice(-this.config.scope.maxSamples),
+		)
+	}
+
 	private post(message: ToWorker): void {
 		this.workerInstance().postMessage(message)
 	}
@@ -87,6 +97,7 @@ export class SimulationClock {
 		worker.addEventListener("message", ({ data }: MessageEvent<FromWorker>) => {
 			this.waiting = false
 			this.frame.set(data)
+			if (data.samples.length > 0) this.record(data.samples, data.time)
 		})
 		worker.addEventListener("error", (event) => {
 			this.waiting = false

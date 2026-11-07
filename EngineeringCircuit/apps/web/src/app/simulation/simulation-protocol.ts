@@ -8,5 +8,18 @@ export type ToWorker =
 	| { type: "restart" }
 	| { type: "advance"; seconds: number; maxSteps: number }
 
+/** Scope probe voltages (positive − negative) at one moment, keyed by probe id. */
+export type ScopeSample = { time: number; values: Record<string, number> }
+
+/** Scope samples per frame at most, spread evenly over the frame's time steps. */
+export const MAX_SAMPLES_PER_FRAME = 64
+
 /** One animation frame's result. `slowed`: the steps needed were capped, so simulated time fell behind. */
-export type FromWorker = { type: "frame"; circuitId: number; time: number; result: DcResult; slowed: boolean }
+export type FromWorker = {
+	type: "frame"
+	circuitId: number
+	time: number
+	result: DcResult
+	slowed: boolean
+	samples: ScopeSample[]
+}

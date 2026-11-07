@@ -1,0 +1,21 @@
+<section class="scope" aria-label="Oscilloscope" data-scope>
+	<div class="legend">
+		@for (trace of plot().traces; track trace.id) {
+			<span class="channel" [style.--trace]="trace.colour" [attr.data-trace]="trace.id">
+				<span class="swatch"></span>{{ trace.id }} <strong>{{ trace.latestText }}</strong>
+			</span>
+		}
+		<span class="scale">{{ plot().division }}/div · {{ plot().bottom }} to {{ plot().top }}</span>
+	</div>
+	<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true">
+		@for (x of gridLines; track x) {
+			<line class="grid" [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="box.height" />
+		}
+		@if (plot().zeroY; as zero) {
+			<line class="zero" x1="0" [attr.y1]="zero" [attr.x2]="box.width" [attr.y2]="zero" />
+		}
+		@for (trace of plot().traces; track trace.id) {
+			<polyline class="trace" [attr.points]="trace.points" [style.stroke]="trace.colour" />
+		}
+	</svg>
+</section>
