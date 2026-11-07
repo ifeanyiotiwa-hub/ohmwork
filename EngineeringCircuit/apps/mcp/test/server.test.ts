@@ -1,20 +1,30 @@
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { CircuitDocument } from "@engineering-circuit/editing"
+import { createCircuit } from "@engineering-circuit/format"
 import { Client } from "@modelcontextprotocol/client"
 import { InMemoryTransport } from "@modelcontextprotocol/server"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
-import { createServer } from "../src/server"
+import { LiveServer } from "../src/live/live-server"
+import { DEFAULT_OPTIONS } from "../src/options"
+import { type ServerContext, createServer } from "../src/server"
 
 type ToolOutput = { isError: boolean; text: string; data: unknown }
 
 let client: Client
+let document: CircuitDocument
 
-beforeEach(async () => {
+async function start(context: ServerContext): Promise<void> {
 	const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-	await createServer().connect(serverTransport)
+	await createServer({ ...DEFAULT_OPTIONS, workspaceDirectory: process.cwd() }, context).connect(serverTransport)
 	client = new Client({ name: "test-client", version: "1.0.0" })
 	await client.connect(clientTransport)
+}
+
+beforeEach(async () => {
+	document = new CircuitDocument(createCircuit("Untitled"))
+	await start({ document })
 })
 
 afterEach(async () => {
@@ -57,7 +67,9 @@ test("offers the build, inspect and file tools", async () => {
 		"get_circuit",
 		"list_component_types",
 		"open_circuit",
+		"open_in_app",
 		"probe",
+		"recent_changes",
 		"remove_component",
 		"save_circuit",
 		"set_parameter",
@@ -178,5 +190,46 @@ describe("files", () => {
 		const result = await call("open_circuit", { path: join(directory, "missing.json") })
 		expect(result.isError).toBe(true)
 		expect(result.text).toContain("Could not read")
+	})
+})
+
+describe("live link", () => {
+	test("open_in_app explains how to turn the link on when it is off", async () => {
+		const result = await call("open_in_app")
+		expect(result.isError).toBe(true)
+		expect(result.text).toContain("live link is off")
+	})
+
+	test("open_in_app gives the learner a link to the same circuit", async () => {
+		const live = await LiveServer.start(document, { ...DEFAULT_OPTIONS.live, maxMessageBytes: 1024 })
+		try {
+			await client.close()
+			await start({ document, live })
+			const result = await call("open_in_app")
+			expect(result.isError).toBe(false)
+			expect(result.text).toContain(live.link)
+		} finally {
+			await live.close()
+		}
+	})
+
+	test("recent_changes shows the learner's edits since the agent last asked", async () => {
+		await call("add_component", { type: "resistor" })
+		document.apply({ type: "set-parameter", componentId: "R1", name: "resistance", value: 220 }, "learner")
+
+		expect((await call("recent_changes")).data).toEqual({
+			revision: 2,
+			changes: [
+				{ revision: 1, author: "agent", summary: 'Added resistor "R1"' },
+				{ revision: 2, author: "learner", summary: "Set R1 resistance to 220" },
+			],
+		})
+
+		document.undo("learner")
+		expect((await call("recent_changes")).data).toEqual({
+			revision: 3,
+			changes: [{ revision: 3, author: "learner", summary: "Undid: Set R1 resistance to 220 (by learner)" }],
+		})
+		expect((await call("recent_changes")).data).toEqual({ revision: 3, changes: [] })
 	})
 })

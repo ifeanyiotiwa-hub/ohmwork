@@ -7,6 +7,7 @@ export type UiConfig = {
 	maxZoomWidth: number
 	zoomFactor: number
 	dragThreshold: number
+	agentHighlightMs: number
 	flow: {
 		dashPeriod: number
 		minCurrent: number
@@ -22,6 +23,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	maxZoomWidth: 4000,
 	zoomFactor: 1.15,
 	dragThreshold: 4,
+	agentHighlightMs: 2000,
 	flow: { dashPeriod: 16, minCurrent: 1e-9, pixelsPerSecondPerDecade: 12, maxPixelsPerSecond: 160 },
 }
 

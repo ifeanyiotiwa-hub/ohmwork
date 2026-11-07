@@ -63,6 +63,7 @@ export class CircuitCanvas {
 		const solution = this.store.solution()
 		const selection = this.store.selection()
 		const wiringFrom = this.store.wiringFrom()
+		const agentChanged = this.store.agentChanges().components
 		return this.store.circuit().components.map((part) => {
 			const at = this.positionOf(part)
 			const symbol = SYMBOLS[part.type]
@@ -81,6 +82,7 @@ export class CircuitCanvas {
 				value: valueText(part),
 				reading: current === 0 ? undefined : formatSi(Math.abs(current), "A"),
 				selected: selection?.kind === "component" && selection.id === part.id,
+				agentChanged: agentChanged.has(part.id),
 				pins: pinsOf(part.type).map((pin) => {
 					const ref = { componentId: part.id, pin }
 					return {
@@ -103,6 +105,7 @@ export class CircuitCanvas {
 		const largest = Math.max(0, ...Object.values(voltages).map(Math.abs))
 		const selection = this.store.selection()
 		const dragged = this.dragPreview()?.componentId
+		const agentChanged = this.store.agentChanges().wires
 
 		return circuit.wires.flatMap((wire) => {
 			const from = partsById.get(wire.from.componentId)
@@ -117,6 +120,7 @@ export class CircuitCanvas {
 					colour: voltage === undefined ? null : voltageColour(voltage, largest),
 					flow: solution ? flowOf(currents[wire.id] ?? 0, this.config.flow) : undefined,
 					selected: selection?.kind === "wire" && selection.id === wire.id,
+					agentChanged: agentChanged.has(wire.id),
 				},
 			]
 		})
@@ -265,8 +269,8 @@ export class CircuitCanvas {
 			component: { type, position: { x: snap(point.x, grid), y: snap(point.y, grid) } },
 		})
 		this.store.placing.set(undefined)
-		const added = this.store.circuit().components.at(-1)
-		if (placed && added) this.store.selection.set({ kind: "component", id: added.id })
+		const added = placed?.components.at(-1)
+		if (added) this.store.selection.set({ kind: "component", id: added.id })
 	}
 
 	private toCircuitPoint(event: MouseEvent): Point {

@@ -69,8 +69,27 @@
 	}
 }
 
+/* What the AI agent just changed glows briefly. */
+.part.agent-changed,
+.wire.agent-changed {
+	filter: drop-shadow(0 0 4px var(--agent));
+	animation: agent-glow 0.6s ease-in-out 3 alternate;
+}
+
+@keyframes agent-glow {
+	from {
+		filter: drop-shadow(0 0 1px var(--agent));
+	}
+
+	to {
+		filter: drop-shadow(0 0 6px var(--agent));
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
-	.wire-flow {
+	.wire-flow,
+	.part.agent-changed,
+	.wire.agent-changed {
 		animation: none;
 	}
 }

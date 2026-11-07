@@ -35,3 +35,18 @@ button.issue {
 .ok {
 	color: var(--text-muted);
 }
+
+.live {
+	margin: 0 0 0 auto;
+	padding: 4px 10px;
+	font-size: 13px;
+	color: var(--text-muted);
+
+	&.connected {
+		color: var(--agent);
+	}
+
+	&.closed {
+		color: var(--warning);
+	}
+}

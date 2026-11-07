@@ -1,6 +1,7 @@
 import { type Circuit, createCircuit } from "@engineering-circuit/format"
 import { describe, expect, test } from "vitest"
-import { type EditCommand, applyCommand } from "../src/apply-command"
+import { applyCommand } from "../src/apply-command"
+import type { EditCommand } from "../src/edit-command"
 
 const run = (circuit: Circuit, ...commands: EditCommand[]): Circuit =>
 	commands.reduce((current, command) => {

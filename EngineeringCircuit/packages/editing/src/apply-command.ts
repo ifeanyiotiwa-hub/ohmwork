@@ -9,28 +9,12 @@ import {
 	idPrefixOf,
 	parseCircuit,
 } from "@engineering-circuit/format"
+import type { EditCommand } from "./edit-command"
 
 const GRID_SPACING = 100
 const GRID_COLUMNS = 8
 const QUARTER_TURN = 90
 const FULL_TURN = 360
-
-export type NewComponent = {
-	id?: string | undefined
-	type: ComponentType
-	params?: Record<string, unknown> | undefined
-	position?: Point | undefined
-	rotation?: Component["rotation"] | undefined
-}
-
-export type EditCommand =
-	| { type: "add-component"; component: NewComponent }
-	| { type: "remove-component"; componentId: string }
-	| { type: "connect"; from: PinRef; to: PinRef }
-	| { type: "disconnect"; wireId: string }
-	| { type: "set-parameter"; componentId: string; name: string; value: unknown }
-	| { type: "move-component"; componentId: string; position: Point }
-	| { type: "rotate-component"; componentId: string }
 
 export type EditResult = { ok: true; circuit: Circuit; summary: string } | { ok: false; errors: CircuitError[] }
 

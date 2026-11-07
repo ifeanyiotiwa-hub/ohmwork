@@ -1,4 +1,5 @@
-import { Component, inject } from "@angular/core"
+import { DOCUMENT, Component, inject } from "@angular/core"
+import { liveSocketUrl } from "@engineering-circuit/editing"
 import type { ComponentType } from "@engineering-circuit/format"
 import { CircuitCanvas } from "./canvas/circuit-canvas"
 import { CircuitStore } from "./circuit/circuit-store"
@@ -17,6 +18,11 @@ const TYPING_ELEMENTS = new Set(["INPUT", "SELECT", "TEXTAREA"])
 })
 export class App {
 	protected readonly store = inject(CircuitStore)
+
+	constructor() {
+		const socketUrl = liveSocketUrl(inject(DOCUMENT).location.href)
+		if (socketUrl) this.store.joinLive(socketUrl)
+	}
 
 	protected choosePart(type: ComponentType): void {
 		this.store.wiringFrom.set(undefined)

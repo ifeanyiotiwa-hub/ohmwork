@@ -29,13 +29,13 @@ test("undo restores the previous circuit and reports what was undone", () => {
 	document.apply(addResistor, "learner")
 	document.apply({ type: "set-parameter", componentId: "R1", name: "resistance", value: 220 }, "agent")
 
-	expect(document.undo()).toEqual({ ok: true, summary: "Undid: Set R1 resistance to 220 (by agent)" })
+	expect(document.undo("agent")).toEqual({ ok: true, summary: "Undid: Set R1 resistance to 220 (by agent)" })
 	expect(document.circuit.components[0]).toMatchObject({ params: { resistance: 100 } })
 	expect(document.history).toHaveLength(1)
 })
 
 test("undo with no history says so", () => {
-	expect(new CircuitDocument(createCircuit("t")).undo()).toEqual({ ok: false, message: "Nothing to undo" })
+	expect(new CircuitDocument(createCircuit("t")).undo("learner")).toEqual({ ok: false, message: "Nothing to undo" })
 })
 
 test("replace swaps in a whole circuit as one undoable change", () => {
@@ -43,6 +43,34 @@ test("replace swaps in a whole circuit as one undoable change", () => {
 	document.replace(createCircuit("new"), "agent", "Opened new.json")
 
 	expect(document.circuit.name).toBe("new")
-	document.undo()
+	document.undo("learner")
 	expect(document.circuit.name).toBe("old")
+})
+
+test("every change bumps the revision and notifies subscribers with its author", () => {
+	const document = new CircuitDocument(createCircuit("t"))
+	const changes: unknown[] = []
+	document.subscribe((change) => changes.push(change))
+
+	document.apply(addResistor, "agent")
+	document.apply({ type: "remove-component", componentId: "X1" }, "agent")
+	document.undo("learner")
+	document.replace(createCircuit("new"), "learner", "New circuit")
+
+	expect(document.revision).toBe(3)
+	expect(changes).toEqual([
+		{ revision: 1, author: "agent", summary: 'Added resistor "R1"' },
+		{ revision: 2, author: "learner", summary: 'Undid: Added resistor "R1" (by agent)' },
+		{ revision: 3, author: "learner", summary: "New circuit" },
+	])
+})
+
+test("an unsubscribed listener hears nothing more", () => {
+	const document = new CircuitDocument(createCircuit("t"))
+	const changes: unknown[] = []
+	const unsubscribe = document.subscribe((change) => changes.push(change))
+	unsubscribe()
+
+	document.apply(addResistor, "agent")
+	expect(changes).toEqual([])
 })

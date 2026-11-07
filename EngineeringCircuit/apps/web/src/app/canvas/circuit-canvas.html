@@ -22,7 +22,11 @@
 	<rect class="grid" x="-20000" y="-20000" width="40000" height="40000" fill="url(#grid-dots)" />
 
 	@for (wire of wires(); track wire.id) {
-		<g class="wire" [class.selected]="wire.selected" [attr.data-wire]="wire.id" (pointerdown)="onWireDown($event, wire.id)">
+		<g
+			class="wire"
+			[class.selected]="wire.selected"
+			[class.agent-changed]="wire.agentChanged"
+			[attr.data-wire]="wire.id" (pointerdown)="onWireDown($event, wire.id)">
 			<path class="wire-hit" [attr.d]="wire.path" />
 			<path class="wire-line" [attr.d]="wire.path" [style.stroke]="wire.colour" />
 			@if (wire.flow; as flow) {
@@ -36,6 +40,7 @@
 			class="part"
 			role="button"
 			[class.selected]="item.selected"
+			[class.agent-changed]="item.agentChanged"
 			[attr.data-part]="item.part.id"
 			[attr.aria-label]="item.part.id + ' ' + item.value"
 			[attr.transform]="item.transform"

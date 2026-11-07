@@ -1,24 +1,42 @@
-import { Injectable, computed, signal } from "@angular/core"
-import { CircuitDocument, type EditCommand } from "@engineering-circuit/editing"
+import { Injectable, computed, inject, signal } from "@angular/core"
+import { CircuitDocument, type EditCommand, type LiveState, applyCommand } from "@engineering-circuit/editing"
 import { type SimIssue, solveDc, wireCurrents } from "@engineering-circuit/engine"
 import { type Circuit, type ComponentType, type PinRef, createCircuit } from "@engineering-circuit/format"
+import { LiveLink } from "../live/live-link"
+import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
 import { kvlExample } from "./examples"
+import { UI_CONFIG } from "./ui-config"
 
 export type Selection = { kind: "component" | "wire"; id: string }
 
+/**
+ * The circuit being edited. On its own the app keeps a local CircuitDocument; joined to the live link, the
+ * MCP server's document is the only copy: edits are sent there and the shared state comes back to everyone.
+ */
 @Injectable({ providedIn: "root" })
 export class CircuitStore {
-	private readonly document = new CircuitDocument(kvlExample())
-	private readonly revision = signal(0)
+	private readonly config = inject(UI_CONFIG)
+	private readonly live = inject(LiveLink)
+	private readonly local = new CircuitDocument(kvlExample())
+	private readonly localRevision = signal(0)
+	private readonly shared = signal<LiveState | undefined>(undefined)
+	/** Our edit as we expect the server to apply it, shown until the server answers. */
+	private readonly predicted = signal<Circuit | undefined>(undefined)
+	private highlightTimer: ReturnType<typeof setTimeout> | undefined
 
 	readonly circuit = computed<Circuit>(() => {
-		this.revision()
-		return this.document.circuit
+		this.localRevision()
+		return this.predicted() ?? this.shared()?.circuit ?? this.local.circuit
 	})
 	readonly history = computed(() => {
-		this.revision()
-		return this.document.history
+		this.localRevision()
+		return this.shared()?.history ?? this.local.history
 	})
+
+	readonly liveStatus = this.live.status.asReadonly()
+	readonly lastChange = computed(() => this.shared()?.change)
+	/** What the agent just changed, highlighted briefly so the learner notices. */
+	readonly agentChanges = signal<ChangedIds>(NO_CHANGES)
 
 	readonly result = computed(() => solveDc(this.circuit()))
 	readonly solution = computed(() => {
@@ -52,28 +70,44 @@ export class CircuitStore {
 	readonly paused = signal(false)
 	readonly editError = signal<string | undefined>(undefined)
 
-	apply(command: EditCommand): boolean {
-		const result = this.document.apply(command, "learner")
+	/** Applies an edit; returns the resulting circuit, or undefined (with editError set) if it was refused. */
+	apply(command: EditCommand): Circuit | undefined {
+		const result = applyCommand(this.circuit(), command)
 		if (!result.ok) {
 			this.editError.set(result.errors.map((error) => error.message).join("\n"))
-			return false
+			return undefined
 		}
 		this.editError.set(undefined)
-		this.revision.update((revision) => revision + 1)
-		return true
+		if (this.shared()) {
+			this.predicted.set(result.circuit)
+			this.live.send({ type: "edit", command })
+		} else {
+			this.local.replace(result.circuit, "learner", result.summary)
+			this.localRevision.update((revision) => revision + 1)
+		}
+		return result.circuit
 	}
 
 	undo(): void {
-		const result = this.document.undo()
+		if (this.shared()) {
+			this.live.send({ type: "undo" })
+			return
+		}
+		const result = this.local.undo("learner")
 		this.editError.set(result.ok ? undefined : result.message)
-		this.revision.update((revision) => revision + 1)
+		this.localRevision.update((revision) => revision + 1)
 	}
 
 	replace(circuit: Circuit, summary: string): void {
-		this.document.replace(circuit, "learner", summary)
 		this.selection.set(undefined)
 		this.editError.set(undefined)
-		this.revision.update((revision) => revision + 1)
+		if (this.shared()) {
+			this.predicted.set(circuit)
+			this.live.send({ type: "replace", circuit, summary })
+			return
+		}
+		this.local.replace(circuit, "learner", summary)
+		this.localRevision.update((revision) => revision + 1)
 	}
 
 	newCircuit(): void {
@@ -97,5 +131,35 @@ export class CircuitStore {
 	rotateSelected(): void {
 		const component = this.selectedComponent()
 		if (component) this.apply({ type: "rotate-component", componentId: component.id })
+	}
+
+	/** Joins the MCP server's circuit. If the link closes, the app keeps the last shared circuit and works alone. */
+	joinLive(socketUrl: string): void {
+		this.live.connect(socketUrl, {
+			state: (state) => {
+				const before = this.shared()?.circuit
+				this.predicted.set(undefined)
+				this.shared.set(state)
+				if (before && state.change?.author === "agent") this.highlight(changedIds(before, state.circuit))
+			},
+			rejected: (message) => {
+				this.predicted.set(undefined)
+				this.editError.set(message)
+			},
+			closed: () => {
+				const last = this.shared()
+				this.predicted.set(undefined)
+				this.shared.set(undefined)
+				if (!last) return
+				this.local.replace(last.circuit, "learner", "Kept the circuit from the closed live link")
+				this.localRevision.update((revision) => revision + 1)
+			},
+		})
+	}
+
+	private highlight(changes: ChangedIds): void {
+		clearTimeout(this.highlightTimer)
+		this.agentChanges.set(changes)
+		this.highlightTimer = setTimeout(() => this.agentChanges.set(NO_CHANGES), this.config.agentHighlightMs)
 	}
 }

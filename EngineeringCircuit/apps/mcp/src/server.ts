@@ -1,6 +1,6 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
-import { CircuitDocument, type EditCommand } from "@engineering-circuit/editing"
+import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
 import { solveDc } from "@engineering-circuit/engine"
 import {
 	COMPONENT_DEFINITIONS,
@@ -12,6 +12,7 @@ import {
 } from "@engineering-circuit/format"
 import { type CallToolResult, McpServer } from "@modelcontextprotocol/server"
 import { z } from "zod"
+import type { LiveServer } from "./live/live-server"
 import { DEFAULT_OPTIONS, type ServerOptions } from "./options"
 import { componentTypesReport, explanation, findProbeTarget, probeReport, simulationReport } from "./reports"
 
@@ -19,7 +20,8 @@ const INSTRUCTIONS = `EngineeringCircuit: build, simulate and explain electronic
 Workflow: list_component_types → create_circuit → add_component → connect → simulate / probe → explain_circuit.
 Pins are written "<componentId>.<pin>", e.g. "R1.a". Every circuit needs a ground part for 0 V.
 Explain from the tool results (real simulated values and warnings), in plain language suited to a beginner.
-Edits are recorded with their author and can be undone.`
+Edits are recorded with their author and can be undone.
+open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 
 const COMPONENT_TYPES = COMPONENT_DEFINITIONS.map((definition) => definition.type) as [ComponentType, ...ComponentType[]]
 const READ_ONLY = { readOnlyHint: true }
@@ -45,9 +47,26 @@ function pinRef(label: string): PinRef | undefined {
 
 const pinLabelSchema = z.string().describe('A pin as "<componentId>.<pin>", e.g. "R1.a"')
 
-export function createServer(options: ServerOptions = { ...DEFAULT_OPTIONS, workspaceDirectory: process.cwd() }): McpServer {
+export type ServerContext = {
+	/** The circuit to edit; shared with the live link when there is one. */
+	document?: CircuitDocument
+	live?: Pick<LiveServer, "link">
+}
+
+export function createServer(
+	options: ServerOptions = { ...DEFAULT_OPTIONS, workspaceDirectory: process.cwd() },
+	context: ServerContext = {},
+): McpServer {
 	const server = new McpServer({ name: "engineering-circuit", version: "0.1.0" }, { instructions: INSTRUCTIONS })
-	const document = new CircuitDocument(createCircuit("Untitled"), { historyLimit: options.historyLimit })
+	const document =
+		context.document ?? new CircuitDocument(createCircuit("Untitled"), { historyLimit: options.historyLimit })
+
+	const changes: DocumentChange[] = []
+	let seenRevision = document.revision
+	document.subscribe((change) => {
+		changes.push(change)
+		if (changes.length > options.historyLimit) changes.shift()
+	})
 
 	const edit = (command: EditCommand): CallToolResult => {
 		const result = document.apply(command, "agent")
@@ -144,7 +163,7 @@ export function createServer(options: ServerOptions = { ...DEFAULT_OPTIONS, work
 	)
 
 	server.registerTool("undo", { description: "Undo the most recent change, whoever made it." }, () => {
-		const result = document.undo()
+		const result = document.undo("agent")
 		return result.ok ? text(result.summary) : failure(result.message)
 	})
 
@@ -226,6 +245,33 @@ export function createServer(options: ServerOptions = { ...DEFAULT_OPTIONS, work
 			} catch (error) {
 				return failure(`Could not save ${fullPath}: ${error instanceof Error ? error.message : String(error)}`)
 			}
+		},
+	)
+
+	server.registerTool(
+		"open_in_app",
+		{
+			description:
+				"A link the learner opens in their browser (with the app running: pnpm web) to watch and edit this same circuit live.",
+			annotations: READ_ONLY,
+		},
+		() =>
+			context.live
+				? text(`Open this link in the browser where the app runs:\n${context.live.link}`)
+				: failure("The live link is off: the server was started without it (see apps/mcp/src/main.ts)."),
+	)
+
+	server.registerTool(
+		"recent_changes",
+		{
+			description:
+				"Changes to the circuit since you last called this, by either author. Use it to see what the learner did in the app.",
+			annotations: READ_ONLY,
+		},
+		() => {
+			const unseen = changes.filter((change) => change.revision > seenRevision)
+			seenRevision = document.revision
+			return text({ revision: document.revision, changes: unseen })
 		},
 	)
 
