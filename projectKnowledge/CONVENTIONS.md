@@ -7,7 +7,8 @@
 - No speculative abstractions: build for the current deliverable.
 - Modern APIs only; no deprecated APIs.
 - Angular: standalone components, signals, `inject()`, separate `.ts`/`.html`/`.scss`, no inline templates or styles.
-- Files: `kebab-case.ts`. Tests sit next to code: `thing.test.ts`.
+- Files: `kebab-case.ts`. Indentation: tabs, width 4 (enforced by `.editorconfig`; YAML/Markdown use 2 spaces).
+- Package layout: `src/<concern>/` folders (e.g. `schema/`, `io/`, `topology/`), one `src/index.ts` public entry. Tests live in `test/` mirroring `src/` (`test/io/parse.test.ts`); shared test circuits in `test/fixtures/`.
 - Units are SI everywhere (volts, amps, ohms, farads, henries, seconds). Name values with units when ambiguous: `stepSeconds`.
 
 ## Tests

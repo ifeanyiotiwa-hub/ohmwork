@@ -9,6 +9,7 @@ Single source of truth for humans and agents. Read in this order before doing an
 5. `DECISIONS.md`: why things are the way they are. Don't re-decide without a new entry.
 6. `VISION.md`: what we're building and for whom.
 7. `GLOSSARY.md`: circuit terms in plain language.
+8. `COMPONENTS.md`: every supported/planned part, and the checklist for adding one.
 
 ## Rules for every agent session
 - Before starting: read `HANDOVER.md` and claim one deliverable (set its status to `in-progress` with your agent/session name).
