@@ -7,7 +7,7 @@
 		"build": "ng build",
 		"watch": "ng build --watch --configuration development",
 		"test": "ng test --watch=false",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test && playwright test -c playwright.offline.config.ts"
 	},
 	"private": true,
 	"dependencies": {
@@ -17,6 +17,7 @@
 		"@angular/forms": "^22.2.0",
 		"@angular/platform-browser": "^22.2.0",
 		"@angular/router": "^22.2.0",
+		"@angular/service-worker": "^22.2.0",
 		"@engineering-circuit/editing": "workspace:*",
 		"@engineering-circuit/engine": "workspace:*",
 		"@engineering-circuit/format": "workspace:*",

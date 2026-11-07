@@ -21,4 +21,6 @@ The link only accepts this computer, the app's own address and the session token
 pnpm install
 pnpm web            # http://localhost:4200
 ```
+In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens or downloads `.circuit.json` files; the circuit you are editing is kept across reloads. A production build is an installable app that works offline.
+
 Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).

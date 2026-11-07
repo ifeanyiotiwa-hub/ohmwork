@@ -19,6 +19,7 @@ export const editCommandSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("disconnect"), wireId: idSchema }),
 	z.strictObject({ type: z.literal("set-parameter"), componentId: idSchema, name: idSchema, value: z.unknown() }),
 	z.strictObject({ type: z.literal("move-component"), componentId: idSchema, position: pointSchema }),
+	z.strictObject({ type: z.literal("rename-circuit"), name: z.string() }),
 	z.strictObject({
 		type: z.literal("set-simulation"),
 		timeStep: z.number().optional(),

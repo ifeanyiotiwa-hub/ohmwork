@@ -1,0 +1,42 @@
+<dialog #dialog class="library" aria-labelledby="library-title" (cancel)="close()">
+	<header>
+		<h2 id="library-title">Your circuits</h2>
+		<button type="button" class="close" aria-label="Close" (click)="close()">×</button>
+	</header>
+
+	<form class="save" (submit)="$event.preventDefault(); save()">
+		<label>
+			<span>Name</span>
+			<input type="text" data-library-name [value]="name()" (input)="rename($event)" />
+		</label>
+		<button type="submit" data-library-save>Save</button>
+	</form>
+	<p class="hint">Saved in this browser. Saving under the same name updates it.</p>
+
+	@if (message(); as text) {
+		<p class="message" role="status" data-library-message>{{ text }}</p>
+	}
+
+	@if (library.entries().length > 0) {
+		<ul class="entries">
+			@for (entry of library.entries(); track entry.id) {
+				<li [attr.data-library-entry]="entry.name">
+					<span class="entry-name">{{ entry.name }}</span>
+					<span class="entry-date">{{ dateFormat.format(entry.savedAt) }}</span>
+					<button type="button" (click)="open(entry.id)">Open</button>
+					<button type="button" class="danger" [attr.aria-label]="'Delete ' + entry.name" (click)="remove(entry.id)">Delete</button>
+				</li>
+			}
+		</ul>
+	} @else {
+		<p class="empty">Nothing saved yet.</p>
+	}
+
+	<footer>
+		<label class="file-button">
+			Open file…
+			<input type="file" accept=".json,application/json" data-library-file (change)="openFile($event)" />
+		</label>
+		<button type="button" data-library-download (click)="download()">Download file</button>
+	</footer>
+</dialog>

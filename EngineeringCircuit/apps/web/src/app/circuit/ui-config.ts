@@ -14,6 +14,14 @@ export type UiConfig = {
 		/** Longest real gap counted between frames (a hidden tab must not cause a huge catch-up). */
 		maxFrameSeconds: number
 	}
+	library: {
+		/** Saved circuits listed at most (newest first). */
+		maxEntries: number
+		/** The circuit being edited is saved this long after the last change. */
+		autosaveDelayMs: number
+		/** Largest circuit file the app opens. */
+		maxFileBytes: number
+	}
 	scope: {
 		/** The oscilloscope shows this many real seconds of the run (× the circuit's speed in simulated time). */
 		windowRealSeconds: number
@@ -38,6 +46,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	scope: { windowRealSeconds: 4, maxSamples: 8000 },
+	library: { maxEntries: 200, autosaveDelayMs: 500, maxFileBytes: 5 * 1024 * 1024 },
 	flow: { dashPeriod: 16, minCurrent: 1e-9, pixelsPerSecondPerDecade: 12, maxPixelsPerSecond: 160 },
 }
 

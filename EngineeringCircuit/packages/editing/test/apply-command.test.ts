@@ -258,3 +258,19 @@ describe("set-simulation", () => {
 		expect(errorsOf(createCircuit("t"), { type: "set-simulation", timeStep: 0 })[0]?.path).toBe("simulation.timeStep")
 	})
 })
+
+describe("rename-circuit", () => {
+	test("renames the circuit", () => {
+		const circuit = run(createCircuit("Old"), { type: "rename-circuit", name: "Night light" })
+		expect(circuit.name).toBe("Night light")
+		expect(applyCommand(createCircuit("Old"), { type: "rename-circuit", name: "Night light" })).toMatchObject({
+			summary: 'Renamed the circuit "Night light"',
+		})
+	})
+
+	test("rejects an empty name", () => {
+		expect(errorsOf(createCircuit("Old"), { type: "rename-circuit", name: "  " })).toEqual([
+			{ path: "name", message: "A circuit needs a name" },
+		])
+	})
+})

@@ -92,6 +92,12 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 				}
 			})
 
+		case "rename-circuit": {
+			const name = command.name.trim()
+			if (name === "") return { errors: [{ path: "name", message: "A circuit needs a name" }] }
+			return { candidate: { ...draft, name }, summary: `Renamed the circuit "${name}"` }
+		}
+
 		case "set-simulation": {
 			const simulation = {
 				...draft.simulation,

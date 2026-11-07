@@ -4,6 +4,7 @@ const port = Number(process.env["E2E_PORT"] ?? 4310)
 
 export default defineConfig({
 	testDir: "e2e",
+	testIgnore: "offline/**",
 	fullyParallel: true,
 	retries: process.env["CI"] ? 2 : 0,
 	use: { baseURL: `http://localhost:${port}`, trace: "retain-on-failure" },

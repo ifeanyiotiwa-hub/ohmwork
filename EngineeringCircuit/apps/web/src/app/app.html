@@ -9,6 +9,7 @@
 		@if (store.timeDependent()) {
 			<button type="button" (click)="store.restartTime()" title="Start again from rest: capacitors empty">Restart</button>
 		}
+		<button type="button" (click)="openLibrary()" title="Save and open circuits (Ctrl/⌘+S)">Library</button>
 		<button type="button" (click)="store.newCircuit()">New</button>
 		<button type="button" (click)="store.loadExample()">Example</button>
 	</div>
@@ -23,3 +24,4 @@
 	<app-part-inspector />
 </main>
 <app-sim-status />
+<app-library-panel />

@@ -1,6 +1,7 @@
 import { Component, computed, inject } from "@angular/core"
 import type { SimIssue } from "@engineering-circuit/engine"
 import { CircuitStore } from "../circuit/circuit-store"
+import { CircuitLibrary } from "../library/circuit-library"
 import { formatSi } from "../circuit/si-units"
 
 @Component({
@@ -10,6 +11,7 @@ import { formatSi } from "../circuit/si-units"
 })
 export class SimStatus {
 	protected readonly store = inject(CircuitStore)
+	protected readonly library = inject(CircuitLibrary)
 
 	protected readonly healthy = computed(
 		() => this.store.errors().length === 0 && this.store.warnings().length === 0 && !this.store.editError(),

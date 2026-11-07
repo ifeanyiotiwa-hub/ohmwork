@@ -18,6 +18,9 @@
 			}
 		</p>
 	}
+	@if (library.problem(); as problem) {
+		<p class="issue warning" data-storage-problem>{{ problem }}</p>
+	}
 	@if (store.slowed()) {
 		<p class="issue warning">Running slower than the set speed: too many time steps per frame. Raise the time step or lower the speed.</p>
 	}
