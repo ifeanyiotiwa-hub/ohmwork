@@ -22,3 +22,6 @@ Small native builds from the same web code; installable and offline on any devic
 
 ## ADR-007: projectKnowledge outside the code package, both in one git repo
 `circuitProject/` is the git root, so knowledge and code version together and agents always see matching docs.
+
+## ADR-008: Zod v4 strict schemas for the circuit format
+Zod gives readable errors with exact paths, TS types from one definition, and JSON Schema export for MCP tools; the MCP SDK uses it too. Objects are strict, so a misspelled field (e.g. `resistence`) is an error rather than silently dropped. This matters because AI agents write these files. Adding new component types is additive and doesn't need a version bump; renaming or removing fields does, with a migration.
