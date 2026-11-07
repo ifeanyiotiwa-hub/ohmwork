@@ -25,3 +25,6 @@ PCB layout, manufacturing export, commercial sales.
 
 ## The AI is a study partner, not a screenshot reader
 Asking a general AI about a circuit today means screenshotting it and hoping the AI reads the picture right. Here the agent reads the real circuit through MCP: every part, connection, value, and live simulation reading, including the engine's plain-language warnings. So it can explain at a beginner's level ("the 2 Ω resistor gets 4 of the 6 volts because…"), spot mistakes, and change the circuit while the learner watches. The learner and the agent edit the same live circuit; either can change it, and every change is visible and undoable.
+
+## References are a floor, not a ceiling
+EveryCircuit screenshots and CircuitJS1 show what a good learning simulator offers today. They are the minimum to match, not a limit: we add parts, features, and teaching ideas they don't have. The "Seen in" column in `COMPONENTS.md` records where an idea was observed; it is never a filter on what we may build.
