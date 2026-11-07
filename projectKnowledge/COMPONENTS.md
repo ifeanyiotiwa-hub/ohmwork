@@ -124,3 +124,4 @@ From CJS / SPICE, not in EC: battery (covered by `voltage-source`; internal resi
 3. Add format tests for valid and invalid params in `packages/format/test/`.
 4. No format version bump for a **new** type: older apps report "Unknown component type ... update the app". Changing an **existing** part's pins or params needs a version bump plus a migration that fills defaults (ADR-008).
 5. Add the part to `DC_MODELS` in `packages/engine/src/dc/branches.ts` (TypeScript fails until you do): a model, or `"not-simulated"` until its deliverable. The engine model ships with a golden test, then status becomes `simulated`.
+6. Draw it: add its symbol to `SYMBOLS` and its display name to `PART_NAMES` in `apps/web/src/app/circuit/symbols.ts` (the build fails until you do). Pins in the symbol must use the catalog's pin names. Give `defaults` in step 2 so it can be placed with one click.

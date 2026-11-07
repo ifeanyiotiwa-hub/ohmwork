@@ -25,8 +25,16 @@
 - Format: `defineComponent` now takes `idPrefix`; catalog exports `definitionOf`, `idPrefixOf`, `ComponentDefinition`.
 - Tooling: ngspice 47 installed via Homebrew on the owner's Mac (ADR-010). `@types/node@24` + `"types": ["node"]` in `tsconfig.base.json` (MCP SDK needs it).
 
+- D6 done: `apps/web` (Angular 22, zoneless, signals, SVG). `src/app/`:
+  - `circuit/`: `circuit-store.ts` (signals over a `CircuitDocument`; `solveDc` + `wireCurrents` as computeds; selection, placing, wiringFrom, paused, editError), `symbols.ts` (`SYMBOLS`, `PART_NAMES`, upright polarity `marks`), `geometry.ts` (pin positions, snap, wire paths), `si-units.ts` (`formatSi`/`parseSi`), `visuals.ts` (flow speed, voltage colour), `part-text.ts`, `examples.ts` (KVL example), `ui-config.ts` (`UI_CONFIG` token: grid, zoom, flow animation).
+  - `canvas/` (SVG, place/drag/wire/pan/zoom), `palette/` (dumb: input + output), `inspector/` (edit values, readings), `status/` (errors, warnings).
+  - Keys: Esc cancel, Delete remove, R rotate, Ctrl/⌘+Z undo. Clicking a switch flips it.
+  - Tests: `*.spec.ts` (Vitest via `ng test`), `e2e/app.spec.ts` (Playwright, 6 flows incl. building a switch circuit from scratch).
+- Also added for D6: catalog `defaults` per part (editing fills missing params; MCP `params` now optional), `paramFieldsOf(type)` in format, `move-component` / `rotate-component` commands (clear bends of attached wires), engine `wireCurrents`.
+- Root scripts: `pnpm test` (core + web unit), `pnpm typecheck` (tsc + web production build), `pnpm test:e2e`, `pnpm web`.
+
 ## Next step
-Owner tries the MCP in Claude Code (restart Claude Code in `circuitProject/`, approve `engineering-circuit`). Then, recommended: D3 transient analysis (capacitor charging, AC/square sources; time-stepping with the existing LU) or D6 web UI (Angular; must reuse `packages/editing` for every edit). They can run in parallel worktrees. D8 (live link) joins MCP and UI on one `CircuitDocument`.
+Owner tries the app (`pnpm web`) and the MCP. Then, recommended: D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; move the engine to a Web Worker in `apps/web`), or D8 live link (MCP and UI share one `CircuitDocument`, so the learner watches the agent build).
 
 ## Blockers / open questions
 - None.
@@ -41,6 +49,7 @@ Owner tries the MCP in Claude Code (restart Claude Code in `circuitProject/`, ap
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | D6 web app (Angular 22 + SVG): 127 core + 36 web unit + 6 e2e tests; catalog defaults, param fields, move/rotate, wire currents; ADR-013 | Owner tries app; then D3 or D8 |
 | 2026-11-07 | Claude (Opus) | D7 MCP server (SDK v2, 14 tools) + `packages/editing` (commands, author history, undo); 104 tests; `.mcp.json`; ADR-012 | Owner tries MCP; then D3 or D6 |
 | 2026-11-07 | Claude (Opus) | D2 DC engine: MNA + LU, plain-language diagnostics, 26 engine tests (67 total), ngspice bridge check; ADR-010/011 | D7 MCP (recommended) |
 | 2026-11-07 | Claude (Opus) | COMPONENTS.md inventory; per-category component catalog; unknown-type error; 41 tests | Start D2 |

@@ -1,1 +1,17 @@
-<p>{{ ok }}</p>
+<header class="toolbar">
+	<h1 class="brand">Engineering<span>Circuit</span></h1>
+	<app-part-palette [active]="store.placing()" (choose)="choosePart($event)" />
+	<div class="actions">
+		<button type="button" (click)="store.undo()" title="Undo (Ctrl/⌘+Z)">Undo</button>
+		<button type="button" [attr.aria-pressed]="store.paused()" (click)="store.paused.set(!store.paused())">
+			{{ store.paused() ? "Resume" : "Pause" }}
+		</button>
+		<button type="button" (click)="store.newCircuit()">New</button>
+		<button type="button" (click)="store.loadExample()">Example</button>
+	</div>
+</header>
+<main class="workspace">
+	<app-circuit-canvas />
+	<app-part-inspector />
+</main>
+<app-sim-status />

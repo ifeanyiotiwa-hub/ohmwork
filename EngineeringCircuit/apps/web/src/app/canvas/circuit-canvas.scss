@@ -1,0 +1,151 @@
+:host {
+	display: block;
+	min-height: 0;
+}
+
+.canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	background: var(--canvas-bg);
+	touch-action: none;
+	user-select: none;
+	cursor: grab;
+
+	&.placing,
+	&.wiring {
+		cursor: crosshair;
+	}
+}
+
+.grid-dot {
+	fill: var(--grid-dot);
+}
+
+.wire-hit {
+	fill: none;
+	stroke: transparent;
+	stroke-width: 12;
+	cursor: pointer;
+}
+
+.wire-line {
+	fill: none;
+	stroke: var(--wire-idle);
+	stroke-width: 2.5;
+	stroke-linejoin: round;
+	pointer-events: none;
+}
+
+.wire.selected .wire-line {
+	stroke-width: 4;
+	filter: drop-shadow(0 0 3px var(--accent));
+}
+
+.wire-flow {
+	fill: none;
+	stroke: var(--flow);
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-dasharray: 2 calc(var(--flow-period) - 2px);
+	pointer-events: none;
+	animation: flow linear infinite;
+
+	&.reverse {
+		animation-direction: reverse;
+	}
+}
+
+.paused .wire-flow {
+	animation-play-state: paused;
+}
+
+@keyframes flow {
+	from {
+		stroke-dashoffset: 0;
+	}
+	to {
+		stroke-dashoffset: calc(-1 * var(--flow-period));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wire-flow {
+		animation: none;
+	}
+}
+
+.part {
+	cursor: move;
+}
+
+.part-hit {
+	fill: transparent;
+}
+
+.symbol {
+	fill: none;
+	stroke: var(--symbol);
+	stroke-width: 2;
+	stroke-linejoin: round;
+	stroke-linecap: round;
+}
+
+.part.selected .symbol {
+	stroke: var(--accent);
+	stroke-width: 2.5;
+}
+
+.part-label,
+.part-reading,
+.node-label {
+	font-size: 11px;
+	pointer-events: none;
+}
+
+.part-label {
+	fill: var(--text-muted);
+}
+
+.part-name {
+	fill: var(--text);
+	font-weight: 600;
+}
+
+.part-reading {
+	fill: var(--flow);
+}
+
+.node-label {
+	fill: var(--voltage-label);
+	font-weight: 600;
+}
+
+.pin {
+	fill: var(--canvas-bg);
+	stroke: var(--pin);
+	stroke-width: 1.5;
+	cursor: crosshair;
+
+	&:hover,
+	&.pending {
+		fill: var(--accent);
+		stroke: var(--accent);
+	}
+}
+
+.rubber-band {
+	stroke: var(--accent);
+	stroke-width: 2;
+	stroke-dasharray: 6 4;
+	pointer-events: none;
+}
+
+.polarity {
+	fill: var(--symbol);
+	font-size: 13px;
+	font-weight: 700;
+	text-anchor: middle;
+	dominant-baseline: central;
+	pointer-events: none;
+}

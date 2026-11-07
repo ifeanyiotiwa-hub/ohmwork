@@ -1,0 +1,77 @@
+import { Component, computed, inject } from "@angular/core"
+import { paramFieldsOf } from "@engineering-circuit/format"
+import { CircuitStore } from "../circuit/circuit-store"
+import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
+import { PART_NAMES } from "../circuit/symbols"
+
+type FieldView =
+	| { name: string; kind: "number"; text: string; unit: string }
+	| { name: string; kind: "boolean"; checked: boolean }
+	| { name: string; kind: "choice"; value: string; options: string[] }
+
+const RECENT_HISTORY = 5
+
+@Component({
+	selector: "app-part-inspector",
+	templateUrl: "./part-inspector.html",
+	styleUrl: "./part-inspector.scss",
+})
+export class PartInspector {
+	protected readonly store = inject(CircuitStore)
+	protected readonly partNames = PART_NAMES
+
+	protected readonly fields = computed<FieldView[]>(() => {
+		const part = this.store.selectedComponent()
+		if (!part) return []
+		const params: Record<string, unknown> = part.params
+		return paramFieldsOf(part.type).map((field): FieldView => {
+			const value = params[field.name]
+			switch (field.kind) {
+				case "number": {
+					const unit = unitSymbolOf(field.description)
+					return { name: field.name, kind: "number", unit, text: typeof value === "number" ? formatSi(value, unit) : "" }
+				}
+				case "boolean":
+					return { name: field.name, kind: "boolean", checked: value === true }
+				case "choice":
+					return { name: field.name, kind: "choice", value: String(value), options: field.options }
+			}
+		})
+	})
+
+	protected readonly reading = computed(() => {
+		const part = this.store.selectedComponent()
+		const reading = part && this.store.solution()?.readings[part.id]
+		if (!reading) return undefined
+		return {
+			voltage: formatSi(reading.voltage, "V"),
+			current: formatSi(reading.current, "A"),
+			power: formatSi(reading.voltage * reading.current, "W"),
+		}
+	})
+
+	protected readonly wireCurrent = computed(() => {
+		const wire = this.store.selectedWire()
+		return wire ? formatSi(Math.abs(this.store.wireCurrents()[wire.id] ?? 0), "A") : undefined
+	})
+
+	protected readonly recentHistory = computed(() => this.store.history().slice(-RECENT_HISTORY).reverse())
+
+	protected setNumber(componentId: string, name: string, event: Event): void {
+		const text = (event.target as HTMLInputElement).value
+		const value = parseSi(text)
+		if (value === undefined) {
+			this.store.editError.set(`Couldn't read "${text}" as a number. Try 1k, 4.7u or 10.`)
+			return
+		}
+		this.store.apply({ type: "set-parameter", componentId, name, value })
+	}
+
+	protected setBoolean(componentId: string, name: string, event: Event): void {
+		this.store.apply({ type: "set-parameter", componentId, name, value: (event.target as HTMLInputElement).checked })
+	}
+
+	protected setChoice(componentId: string, name: string, event: Event): void {
+		this.store.apply({ type: "set-parameter", componentId, name, value: (event.target as HTMLSelectElement).value })
+	}
+}

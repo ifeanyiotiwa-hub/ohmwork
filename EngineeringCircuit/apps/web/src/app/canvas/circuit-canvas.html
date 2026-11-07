@@ -1,0 +1,86 @@
+<svg
+	#svg
+	class="canvas"
+	role="application"
+	aria-label="Circuit canvas"
+	[attr.viewBox]="viewBox()"
+	[class.paused]="store.paused()"
+	[class.placing]="store.placing() !== undefined"
+	[class.wiring]="store.wiringFrom() !== undefined"
+	[style.--flow-period.px]="config.flow.dashPeriod"
+	(pointerdown)="onBackgroundDown($event)"
+	(pointermove)="onPointerMove($event)"
+	(pointerup)="onPointerUp()"
+	(pointercancel)="onPointerUp()"
+	(wheel)="onWheel($event)"
+>
+	<defs>
+		<pattern id="grid-dots" patternUnits="userSpaceOnUse" [attr.width]="config.gridSize" [attr.height]="config.gridSize">
+			<circle class="grid-dot" cx="0" cy="0" r="1" />
+		</pattern>
+	</defs>
+	<rect class="grid" x="-20000" y="-20000" width="40000" height="40000" fill="url(#grid-dots)" />
+
+	@for (wire of wires(); track wire.id) {
+		<g class="wire" [class.selected]="wire.selected" [attr.data-wire]="wire.id" (pointerdown)="onWireDown($event, wire.id)">
+			<path class="wire-hit" [attr.d]="wire.path" />
+			<path class="wire-line" [attr.d]="wire.path" [style.stroke]="wire.colour" />
+			@if (wire.flow; as flow) {
+				<path class="wire-flow" [class.reverse]="flow.reverse" [attr.d]="wire.path" [style.animation-duration.s]="flow.seconds" />
+			}
+		</g>
+	}
+
+	@for (item of parts(); track item.part.id) {
+		<g
+			class="part"
+			role="button"
+			[class.selected]="item.selected"
+			[attr.data-part]="item.part.id"
+			[attr.aria-label]="item.part.id + ' ' + item.value"
+			[attr.transform]="item.transform"
+			(pointerdown)="onPartDown($event, item.part)"
+		>
+			<rect class="part-hit" x="-40" y="-22" width="80" height="44" [attr.transform]="item.rotation" />
+			<g [attr.transform]="item.rotation">
+				@for (d of item.paths; track $index) {
+					<path class="symbol" [attr.d]="d" />
+				}
+				@if (item.lever; as lever) {
+					<path class="symbol" [attr.d]="lever" />
+				}
+			</g>
+		</g>
+		@for (mark of item.marks; track $index) {
+			<text class="polarity" [attr.x]="mark.x" [attr.y]="mark.y">{{ mark.text }}</text>
+		}
+		<text class="part-label" [attr.x]="item.label.x" [attr.y]="item.label.y" [attr.text-anchor]="item.label.anchor">
+			<tspan class="part-name">{{ item.part.id }}</tspan> {{ item.value }}
+		</text>
+		@if (item.reading; as reading) {
+			<text class="part-reading" [attr.x]="item.label.x" [attr.y]="item.label.y + readingOffset" [attr.text-anchor]="item.label.anchor">{{ reading }}</text>
+		}
+	}
+
+	@for (label of nodeLabels(); track label.key) {
+		<text class="node-label" [attr.x]="label.x" [attr.y]="label.y">{{ label.text }}</text>
+	}
+
+	@for (item of parts(); track item.part.id) {
+		@for (pin of item.pins; track pin.key) {
+			<circle
+				class="pin"
+				r="5"
+				[class.pending]="pin.pending"
+				[attr.cx]="pin.at.x"
+				[attr.cy]="pin.at.y"
+				[attr.data-pin]="pin.key"
+				(pointerdown)="onPinDown($event, pin.ref)"
+			/>
+		}
+	}
+
+	@if (rubberBand(); as band) {
+		<line class="rubber-band" [attr.x1]="band.x1" [attr.y1]="band.y1" [attr.x2]="band.x2" [attr.y2]="band.y2" />
+	}
+</svg>

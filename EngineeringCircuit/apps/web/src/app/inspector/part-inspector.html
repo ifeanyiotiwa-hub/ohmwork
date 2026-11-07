@@ -1,0 +1,81 @@
+<aside class="inspector" aria-label="Inspector">
+	@if (store.selectedComponent(); as part) {
+		<header>
+			<h2>{{ part.id }}</h2>
+			<span class="kind">{{ partNames[part.type] }}</span>
+		</header>
+
+		@for (field of fields(); track field.name) {
+			<label class="field">
+				<span class="field-name">{{ field.name }}</span>
+				@if (field.kind === "number") {
+					<input
+						type="text"
+						inputmode="decimal"
+						[attr.data-field]="field.name"
+						[value]="field.text"
+						(change)="setNumber(part.id, field.name, $event)"
+					/>
+				} @else if (field.kind === "boolean") {
+					<input type="checkbox" [attr.data-field]="field.name" [checked]="field.checked" (change)="setBoolean(part.id, field.name, $event)" />
+				} @else {
+					<select [attr.data-field]="field.name" (change)="setChoice(part.id, field.name, $event)">
+						@for (option of field.options; track option) {
+							<option [value]="option" [selected]="option === field.value">{{ option }}</option>
+						}
+					</select>
+				}
+			</label>
+		}
+
+		@if (reading(); as values) {
+			<dl class="readings" data-readings>
+				<dt>Voltage</dt>
+				<dd>{{ values.voltage }}</dd>
+				<dt>Current</dt>
+				<dd>{{ values.current }}</dd>
+				<dt>Power</dt>
+				<dd>{{ values.power }}</dd>
+			</dl>
+		}
+
+		<div class="actions">
+			<button type="button" (click)="store.rotateSelected()" title="Rotate (R)">Rotate</button>
+			<button type="button" class="danger" (click)="store.removeSelected()" title="Delete (Del)">Delete</button>
+		</div>
+	} @else if (store.selectedWire(); as wire) {
+		<header>
+			<h2>{{ wire.id }}</h2>
+			<span class="kind">Wire</span>
+		</header>
+		<p class="wire-ends">{{ wire.from.componentId }}.{{ wire.from.pin }} → {{ wire.to.componentId }}.{{ wire.to.pin }}</p>
+		<dl class="readings">
+			<dt>Current</dt>
+			<dd>{{ wireCurrent() }}</dd>
+		</dl>
+		<div class="actions">
+			<button type="button" class="danger" (click)="store.removeSelected()">Delete</button>
+		</div>
+	} @else {
+		<header>
+			<h2>{{ store.circuit().name }}</h2>
+		</header>
+		@if (store.circuit().description) {
+			<p class="description">{{ store.circuit().description }}</p>
+		}
+		<ol class="help">
+			<li>Pick a part above, then click the canvas to place it.</li>
+			<li>Click a pin, then another pin, to connect them with a wire.</li>
+			<li>Click a part to edit it; drag to move; click a switch to flip it.</li>
+			<li>Drag the background to pan, scroll to zoom.</li>
+		</ol>
+		@if (recentHistory().length > 0) {
+			<h3>Recent changes</h3>
+			<ul class="history">
+				@for (item of recentHistory(); track $index) {
+					<li><span class="author">{{ item.author }}</span> {{ item.summary }}</li>
+				}
+			</ul>
+		}
+	}
+</aside>

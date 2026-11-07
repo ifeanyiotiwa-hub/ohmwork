@@ -1,0 +1,23 @@
+<nav class="palette" aria-label="Parts">
+	@for (item of items; track item.type) {
+		<button
+			type="button"
+			class="part-button"
+			[class.active]="active() === item.type"
+			[attr.aria-pressed]="active() === item.type"
+			[attr.data-palette]="item.type"
+			[title]="item.simulated ? 'Add ' + item.name : item.name + ' (shown, not simulated yet)'"
+			(click)="choose.emit(item.type)"
+		>
+			<svg class="icon" viewBox="-44 -24 88 48" aria-hidden="true">
+				@for (d of item.paths; track $index) {
+					<path [attr.d]="d" />
+				}
+			</svg>
+			<span class="name">{{ item.name }}</span>
+			@if (!item.simulated) {
+				<span class="badge">soon</span>
+			}
+		</button>
+	}
+</nav>

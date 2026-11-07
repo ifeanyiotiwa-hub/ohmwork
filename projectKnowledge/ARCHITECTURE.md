@@ -16,7 +16,7 @@ Device (works offline)                     Server (optional, later)
 |---|---|---|
 | `packages/format` | Circuit JSON format: types, validation, version migrations | none |
 | `packages/engine` | Simulation: analog (MNA), digital (event-driven), mixed | `format` |
-| `apps/web` | Angular 21 UI, PixiJS canvas, engine in a Web Worker | `format`, `engine` |
+| `apps/web` | Angular 22 UI (signals, standalone, zoneless), SVG canvas; engine runs in-thread until D3 adds a Web Worker | `format`, `engine`, `editing` |
 | `packages/editing` | Shared edit commands (`applyCommand`) and `CircuitDocument` (author-tagged history, undo). Used by MCP now and the UI later | `format` |
 | `apps/mcp` | MCP server (TypeScript SDK v2, stdio): build/simulate/explain tools | `format`, `engine`, `editing` |
 | `apps/desktop` | Tauri 2 shell around `apps/web` (desktop + mobile) | `apps/web` build |

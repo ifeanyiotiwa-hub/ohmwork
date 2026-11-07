@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from "@angular/core"
 import { CircuitDocument, type EditCommand } from "@engineering-circuit/editing"
 import { type SimIssue, solveDc, wireCurrents } from "@engineering-circuit/engine"
-import { type Circuit, type ComponentType, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, type ComponentType, type PinRef, createCircuit } from "@engineering-circuit/format"
 import { kvlExample } from "./examples"
 
 export type Selection = { kind: "component" | "wire"; id: string }
@@ -48,6 +48,7 @@ export class CircuitStore {
 	})
 
 	readonly placing = signal<ComponentType | undefined>(undefined)
+	readonly wiringFrom = signal<PinRef | undefined>(undefined)
 	readonly paused = signal(false)
 	readonly editError = signal<string | undefined>(undefined)
 

@@ -1,0 +1,57 @@
+.palette {
+	display: flex;
+	gap: 4px;
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+.part-button {
+	position: relative;
+	display: grid;
+	justify-items: center;
+	gap: 2px;
+	min-width: 72px;
+	padding: 6px 4px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--text-muted);
+	font: inherit;
+	font-size: 11px;
+	cursor: pointer;
+
+	&:hover {
+		background: var(--surface-hover);
+		color: var(--text);
+	}
+
+	&.active {
+		border-color: var(--accent);
+		background: var(--accent-soft);
+		color: var(--text);
+	}
+}
+
+.icon {
+	width: 44px;
+	height: 24px;
+
+	path {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 3;
+		stroke-linejoin: round;
+		stroke-linecap: round;
+	}
+}
+
+.badge {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	padding: 0 4px;
+	border-radius: 4px;
+	background: var(--warning-soft);
+	color: var(--warning);
+	font-size: 9px;
+}

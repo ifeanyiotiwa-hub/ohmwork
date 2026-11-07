@@ -1,0 +1,37 @@
+.status {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 8px 12px;
+	border-top: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.issue {
+	margin: 0;
+	padding: 4px 10px;
+	border: none;
+	border-radius: 6px;
+	font: inherit;
+	font-size: 13px;
+	text-align: left;
+	white-space: pre-line;
+}
+
+button.issue {
+	cursor: pointer;
+}
+
+.error {
+	background: var(--danger-soft);
+	color: var(--danger);
+}
+
+.warning {
+	background: var(--warning-soft);
+	color: var(--warning);
+}
+
+.ok {
+	color: var(--text-muted);
+}

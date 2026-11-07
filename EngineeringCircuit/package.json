@@ -7,7 +7,9 @@
 		"prepare": "git config core.hooksPath .githooks",
 		"test": "vitest run && pnpm --filter @engineering-circuit/web test",
 		"typecheck": "tsc -p tsconfig.base.json --noEmit && pnpm --filter @engineering-circuit/web build",
-		"test:core": "vitest run"
+		"test:core": "vitest run",
+		"test:e2e": "pnpm --filter @engineering-circuit/web test:e2e",
+		"web": "pnpm --filter @engineering-circuit/web start"
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",

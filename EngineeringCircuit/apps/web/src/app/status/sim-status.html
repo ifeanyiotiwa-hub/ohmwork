@@ -1,0 +1,14 @@
+<footer class="status" role="status" aria-live="polite">
+	@if (store.editError(); as message) {
+		<p class="issue error">{{ message }}</p>
+	}
+	@for (issue of store.errors(); track $index) {
+		<button type="button" class="issue error" (click)="show(issue)">{{ issue.message }}</button>
+	}
+	@for (issue of store.warnings(); track $index) {
+		<button type="button" class="issue warning" (click)="show(issue)">{{ issue.message }}</button>
+	}
+	@if (healthy()) {
+		<p class="issue ok">Simulating · {{ store.circuit().components.length }} parts · DC steady state</p>
+	}
+</footer>

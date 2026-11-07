@@ -1,0 +1,58 @@
+:host {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	height: 100dvh;
+}
+
+.toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.brand {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 700;
+	white-space: nowrap;
+
+	span {
+		color: var(--accent);
+	}
+}
+
+app-part-palette {
+	flex: 1;
+	min-width: 0;
+}
+
+.actions {
+	display: flex;
+	gap: 6px;
+}
+
+.workspace {
+	display: grid;
+	grid-template-columns: 1fr 280px;
+	min-height: 0;
+}
+
+@media (max-width: 760px) {
+	.toolbar {
+		flex-wrap: wrap;
+	}
+
+	app-part-palette {
+		order: 3;
+		flex-basis: 100%;
+	}
+
+	.workspace {
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr minmax(0, 40%);
+	}
+}
