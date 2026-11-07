@@ -2,6 +2,7 @@ import type { Circuit } from "@engineering-circuit/format"
 import { type DcInputs, STATEFUL_TYPES, type StoredState, TIME_DEPENDENT_TYPES } from "../dc/branches"
 import type { SimIssue } from "../dc/issues"
 import { type DcSolution, solveCircuit } from "../dc/solve-dc"
+import { type LogicMemories, advanceLogic, initialMemories } from "../digital/advance"
 
 /**
  * Simulated time, each capacitor's / inductor's state (keyed by component id), and the last pin voltages, which
@@ -11,6 +12,8 @@ export type TransientState = {
 	time: number
 	memory: Readonly<Record<string, StoredState>>
 	pinVoltages: Readonly<Record<string, number>>
+	/** Logic parts' state and outputs; the outputs drive the next step (one step of propagation delay). */
+	logic?: LogicMemories
 }
 export type TransientOptions = DcInputs & { timeStep: number }
 export type TransientResult = { ok: true; state: TransientState; solution: DcSolution } | { ok: false; errors: SimIssue[] }
@@ -30,6 +33,7 @@ export function stepTransient(circuit: Circuit, previous: TransientState, { time
 		...(pressed ? { pressed } : {}),
 		transient: { time, timeStep, memory: previous.memory },
 		guess: previous.pinVoltages,
+		logic: previous.logic ?? initialMemories(circuit),
 	})
 	if (!result.ok) return result
 
@@ -39,5 +43,6 @@ export function stepTransient(circuit: Circuit, previous: TransientState, { time
 			.filter(([key]) => stateful.has(key.split("/")[0] ?? ""))
 			.map(([key, reading]): [string, StoredState] => [key, { voltage: reading.voltage, current: reading.current }]),
 	)
-	return { ok: true, state: { time, memory, pinVoltages: result.solution.pinVoltages }, solution: result.solution }
+	const logic = advanceLogic(circuit, result.solution.pinVoltages, previous.logic ?? initialMemories(circuit), circuit.simulation.logicHigh)
+	return { ok: true, state: { time, memory, pinVoltages: result.solution.pinVoltages, logic }, solution: result.solution }
 }

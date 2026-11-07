@@ -343,7 +343,7 @@ describe("over time", () => {
 	})
 
 	test("set_simulation changes the time step and speed, and period is accepted for frequency", async () => {
-		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001")
+		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001, logic high 5 V")
 		await call("add_component", { type: "ac-source" })
 		expect((await call("set_parameter", { componentId: "AC1", name: "period", value: 0.01 })).text).toBe("Set AC1 frequency to 100")
 	})
@@ -394,4 +394,16 @@ test("probing a transistor reports base-emitter and collector-emitter", async ()
 			"collector-emitter": { voltage: expect.closeTo(8.604, 2), current: expect.closeTo(0.0013958, 5) },
 		},
 	})
+})
+
+test("the agent can watch a counter count with simulate_over_time", async () => {
+	await call("add_component", { type: "clock", params: { frequency: 1000 } })
+	await call("add_component", { type: "counter-4bit" })
+	await call("connect", { from: "CLK1.out", to: "CNT1.clk" })
+	const { data } = await call("simulate_over_time", { duration: 0.0035, probes: ["CNT1.q0", "CNT1.q1"], samples: 1 })
+	// Rising edges at 0, 1, 2, 3 ms: a count of 4 (q0 = 0, q1 = 0 → bit 2 set).
+	expect(data).toMatchObject({ samples: [{ values: { "CNT1.q0": { voltage: 0 }, "CNT1.q1": { voltage: 0 } } }] })
+	const more = await call("simulate_over_time", { duration: 0.0025, probes: ["CNT1.q0", "CNT1.q1"], samples: 1 })
+	// Edges at 0, 1, 2 ms: a count of 3.
+	expect(more.data).toMatchObject({ samples: [{ values: { "CNT1.q0": { voltage: 5 }, "CNT1.q1": { voltage: 5 } } }] })
 })

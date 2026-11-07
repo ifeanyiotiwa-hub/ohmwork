@@ -1,4 +1,6 @@
 import type { Component, ComponentType } from "@engineering-circuit/format"
+import type { LogicMemories } from "../digital/advance"
+import { LOGIC_PARTS, type LogicPart, initialMemory } from "../digital/logic"
 import { bipolarDevice } from "../nonlinear/bipolar"
 import type { Device } from "../nonlinear/device"
 import { diodeDevice } from "../nonlinear/diode"
@@ -37,11 +39,26 @@ export type StoredState = { voltage: number; current: number }
 /** Present only when solving one time step: the time at the end of the step, its length, and stored states. */
 export type TransientContext = { time: number; timeStep: number; memory: Readonly<Record<string, StoredState>> }
 
-/** `guess`: pin voltages (keyed "R1:a") to start Newton–Raphson from, e.g. the previous time step's. */
-export type SolveInputs = DcInputs & { transient?: TransientContext; guess?: Readonly<Record<string, number>> }
+/**
+ * `guess`: pin voltages (keyed "R1:a") to start Newton–Raphson from, e.g. the previous time step's.
+ * `logic`: each logic part's present outputs (they change between solves, never within one).
+ */
+export type SolveInputs = DcInputs & {
+	transient?: TransientContext
+	guess?: Readonly<Record<string, number>>
+	logic?: LogicMemories
+}
+
+/** What a part model sees: the solve inputs plus the circuit's logic-high voltage. */
+export type ModelContext = SolveInputs & { logicHigh: number }
+
+/** Stands for the circuit's ground in a branch's pins: logic parts and rails are referenced to it. */
+export const GROUND_PIN = "@ground"
 
 /** Parts whose behaviour depends on time; a circuit without any is the same at every instant. */
-export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set([
+export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<ComponentType>([
+	"clock",
+	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 	"capacitor",
 	"polarized-capacitor",
 	"inductor",
@@ -57,7 +74,7 @@ export const STATEFUL_TYPES: ReadonlySet<ComponentType> = new Set(["capacitor", 
 export const OHMMETER_TEST_CURRENT = 1e-3
 
 type DcModel<Type extends ComponentType> =
-	| ((component: Extract<Component, { type: Type }>, inputs: SolveInputs) => Branch[])
+	| ((component: Extract<Component, { type: Type }>, context: ModelContext) => Branch[])
 	| "not-simulated"
 
 const wire = (componentId: string, pins: Pins = ["a", "b"]): Branch => ({ kind: "voltage", componentId, pins, voltage: 0 })
@@ -98,6 +115,21 @@ const deviceBranch = (componentId: string, device: Device, port?: string): Branc
 }
 
 const RGB_COLOURS = ["red", "green", "blue"] as const
+
+const toGround = (componentId: string, pin: string, voltage: number): Branch => ({
+	kind: "voltage",
+	componentId,
+	pins: [pin, GROUND_PIN],
+	voltage,
+})
+
+/** Each output pin is an ideal source to ground at 0 V or logic high (CircuitJS1 GateElm). */
+const logicModel =
+	(part: LogicPart) =>
+	({ id }: Component, { logic, logicHigh }: ModelContext): Branch[] => {
+		const outputs = logic?.[id]?.outputs ?? initialMemory(part).outputs
+		return part.outputs.map((pin, index) => toGround(id, pin, outputs[index] ? logicHigh : 0))
+	}
 
 const PRIMARY: Pins = ["primaryA", "primaryB"]
 const SECONDARY: Pins = ["secondaryA", "secondaryB"]
@@ -229,6 +261,25 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	"pnp-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, -1))],
 	"n-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, 1))],
 	"p-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, -1))],
+	"voltage-rail": ({ id, params }) => [toGround(id, "terminal", params.voltage)],
+	"logic-input": ({ id, params }, { logicHigh }) => [toGround(id, "out", params.high ? logicHigh : 0)],
+	"logic-output": () => [],
+	clock: ({ id, params }, { transient, logicHigh }) => [
+		toGround(id, "out", transient ? squareVoltage({ ...params, low: 0, high: logicHigh }, transient.time) : 0),
+	],
+	"not-gate": logicModel(LOGIC_PARTS["not-gate"]),
+	"and-gate": logicModel(LOGIC_PARTS["and-gate"]),
+	"or-gate": logicModel(LOGIC_PARTS["or-gate"]),
+	"nand-gate": logicModel(LOGIC_PARTS["nand-gate"]),
+	"nor-gate": logicModel(LOGIC_PARTS["nor-gate"]),
+	"xor-gate": logicModel(LOGIC_PARTS["xor-gate"]),
+	"xnor-gate": logicModel(LOGIC_PARTS["xnor-gate"]),
+	"sr-latch": logicModel(LOGIC_PARTS["sr-latch"]),
+	"sr-latch-inverted": logicModel(LOGIC_PARTS["sr-latch-inverted"]),
+	"d-flip-flop": logicModel(LOGIC_PARTS["d-flip-flop"]),
+	"t-flip-flop": logicModel(LOGIC_PARTS["t-flip-flop"]),
+	"jk-flip-flop": logicModel(LOGIC_PARTS["jk-flip-flop"]),
+	"counter-4bit": logicModel(LOGIC_PARTS["counter-4bit"]),
 	voltmeter: () => [],
 	ammeter: ({ id }) => [wire(id, ["positive", "negative"])],
 	ohmmeter: ({ id }) => [{ kind: "current", componentId: id, pins: ["a", "b"], current: OHMMETER_TEST_CURRENT, test: true }],

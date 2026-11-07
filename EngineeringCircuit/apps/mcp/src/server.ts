@@ -36,6 +36,7 @@ A wire leaves each pin in the direction the pin points (away from its part) and 
 get_circuit lists every pin's position; use move_component / rotate_component to tidy up.
 Meters are ideal: a voltmeter goes across a part, an ammeter in series (across a battery it is a short circuit), an ohmmeter across an unpowered part.
 Push buttons are released unless you list them in simulate/probe "pressed"; in the app the learner holds them with the mouse.
+Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 
 const COMPONENT_TYPES = COMPONENT_DEFINITIONS.map((definition) => definition.type) as [ComponentType, ...ComponentType[]]
@@ -296,10 +297,14 @@ export function createServer(
 		"set_simulation",
 		{
 			description:
-				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower) and speed (simulated seconds per real second in the app).",
-			inputSchema: z.object({ timeStep: z.number().positive().optional(), speed: z.number().positive().optional() }),
+				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower), speed (simulated seconds per real second in the app), and logicHigh (volts for logic 1; logic inputs read 1 above half of it).",
+			inputSchema: z.object({
+				timeStep: z.number().positive().optional(),
+				speed: z.number().positive().optional(),
+				logicHigh: z.number().positive().optional(),
+			}),
 		},
-		({ timeStep, speed }) => edit({ type: "set-simulation", timeStep, speed }),
+		({ timeStep, speed, logicHigh }) => edit({ type: "set-simulation", timeStep, speed, logicHigh }),
 	)
 
 	server.registerTool(

@@ -37,6 +37,34 @@ const CONTROLLED_LABEL = { x: 0, y: -30 }
 const TRANSISTOR_BODY: Box = { left: -40, top: -40, right: 30, bottom: 40 }
 const TRANSISTOR_LABEL = { x: 34, y: 4 }
 const BIPOLAR_PATHS = ["M-40 0 H-6 M-6 -14 V14", "M-6 -7 L20 -24 V-40 M-6 7 L20 24 V40", "M-16 0 a24 24 0 1 0 48 0 a24 24 0 1 0 -48 0"]
+// Logic: IEEE distinctive gate shapes; inputs on the left (a above b), output on the right.
+const GATE_BODY: Box = { left: -40, top: -24, right: 40, bottom: 24 }
+const GATE_LABEL = { x: 0, y: -30 }
+const AND_LEADS = "M-40 -20 H-20 M-40 20 H-20"
+const AND_SHAPE = "M-20 -24 H0 A24 24 0 0 1 0 24 H-20 Z"
+const OR_LEADS = "M-40 -20 H-19 M-40 20 H-19"
+const OR_SHAPE = "M-24 -24 Q-10 0 -24 24 Q8 24 22 0 Q8 -24 -24 -24 Z"
+const XOR_EXTRA = "M-31 -24 Q-17 0 -31 24"
+const bubbleAt = (x: number) => `M${x} 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0`
+const gateSymbol = (paths: string[]): SymbolShape => ({ body: GATE_BODY, paths, label: GATE_LABEL, labelAnchor: "middle" })
+
+/** Flip-flops and latches: a box with its pin names inside; a clock input is marked with a triangle. */
+const BOX_BODY: Box = { left: -40, top: -32, right: 40, bottom: 32 }
+const BOX = "M-24 -32 H24 V32 H-24 Z"
+const BOX_LEADS = "M-40 -20 H-24 M-40 20 H-24 M24 -20 H40 M24 20 H40"
+const CLOCK_MARK = (y: number) => `M-24 ${y - 6} L-16 ${y} L-24 ${y + 6}`
+const pinMark = (text: string, x: number, y: number) => ({ text, at: { x, y } })
+const Q_MARKS = [pinMark("Q", 14, -20), pinMark("Q̄", 14, 20)]
+const boxSymbol = (paths: string[], marks: { text: string; at: Point }[]): SymbolShape => ({
+	body: BOX_BODY,
+	paths: [BOX, BOX_LEADS, ...paths],
+	marks,
+	label: { x: 0, y: -38 },
+	labelAnchor: "middle",
+})
+const SOURCE_BOX = "M-20 -14 H20 V14 H-20 Z M20 0 H40"
+const SOURCE_BOX_BODY: Box = { left: -20, top: -16, right: 40, bottom: 16 }
+
 const MOSFET_PATHS = ["M-40 0 H-12 M-12 -14 V14", "M-4 -16 V16", "M-4 -10 H20 V-40 M-4 10 H20 V40"]
 /** Room above the dial for the name and, under it, the big reading. */
 const METER_LABEL = { x: 0, y: -42 }
@@ -228,6 +256,44 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 0, y: -30 },
 		labelAnchor: "middle",
 	},
+	"voltage-rail": {
+		body: { left: -16, top: -10, right: 16, bottom: 40 },
+		paths: ["M0 40 V8 M-12 8 H12", "M-6 0 L0 -8 L6 0"],
+		label: { x: 0, y: -14 },
+		labelAnchor: "middle",
+	},
+	"logic-input": { body: SOURCE_BOX_BODY, paths: [SOURCE_BOX], label: { x: 0, y: -20 }, labelAnchor: "middle" },
+	"logic-output": {
+		body: { left: -40, top: -16, right: 14, bottom: 16 },
+		paths: ["M-40 0 H-14", "M-14 0 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0"],
+		label: { x: 0, y: -20 },
+		labelAnchor: "middle",
+	},
+	clock: { body: SOURCE_BOX_BODY, paths: [SOURCE_BOX, "M-12 6 H-6 V-6 H2 V6 H8 V-6"], label: { x: 0, y: -20 }, labelAnchor: "middle" },
+	"not-gate": {
+		body: { left: -40, top: -16, right: 40, bottom: 16 },
+		paths: ["M-40 0 H-20 M24 0 H40", "M-20 -16 L16 0 L-20 16 Z", bubbleAt(16)],
+		label: { x: 0, y: -22 },
+		labelAnchor: "middle",
+	},
+	"and-gate": gateSymbol([AND_LEADS, AND_SHAPE, "M24 0 H40"]),
+	"nand-gate": gateSymbol([AND_LEADS, AND_SHAPE, bubbleAt(24), "M32 0 H40"]),
+	"or-gate": gateSymbol([OR_LEADS, OR_SHAPE, "M22 0 H40"]),
+	"nor-gate": gateSymbol([OR_LEADS, OR_SHAPE, bubbleAt(22), "M30 0 H40"]),
+	"xor-gate": gateSymbol([OR_LEADS, OR_SHAPE, XOR_EXTRA, "M22 0 H40"]),
+	"xnor-gate": gateSymbol([OR_LEADS, OR_SHAPE, XOR_EXTRA, bubbleAt(22), "M30 0 H40"]),
+	"sr-latch": boxSymbol([], [pinMark("S", -14, -20), pinMark("R", -14, 20), ...Q_MARKS]),
+	"sr-latch-inverted": boxSymbol([], [pinMark("S̄", -14, -20), pinMark("R̄", -14, 20), ...Q_MARKS]),
+	"d-flip-flop": boxSymbol([CLOCK_MARK(20)], [pinMark("D", -14, -20), ...Q_MARKS]),
+	"t-flip-flop": boxSymbol([CLOCK_MARK(20)], [pinMark("T", -14, -20), ...Q_MARKS]),
+	"jk-flip-flop": boxSymbol(["M-40 0 H-24", CLOCK_MARK(0)], [pinMark("J", -14, -20), pinMark("K", -14, 20), ...Q_MARKS]),
+	"counter-4bit": {
+		body: { left: -40, top: -48, right: 40, bottom: 32 },
+		paths: ["M-24 -48 H24 V32 H-24 Z", "M-40 -20 H-24 M-40 20 H-24", "M24 -40 H40 M24 -20 H40 M24 0 H40 M24 20 H40", CLOCK_MARK(-20)],
+		marks: [pinMark("R", -14, 20), pinMark("0", 14, -40), pinMark("1", 14, -20), pinMark("2", 14, 0), pinMark("3", 14, 20)],
+		label: { x: 0, y: -54 },
+		labelAnchor: "middle",
+	},
 	voltmeter: {
 		body: TWO_PIN_BODY,
 		paths: METER_PATHS,
@@ -287,6 +353,23 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"pnp-transistor": "PNP transistor",
 	"n-mosfet": "N-MOSFET",
 	"p-mosfet": "P-MOSFET",
+	"voltage-rail": "Voltage rail",
+	"logic-input": "Logic input",
+	"logic-output": "Logic output",
+	clock: "Clock",
+	"not-gate": "NOT",
+	"and-gate": "AND",
+	"or-gate": "OR",
+	"nand-gate": "NAND",
+	"nor-gate": "NOR",
+	"xor-gate": "XOR",
+	"xnor-gate": "XNOR",
+	"sr-latch": "SR latch",
+	"sr-latch-inverted": "S̄R̄ latch",
+	"d-flip-flop": "D flip-flop",
+	"t-flip-flop": "T flip-flop",
+	"jk-flip-flop": "JK flip-flop",
+	"counter-4bit": "4-bit counter",
 	voltmeter: "Voltmeter",
 	ammeter: "Ammeter",
 	ohmmeter: "Ohmmeter",

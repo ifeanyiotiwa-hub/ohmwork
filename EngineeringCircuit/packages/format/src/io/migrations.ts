@@ -1,5 +1,3 @@
-import { DEFAULT_SIMULATION } from "../schema/circuit"
-
 export type JsonObject = Record<string, unknown>
 export type Migration = (document: JsonObject) => JsonObject
 
@@ -17,7 +15,7 @@ export const isObject = (value: unknown): value is JsonObject =>
 
 /** Keyed by the version migrated from. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
-	1: (document) => ({ ...document, simulation: { ...DEFAULT_SIMULATION } }),
+	1: (document) => ({ ...document, simulation: { timeStep: 5e-6, speed: 0.01 } }),
 	2: (document) => ({
 		...document,
 		components: Array.isArray(document.components)
@@ -28,6 +26,10 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 					return added ? { ...component, params: { ...added, ...params } } : component
 				})
 			: document.components,
+	}),
+	3: (document) => ({
+		...document,
+		simulation: { ...(isObject(document.simulation) ? document.simulation : {}), logicHigh: 5 },
 	}),
 }
 

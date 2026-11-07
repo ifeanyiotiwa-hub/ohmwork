@@ -12,6 +12,7 @@ const LED_COLOURS: Record<string, readonly [number, number, number]> = {
 	white: [255, 255, 255],
 }
 const LAMP_COLOUR = "var(--flow)"
+const LOGIC_ON = "var(--voltage-label)"
 
 const clampUnit = (value: number) => Math.max(0, Math.min(1, value))
 const rgb = ([red, green, blue]: readonly [number, number, number]) =>
@@ -21,7 +22,7 @@ const rgb = ([red, green, blue]: readonly [number, number, number]) =>
  * Lamps glow with their share of rated power; LEDs with their forward current over the full-brightness current
  * (as CircuitJS1 does). An RGB LED mixes its three colours by each one's current. Undefined for parts that never light.
  */
-export function glowOf(part: Component, solution: DcSolution | undefined): Glow | undefined {
+export function glowOf(part: Component, solution: DcSolution | undefined, logicHigh: number): Glow | undefined {
 	switch (part.type) {
 		case "lamp": {
 			const reading = solution?.readings[part.id]
@@ -39,6 +40,13 @@ export function glowOf(part: Component, solution: DcSolution | undefined): Glow 
 			const strength = Math.max(...shares)
 			const [red = 0, green = 0, blue = 0] = shares.map((share) => (strength === 0 ? 0 : (255 * share) / strength))
 			return { colour: rgb([red, green, blue]), strength }
+		}
+		// Logic inputs and indicators light at 1 (above half the logic level).
+		case "logic-input":
+			return { colour: LOGIC_ON, strength: part.params.high ? 1 : 0 }
+		case "logic-output": {
+			const voltage = solution?.pinVoltages[`${part.id}:in`] ?? 0
+			return { colour: LOGIC_ON, strength: voltage > logicHigh / 2 ? 1 : 0 }
 		}
 		default:
 			return undefined

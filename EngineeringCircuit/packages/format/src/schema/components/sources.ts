@@ -15,6 +15,12 @@ export const SOURCES = [
 		params: { current: z.number().describe("amps, flowing out of the positive pin") },
 		defaults: { current: 0.001 },
 	}),
+	defineComponent("voltage-rail", {
+		idPrefix: "VR",
+		pins: ["terminal"],
+		params: { voltage: z.number().describe("volts, measured from ground") },
+		defaults: { voltage: 5 },
+	}),
 	// Waveforms follow SPICE SIN and PULSE (ngspice manual §4.1); defaults are CircuitJS1's (5 V, 40 Hz).
 	defineComponent("ac-source", {
 		idPrefix: "AC",

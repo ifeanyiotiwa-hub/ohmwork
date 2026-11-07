@@ -23,6 +23,7 @@ export const editCommandSchema = z.discriminatedUnion("type", [
 		type: z.literal("set-simulation"),
 		timeStep: z.number().optional(),
 		speed: z.number().optional(),
+		logicHigh: z.number().optional(),
 	}),
 	z.strictObject({
 		type: z.literal("rotate-component"),

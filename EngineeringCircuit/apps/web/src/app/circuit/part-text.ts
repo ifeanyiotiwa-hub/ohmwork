@@ -20,6 +20,12 @@ export function valueText(component: Component): string {
 		}
 		case "diode":
 			return ""
+		case "logic-input":
+			return component.params.high ? "1" : "0"
+		case "voltage-rail":
+			return formatSi(component.params.voltage, "V")
+		case "clock":
+			return formatSi(component.params.frequency, "Hz")
 		case "zener-diode":
 			return formatSi(component.params.breakdownVoltage, "V")
 		case "led":

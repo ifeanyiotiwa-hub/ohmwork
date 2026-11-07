@@ -23,10 +23,10 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `vccs` | controlPositive, controlNegative, positive, negative | transconductance (S = A/V) | voltage-controlled current source; output current flows out of `positive` (like `current-source`; SPICE G is the reverse) | EC, CJS, SPICE `G` | D3 | simulated |
 | `ccvs` | senseIn, senseOut, positive, negative | transresistance (Ω) | current through sense pins (0 V path) controls voltage | EC, CJS, SPICE `H` | D3 | simulated |
 | `cccs` | senseIn, senseOut, positive, negative | gain (A/A) | current through sense pins controls current, out of `positive` | EC, CJS, SPICE `F` | D3 | simulated |
-| `voltage-rail` | terminal | voltage (V) | source to ground drawn as one pin (e.g. +5 V) | CJS | D5 | planned |
+| `voltage-rail` | terminal | voltage (V) | source to ground drawn as one pin (e.g. +5 V) | CJS | D5 | simulated |
 | `ac-source` | positive, negative | amplitude (peak V; RMS accepted), frequency (Hz; period accepted), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping; DC value = offset | EC, CJS, SPICE | D3 | simulated |
 | `square-source` | positive, negative | low (V), high (V), frequency (Hz; period accepted), dutyCycle (0–1) | pulse, SPICE `PULSE` with instant edges, high first; DC value = low | CJS, SPICE | D3 | simulated |
-| `clock` | out | frequency (Hz; period accepted), dutyCycle | logic square wave | EC (Logic Train), CJS | D5 | planned |
+| `clock` | out | frequency (Hz; period accepted), dutyCycle | logic square wave | EC (Logic Train), CJS | D5 | simulated |
 
 ## Passive
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
@@ -68,16 +68,16 @@ Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chainin
 
 | Type | Pins | Params | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|
-| `logic-input` (toggle) | out | high | EC (Logic Source), CJS | D5 | planned |
-| `logic-output` (indicator) | in | – | CJS | D5 | planned |
-| `not-gate` | in, out | – | EC, CJS (Inverter) | D5 | planned |
-| `and-gate`, `or-gate`, `nand-gate`, `nor-gate`, `xor-gate`, `xnor-gate` | a, b, out | – | EC, CJS | D5 | planned |
-| `sr-latch` (NOR, active-high) | s, r, q, qNot | – | EC | D5 | planned |
-| `sr-latch-inverted` (NAND, active-low S̄R̄) | sNot, rNot, q, qNot | – | EC | D5 | planned |
-| `d-flip-flop` | d, clk, q, qNot | – | EC, CJS | D5 | planned |
-| `t-flip-flop` | t, clk, q, qNot | – | EC, CJS | D5 | planned |
-| `jk-flip-flop` | j, k, clk, q, qNot | – | EC, CJS | D5 | planned |
-| `counter-4bit` | clk, reset, q0, q1, q2, q3 | – | EC, CJS | D5 | planned |
+| `logic-input` (toggle) | out | high | EC (Logic Source), CJS | D5 | simulated |
+| `logic-output` (indicator) | in | – | CJS | D5 | simulated |
+| `not-gate` | in, out | – | EC, CJS (Inverter) | D5 | simulated |
+| `and-gate`, `or-gate`, `nand-gate`, `nor-gate`, `xor-gate`, `xnor-gate` | a, b, out | – | EC, CJS | D5 | simulated |
+| `sr-latch` (NOR, active-high) | s, r, q, qNot | – | EC | D5 | simulated |
+| `sr-latch-inverted` (NAND, active-low S̄R̄) | sNot, rNot, q, qNot | – | EC | D5 | simulated |
+| `d-flip-flop` | d, clk, q, qNot | – | EC, CJS | D5 | simulated |
+| `t-flip-flop` | t, clk, q, qNot | – | EC, CJS | D5 | simulated |
+| `jk-flip-flop` | j, k, clk, q, qNot | – | EC, CJS | D5 | simulated |
+| `counter-4bit` | clk, reset, q0, q1, q2, q3 | – | EC, CJS | D5 | simulated |
 
 Half and full adders are not parts. Learners build them from gates (lessons in D12). CJS has them as chips; revisit with subcircuits.
 
@@ -105,7 +105,7 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 | Junction | Wires connect pin to pin only today; joining mid-wire needs a junction | CJS (wires join anywhere) | D6 |
 | Labeled node (net label, e.g. "VCC") | Connect distant points by name | CJS | later |
 | Text notes | Lessons and AI explanations (separate `annotations` list) | CJS | D12 |
-| Simulation settings | Time step, duration, logic family; saved with the circuit | SPICE (TSTEP/TSTOP) | D3 / D5 |
+| Simulation settings | Time step, speed (D3), logic high voltage (D5); saved with the circuit | SPICE (TSTEP/TSTOP), CJS | done |
 | Subcircuits ("custom chips") | Learner builds a half adder, saves it as a reusable part | CJS, SPICE `X`, EC `+` | later |
 | Parts browser + "request a new part" | Browse all parts; request a missing one with an explanation and sources, which the AI drafts into a `COMPONENTS.md` row + `defineComponent` entry for review | EC `+` | after D7 |
 

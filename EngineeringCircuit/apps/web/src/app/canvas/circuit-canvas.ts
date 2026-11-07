@@ -70,6 +70,7 @@ export class CircuitCanvas {
 		const wiringFrom = this.store.wiringFrom()
 		const agentChanged = this.store.agentChanges().components
 		const pressed = this.store.pressed()
+		const { logicHigh } = this.store.circuit().simulation
 		return this.store.circuit().components.map((part) => {
 			const at = this.positionOf(part)
 			const symbol = SYMBOLS[part.type]
@@ -90,7 +91,7 @@ export class CircuitCanvas {
 					meterText(part, solution?.readings[part.id]) ?? (current === 0 ? undefined : formatSi(Math.abs(current), "A")),
 				meter: isMeter(part),
 				body: symbol.body,
-				glow: glowOf(part, solution),
+				glow: glowOf(part, solution, logicHigh),
 				selected: selection?.kind === "component" && selection.id === part.id,
 				agentChanged: agentChanged.has(part.id),
 				pins: pinsOf(part.type).map((pin) => {
@@ -269,6 +270,9 @@ export class CircuitCanvas {
 		const part = this.store.circuit().components.find((candidate) => candidate.id === interaction.componentId)
 		if (part?.type === "switch") {
 			this.store.apply({ type: "set-parameter", componentId: part.id, name: "closed", value: !part.params.closed })
+		}
+		if (part?.type === "logic-input") {
+			this.store.apply({ type: "set-parameter", componentId: part.id, name: "high", value: !part.params.high })
 		}
 		if (part?.type === "switch-spdt") {
 			const position = part.params.position === "a" ? "b" : "a"

@@ -269,3 +269,31 @@ test("a transistor switch: pressing the button lights the LED", async ({ page })
 	await page.mouse.up()
 	await expect.poll(strength).toBeLessThan(0.01)
 })
+
+test("logic: clicking an input flips the indicator through a NOT gate", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["logic-input", 200, 300],
+		["not-gate", 400, 300],
+		["logic-output", 600, 300],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["IN1:out", "NOT1:in"],
+		["NOT1:out", "OUT1:in"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const lit = async () => Number(await page.locator('[data-part="OUT1"] .glow').getAttribute("opacity"))
+	await expect.poll(lit).toBe(1)
+
+	await page.locator('[data-part="IN1"]').click()
+	await expect.poll(lit).toBe(0)
+	await page.locator('[data-part="IN1"]').click()
+	await expect.poll(lit).toBe(1)
+})

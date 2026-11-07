@@ -250,7 +250,8 @@ describe("equivalent quantities", () => {
 describe("set-simulation", () => {
 	test("changes the time step and speed", () => {
 		const circuit = run(createCircuit("t"), { type: "set-simulation", timeStep: 1e-6, speed: 0.5 })
-		expect(circuit.simulation).toEqual({ timeStep: 1e-6, speed: 0.5 })
+		expect(circuit.simulation).toEqual({ timeStep: 1e-6, speed: 0.5, logicHigh: 5 })
+		expect(run(circuit, { type: "set-simulation", logicHigh: 3.3 }).simulation.logicHigh).toBe(3.3)
 	})
 
 	test("rejects a time step of zero", () => {

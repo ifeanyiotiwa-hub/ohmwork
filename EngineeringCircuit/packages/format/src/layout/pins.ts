@@ -9,6 +9,13 @@ const LEADS = { a: { x: -40, y: 0 }, b: { x: 40, y: 0 } }
 const POLARISED_LEADS = { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } }
 const TRANSISTOR_LEADS = { collector: { x: 20, y: -40 }, base: { x: -40, y: 0 }, emitter: { x: 20, y: 40 } }
 const MOSFET_LEADS = { drain: { x: 20, y: -40 }, gate: { x: -40, y: 0 }, source: { x: 20, y: 40 } }
+const GATE_LEADS = { a: { x: -40, y: -20 }, b: { x: -40, y: 20 }, out: { x: 40, y: 0 } }
+const TWO_IN_TWO_OUT = (first: string, second: string) => ({
+	[first]: { x: -40, y: -20 },
+	[second]: { x: -40, y: 20 },
+	q: { x: 40, y: -20 },
+	qNot: { x: 40, y: 20 },
+})
 /** Four-pin controlled sources: control or sense pins on the left, output on the right. */
 const CONTROLLED_LEADS = {
 	controlPositive: { x: -40, y: -20 },
@@ -57,6 +64,30 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"pnp-transistor": TRANSISTOR_LEADS,
 	"n-mosfet": MOSFET_LEADS,
 	"p-mosfet": MOSFET_LEADS,
+	"voltage-rail": { terminal: { x: 0, y: 40 } },
+	"logic-input": { out: { x: 40, y: 0 } },
+	"logic-output": { in: { x: -40, y: 0 } },
+	clock: { out: { x: 40, y: 0 } },
+	"not-gate": { in: { x: -40, y: 0 }, out: { x: 40, y: 0 } },
+	"and-gate": GATE_LEADS,
+	"or-gate": GATE_LEADS,
+	"nand-gate": GATE_LEADS,
+	"nor-gate": GATE_LEADS,
+	"xor-gate": GATE_LEADS,
+	"xnor-gate": GATE_LEADS,
+	"sr-latch": TWO_IN_TWO_OUT("s", "r"),
+	"sr-latch-inverted": TWO_IN_TWO_OUT("sNot", "rNot"),
+	"d-flip-flop": TWO_IN_TWO_OUT("d", "clk"),
+	"t-flip-flop": TWO_IN_TWO_OUT("t", "clk"),
+	"jk-flip-flop": { j: { x: -40, y: -20 }, clk: { x: -40, y: 0 }, k: { x: -40, y: 20 }, q: { x: 40, y: -20 }, qNot: { x: 40, y: 20 } },
+	"counter-4bit": {
+		clk: { x: -40, y: -20 },
+		reset: { x: -40, y: 20 },
+		q0: { x: 40, y: -40 },
+		q1: { x: 40, y: -20 },
+		q2: { x: 40, y: 0 },
+		q3: { x: 40, y: 20 },
+	},
 	voltmeter: POLARISED_LEADS,
 	ammeter: POLARISED_LEADS,
 	ohmmeter: LEADS,

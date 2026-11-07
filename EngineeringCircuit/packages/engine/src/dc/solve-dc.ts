@@ -1,6 +1,16 @@
-import { type Circuit, type ComponentType, type Net, buildNets, pinKey, pinsOf } from "@engineering-circuit/format"
+import {
+	type Circuit,
+	type ComponentType,
+	type Net,
+	type PinRef,
+	buildNets,
+	pinKey,
+	pinsOf,
+} from "@engineering-circuit/format"
 import type { DisjointSets } from "../graph/disjoint-sets"
-import { type DcInputs, OHMMETER_TEST_CURRENT, type SolveInputs, dcModelOf } from "./branches"
+import { type LogicMemories, advanceLogic, hasLogic, initialMemories, sameOutputs } from "../digital/advance"
+import { LOGIC_PARTS, logicPartOf } from "../digital/logic"
+import { type DcInputs, GROUND_PIN, OHMMETER_TEST_CURRENT, type SolveInputs, dcModelOf } from "./branches"
 import type { SimIssue } from "./issues"
 import { type MnaSolution, solveMna, terminalCurrents } from "./mna"
 import { type NetBranch, chooseReferences, conductiveSets, findCurrentWithoutPath, findShortCircuits } from "./topology"
@@ -21,6 +31,10 @@ const POWERING_TYPES: ReadonlySet<ComponentType> = new Set([
 	"ccvs",
 	"cccs",
 	"ohmmeter",
+	"voltage-rail",
+	"logic-input",
+	"clock",
+	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 ])
 
 /**
@@ -36,9 +50,35 @@ export type DcSolution = {
 
 export type DcResult = { ok: true; solution: DcSolution } | { ok: false; errors: SimIssue[] }
 
-/** The DC steady state: capacitors open, inductors shorted, wave sources at their DC value. */
+/** Logic in a DC solve is re-solved until its outputs stop changing; an oscillator never does. */
+const MAX_LOGIC_PASSES = 64
+
+/**
+ * The DC steady state: capacitors open, inductors shorted, wave sources at their DC value, clocks low. With logic
+ * parts, solves repeatedly, feeding each pass's input levels into the next, until no output changes.
+ */
 export function solveDc(circuit: Circuit, inputs: DcInputs = {}): DcResult {
-	return solveCircuit(circuit, inputs.pressed ? { pressed: inputs.pressed } : {})
+	const base: SolveInputs = inputs.pressed ? { pressed: inputs.pressed } : {}
+	if (!hasLogic(circuit)) return solveCircuit(circuit, base)
+
+	let logic: LogicMemories = initialMemories(circuit)
+	for (let pass = 0; pass < MAX_LOGIC_PASSES; pass++) {
+		const result = solveCircuit(circuit, { ...base, logic })
+		if (!result.ok) return result
+		const next = advanceLogic(circuit, result.solution.pinVoltages, logic, circuit.simulation.logicHigh)
+		if (sameOutputs(next, logic)) return result
+		logic = next
+	}
+	return {
+		ok: false,
+		errors: [
+			{
+				componentIds: Object.keys(logic),
+				message:
+					"The logic keeps changing and never settles (for example a NOT gate feeding itself): it oscillates. Watch it run over time instead.",
+			},
+		],
+	}
 }
 
 /** Solves the circuit once; with `inputs.transient`, that is one time step. */
@@ -51,13 +91,14 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		}))
 	if (notSimulated.length > 0) return { ok: false, errors: notSimulated }
 
-	const nets = buildNets(circuit)
+	const context = { ...inputs, logicHigh: circuit.simulation.logicHigh }
+	const raw = circuit.components.flatMap((component) => {
+		const model = dcModelOf(component)
+		return model === "not-simulated" ? [] : model(component, context)
+	})
+	const nets = withGround(buildNets(circuit), raw.some((branch) => branch.pins.includes(GROUND_PIN)))
 	const netOf = netLookup(nets)
-	const modelled: NetBranch[] = circuit.components
-		.flatMap((component) => {
-			const model = dcModelOf(component)
-			return model === "not-simulated" ? [] : model(component, inputs)
-		})
+	const modelled: NetBranch[] = raw
 		.map((branch): NetBranch => {
 			const nets: NetBranch["nets"] = [netOf(branch.componentId, branch.pins[0]), netOf(branch.componentId, branch.pins[1])]
 			if (branch.kind === "device") {
@@ -78,8 +119,12 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 	const errors = [...findShortCircuits(nets, branches), ...findCurrentWithoutPath(branches, conductive)]
 	if (errors.length > 0) return { ok: false, errors }
 
-	const references = chooseReferences(circuit, nets, branches, conductive, (componentIds) =>
-		isUnpoweredMeasurement(circuit, componentIds),
+	const references = chooseReferences(
+		circuit,
+		nets,
+		branches,
+		conductive,
+		(componentIds, pins) => isUnpoweredMeasurement(circuit, componentIds) || areOpenLogicInputs(circuit, pins),
 	)
 	const start = nets.map((net) => {
 		const pin = net.pins.find((candidate) => inputs.guess?.[pinKey(candidate)] !== undefined)
@@ -171,6 +216,18 @@ function reversedCapacitorWarnings(circuit: Circuit, readings: Record<string, Co
 	})
 }
 
+/** Pins that are all inputs of logic parts, connected to nothing that drives them: they read 0. */
+function areOpenLogicInputs(circuit: Circuit, pins: readonly PinRef[]): boolean {
+	const typeOf = new Map(circuit.components.map((component) => [component.id, component.type]))
+	return (
+		pins.length > 0 &&
+		pins.every((pin) => {
+			const type = typeOf.get(pin.componentId)
+			return type !== undefined && (logicPartOf(type)?.inputs.includes(pin.pin) ?? false)
+		})
+	)
+}
+
 /** An ohmmeter measuring a passive network needs no ground: its reading is a voltage difference. */
 function isUnpoweredMeasurement(circuit: Circuit, componentIds: readonly string[]): boolean {
 	const types = circuit.components.filter((component) => componentIds.includes(component.id)).map((part) => part.type)
@@ -190,9 +247,20 @@ function poweredOhmmeterWarnings(circuit: Circuit, branches: readonly NetBranch[
 		}))
 }
 
+/**
+ * Logic parts and rails are referenced to ground. If the circuit has no ground part, an internal ground net is
+ * added for them (as EveryCircuit does): it holds 0 V but has no pins.
+ */
+function withGround(nets: Net[], needed: boolean): Net[] {
+	if (!needed || nets.some((net) => net.isGround)) return nets
+	return [...nets, { index: nets.length, pins: [], isGround: true }]
+}
+
 function netLookup(nets: readonly Net[]) {
 	const netOfPin = new Map(nets.flatMap((net) => net.pins.map((pin) => [pinKey(pin), net.index] as const)))
+	const groundNet = nets.find((net) => net.isGround)?.index
 	return (componentId: string, pin: string): number => {
+		if (pin === GROUND_PIN && groundNet !== undefined) return groundNet
 		const net = netOfPin.get(pinKey({ componentId, pin }))
 		if (net === undefined) throw new Error(`Pin "${componentId}:${pin}" is not in any net`)
 		return net

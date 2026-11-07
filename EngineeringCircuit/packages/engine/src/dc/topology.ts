@@ -70,8 +70,11 @@ export function chooseReferences(
 	nets: readonly Net[],
 	branches: readonly NetBranch[],
 	conductive: DisjointSets,
-	/** Islands that need no ground (e.g. an ohmmeter on an unpowered network) are solved without a warning. */
-	needsNoGround: (componentIds: readonly string[]) => boolean = () => false,
+	/**
+	 * Islands that need no ground are solved without a warning: an ohmmeter on an unpowered network, or a logic
+	 * input left unconnected (it reads 0).
+	 */
+	needsNoGround: (componentIds: readonly string[], pins: readonly PinRef[]) => boolean = () => false,
 ): References {
 	const groundRoots = new Set(nets.filter((net) => net.isGround).map((net) => conductive.find(net.index)))
 	const floatingRoots = new Set(
@@ -88,7 +91,7 @@ export function chooseReferences(
 
 		const islandPins = new Set(islandNets.flatMap((net) => net.pins.map((pin) => pin.componentId)))
 		const componentIds = circuit.components.map((component) => component.id).filter((id) => islandPins.has(id))
-		if (needsNoGround(componentIds)) continue
+		if (needsNoGround(componentIds, islandNets.flatMap((net) => net.pins))) continue
 		const subject = componentIds.length === 1 ? "Its voltages are" : "Their voltages are"
 		warnings.push({
 			componentIds,

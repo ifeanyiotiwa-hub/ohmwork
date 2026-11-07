@@ -94,12 +94,14 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 
 		case "set-simulation": {
 			const simulation = {
-				timeStep: command.timeStep ?? draft.simulation.timeStep,
-				speed: command.speed ?? draft.simulation.speed,
+				...draft.simulation,
+				...(command.timeStep === undefined ? {} : { timeStep: command.timeStep }),
+				...(command.speed === undefined ? {} : { speed: command.speed }),
+				...(command.logicHigh === undefined ? {} : { logicHigh: command.logicHigh }),
 			}
 			return {
 				candidate: { ...draft, simulation },
-				summary: `Simulation: time step ${String(simulation.timeStep)} s, speed ${String(simulation.speed)}`,
+				summary: `Simulation: time step ${String(simulation.timeStep)} s, speed ${String(simulation.speed)}, logic high ${String(simulation.logicHigh)} V`,
 			}
 		}
 

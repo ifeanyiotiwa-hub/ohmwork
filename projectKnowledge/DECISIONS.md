@@ -70,3 +70,11 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - Series resistance (LED RS) is solved inside the diode (junction voltage by an inner Newton loop), since circuits have no internal nodes.
 - Format v3 adds the electrical parameters; the 2→3 migration fills diodes and LEDs with values frozen in the migration (not read from the catalog), so a later default change never changes old files.
 - Not modelled yet: junction capacitances (switching is instantaneous over time), Early effect, temperature; no gmin or source stepping when Newton fails.
+
+## ADR-018: Digital logic inside the analog solve, one time step of delay (not event-driven)
+- Logic parts live in the same MNA solve as analog parts, so mixing is automatic: a gate output is an ideal voltage source to ground at 0 V or `simulation.logicHigh` (CircuitJS1 GateElm); an input reads 1 above half of it (CircuitJS1 `getThreshold`). Parts have no supply pins (as in EveryCircuit); if the circuit has no ground part an internal ground net is added.
+- Outputs change between solves, never inside one. Over time, each logic part reads its inputs at the end of a step and drives its new outputs during the next: one time step of propagation delay. That makes feedback (latches from gates, ring oscillators) well defined and keeps every step linear in the logic. Flip-flops and the counter act on a rising clock edge sampled this way.
+- A plain DC solve repeats until no output changes (at most 64 passes) and reports an oscillator in plain words.
+- The architecture's original plan was an event-driven digital engine. Rejected for now: a separate scheduler plus analog↔digital converters at every boundary is far more machinery, while stepping logic with the analog solve is what CircuitJS1 does and is exact enough for teaching. Revisit if large digital circuits become slow.
+- Format v4 adds `simulation.logicHigh` (5 V); migration 3→4 fills it; migration 1→2 now writes its own frozen values.
+- An unconnected logic input reads 0 and raises no "not connected to ground" warning.

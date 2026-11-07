@@ -27,6 +27,12 @@ describe("older files", () => {
 		expect(result).toEqual({ ok: true, circuit: voltageDivider() })
 	})
 
+	test("a version 3 file gains the 5 V logic level", () => {
+		const { simulation, ...circuit } = voltageDivider()
+		const { logicHigh: _level, ...older } = simulation
+		expect(parseCircuit({ ...circuit, version: 3, simulation: older })).toEqual({ ok: true, circuit: voltageDivider() })
+	})
+
 	test("version 2 diodes and LEDs gain electrical parameters; the LED keeps its colour", () => {
 		const at = { position: { x: 0, y: 0 }, rotation: 0 }
 		const result = parseCircuit({
@@ -47,7 +53,7 @@ describe("older files", () => {
 
 describe("simulation settings", () => {
 	test("time step and speed must be positive", () => {
-		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1 } })
+		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1, logicHigh: 5 } })
 		expect(errors.map((error) => error.path)).toEqual(["simulation.timeStep", "simulation.speed"])
 	})
 })
