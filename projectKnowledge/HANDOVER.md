@@ -34,12 +34,13 @@
 - Root scripts: `pnpm test` (core + web unit), `pnpm typecheck` (tsc + web production build), `pnpm test:e2e`, `pnpm web`.
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
-  - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes` (16 tools). Env `EC_APP_URL`, `EC_LIVE_ORIGINS`, `EC_LIVE_PORT`.
+  - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- Agent layout (after D8): pin geometry moved to `packages/format/src/layout/pins.ts` (`PIN_OFFSETS`, `rotate`, `pinPosition`; the app's `SYMBOLS` no longer hold pins). `rotate-component` takes an optional exact `rotation`. MCP: `add_component` takes `rotation`; new `move_component`, `rotate_component`; `get_circuit` adds `pinPositions`; `list_component_types` adds `pinOffsets`; layout rules in the server instructions (18 tools). Env `EC_APP_URL`, `EC_LIVE_ORIGINS`, `EC_LIVE_PORT`.
   - `apps/web`: `live/live-link.ts` (socket wrapper, status signal), `CircuitStore.joinLive(url)` (shared vs local document, predicted state, `agentChanges` highlight for `agentHighlightMs`), `circuit/changes.ts`; `App` joins when the URL has `live` + `token`; status bar shows "Live with agent · Agent: …". `store.apply` now returns the resulting `Circuit | undefined`.
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then: agent layout tools (see gaps), then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
+Owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
 
 ## Blockers / open questions
 - None.
@@ -50,12 +51,12 @@ Owner tries the live link (restart Claude Code or `/mcp` reconnect so the server
 - No simulation settings (time step, duration, logic family) in the file → D3/D5.
 - No meters/probes, AC sources, potentiometer, push button, SPDT → see `COMPONENTS.md`.
 - No canvas text notes → D12.
-- The agent can't rotate or move parts (`add_component` has x/y only; no `move_component` / `rotate_component` tools), so agent-built circuits look untidy (a battery is always horizontal). The edit commands exist; only the MCP tools are missing. Small; do before D3.
 - Horizontal voltage source: its value label and current reading overlap (label placement in `apps/web` canvas).
 
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | Agent layout: shared pin geometry in format, `move_component` / `rotate_component`, `rotation` on add, pin positions in `get_circuit` | Owner tries it; then D3 |
 | 2026-11-07 | Claude (Opus) | D8 live link: MCP-hosted WebSocket, shared document, `open_in_app` / `recent_changes`, agent-change glow; 147 core + 46 web unit + 8 e2e tests; ADR-014 | Owner tries it; agent move/rotate tools; then D3 |
 | 2026-11-07 | Claude (Opus) | D6 web app (Angular 22 + SVG): 127 core + 36 web unit + 6 e2e tests; catalog defaults, param fields, move/rotate, wire currents; ADR-013 | Owner tries app; then D3 or D8 |
 | 2026-11-07 | Claude (Opus) | D7 MCP server (SDK v2, 14 tools) + `packages/editing` (commands, author history, undo); 104 tests; `.mcp.json`; ADR-012 | Owner tries MCP; then D3 or D6 |

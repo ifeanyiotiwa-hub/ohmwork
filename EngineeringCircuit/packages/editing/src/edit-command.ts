@@ -19,6 +19,11 @@ export const editCommandSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("disconnect"), wireId: idSchema }),
 	z.strictObject({ type: z.literal("set-parameter"), componentId: idSchema, name: idSchema, value: z.unknown() }),
 	z.strictObject({ type: z.literal("move-component"), componentId: idSchema, position: pointSchema }),
-	z.strictObject({ type: z.literal("rotate-component"), componentId: idSchema }),
+	z.strictObject({
+		type: z.literal("rotate-component"),
+		componentId: idSchema,
+		/** The exact angle to turn to; without it the part turns a quarter turn clockwise. */
+		rotation: rotationSchema.optional(),
+	}),
 ])
 export type EditCommand = z.infer<typeof editCommandSchema>

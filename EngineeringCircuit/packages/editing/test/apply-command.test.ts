@@ -187,6 +187,11 @@ describe("move and rotate", () => {
 		expect(circuit.components[0]?.rotation).toBe(90)
 	})
 
+	test("turns to an exact angle when one is given", () => {
+		const circuit = run(createCircuit("t"), resistor, { type: "rotate-component", componentId: "R1", rotation: 270 })
+		expect(circuit.components[0]?.rotation).toBe(270)
+	})
+
 	test("rejects an unknown component", () => {
 		expect(errorsOf(createCircuit("t"), { type: "rotate-component", componentId: "Q1" })).toEqual([
 			{ path: "components", message: 'No component with id "Q1"' },

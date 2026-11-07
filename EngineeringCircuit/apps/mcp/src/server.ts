@@ -8,19 +8,31 @@ import {
 	type PinRef,
 	createCircuit,
 	parseCircuitJson,
+	rotationSchema,
 	serializeCircuit,
 } from "@engineering-circuit/format"
 import { type CallToolResult, McpServer } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import type { LiveServer } from "./live/live-server"
 import { DEFAULT_OPTIONS, type ServerOptions } from "./options"
-import { componentTypesReport, explanation, findProbeTarget, probeReport, simulationReport } from "./reports"
+import {
+	componentTypesReport,
+	explanation,
+	findProbeTarget,
+	pinPositionsReport,
+	probeReport,
+	simulationReport,
+} from "./reports"
 
 const INSTRUCTIONS = `EngineeringCircuit: build, simulate and explain electronic circuits with a learner.
 Workflow: list_component_types → create_circuit → add_component → connect → simulate / probe → explain_circuit.
 Pins are written "<componentId>.<pin>", e.g. "R1.a". Every circuit needs a ground part for 0 V.
 Explain from the tool results (real simulated values and warnings), in plain language suited to a beginner.
 Edits are recorded with their author and can be undone.
+Layout (the learner sees it, so make it read like a textbook diagram): x grows right, y grows down, grid 20.
+pinOffsets (list_component_types) are at rotation 0; rotation turns parts clockwise in 90° steps, so 90 makes a two-pin part vertical with its first pin on top.
+A wire is drawn from its first pin horizontally, then vertically; put connected pins on the same x or y for straight wires.
+get_circuit lists every pin's position; use move_component / rotate_component to tidy up.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 
 const COMPONENT_TYPES = COMPONENT_DEFINITIONS.map((definition) => definition.type) as [ComponentType, ...ComponentType[]]
@@ -107,13 +119,32 @@ export function createServer(
 				id: z.string().min(1).optional(),
 				x: z.number().optional(),
 				y: z.number().optional(),
+				rotation: rotationSchema.optional().describe("Degrees clockwise: 0, 90, 180 or 270 (default 0)"),
 			}),
 		},
-		({ type, params, id, x, y }) =>
+		({ type, params, id, x, y, rotation }) =>
 			edit({
 				type: "add-component",
-				component: { type, params, id, position: x === undefined || y === undefined ? undefined : { x, y } },
+				component: { type, params, id, rotation, position: x === undefined || y === undefined ? undefined : { x, y } },
 			}),
+	)
+
+	server.registerTool(
+		"move_component",
+		{
+			description: "Move a part to a new position (its wires follow and lose any bends).",
+			inputSchema: z.object({ componentId: z.string().min(1), x: z.number(), y: z.number() }),
+		},
+		({ componentId, x, y }) => edit({ type: "move-component", componentId, position: { x, y } }),
+	)
+
+	server.registerTool(
+		"rotate_component",
+		{
+			description: "Turn a part to an angle (0, 90, 180, 270 degrees clockwise), or a quarter turn if none is given.",
+			inputSchema: z.object({ componentId: z.string().min(1), rotation: rotationSchema.optional() }),
+		},
+		({ componentId, rotation }) => edit({ type: "rotate-component", componentId, rotation }),
 	)
 
 	server.registerTool(
@@ -169,8 +200,12 @@ export function createServer(
 
 	server.registerTool(
 		"get_circuit",
-		{ description: "The current circuit as saved JSON, plus who changed what.", annotations: READ_ONLY },
-		() => text({ circuit: document.circuit, history: document.history }),
+		{
+			description: "The current circuit as saved JSON, where every pin is on the canvas, and who changed what.",
+			annotations: READ_ONLY,
+		},
+		() =>
+			text({ circuit: document.circuit, pinPositions: pinPositionsReport(document.circuit), history: document.history }),
 	)
 
 	server.registerTool(

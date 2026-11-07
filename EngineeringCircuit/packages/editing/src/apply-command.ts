@@ -13,8 +13,6 @@ import type { EditCommand } from "./edit-command"
 
 const GRID_SPACING = 100
 const GRID_COLUMNS = 8
-const QUARTER_TURN = 90
-const FULL_TURN = 360
 
 export type EditResult = { ok: true; circuit: Circuit; summary: string } | { ok: false; errors: CircuitError[] }
 
@@ -106,7 +104,7 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 				draft,
 				command.componentId,
 				(target) => {
-					const rotation = (target.rotation + QUARTER_TURN) % FULL_TURN
+					const rotation = command.rotation ?? quarterTurn(target.rotation)
 					return { component: { ...target, rotation }, summary: `Rotated ${target.id} to ${rotation}°` }
 				},
 				{ rerouteWires: true },
@@ -156,3 +154,16 @@ const pinName = (ref: PinRef) => `${ref.componentId}.${ref.pin}`
 const notFound = (path: string, kind: string, id: string): Proposal => ({
 	errors: [{ path, message: `No ${kind} with id "${id}"` }],
 })
+
+function quarterTurn(rotation: Component["rotation"]): Component["rotation"] {
+	switch (rotation) {
+		case 0:
+			return 90
+		case 90:
+			return 180
+		case 180:
+			return 270
+		case 270:
+			return 0
+	}
+}

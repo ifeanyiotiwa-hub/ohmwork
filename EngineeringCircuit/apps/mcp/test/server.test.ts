@@ -66,11 +66,13 @@ test("offers the build, inspect and file tools", async () => {
 		"explain_circuit",
 		"get_circuit",
 		"list_component_types",
+		"move_component",
 		"open_circuit",
 		"open_in_app",
 		"probe",
 		"recent_changes",
 		"remove_component",
+		"rotate_component",
 		"save_circuit",
 		"set_parameter",
 		"simulate",
@@ -231,5 +233,46 @@ describe("live link", () => {
 			changes: [{ revision: 3, author: "learner", summary: "Undid: Set R1 resistance to 220 (by learner)" }],
 		})
 		expect((await call("recent_changes")).data).toEqual({ revision: 3, changes: [] })
+	})
+})
+
+describe("layout", () => {
+	test("list_component_types gives each pin's offset at rotation 0", async () => {
+		const { data } = await call("list_component_types")
+		expect(data).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ type: "resistor", pinOffsets: { a: { x: -40, y: 0 }, b: { x: 40, y: 0 } } }),
+			]),
+		)
+	})
+
+	test("parts can be placed rotated, moved and turned, and get_circuit reports where every pin is", async () => {
+		await call("add_component", { type: "voltage-source", x: 0, y: 100, rotation: 90 })
+		await call("add_component", { type: "resistor", x: 100, y: 0 })
+
+		expect((await call("move_component", { componentId: "R1", x: 160, y: 60 })).text).toBe("Moved R1 to (160, 60)")
+		expect((await call("rotate_component", { componentId: "R1", rotation: 270 })).text).toBe("Rotated R1 to 270°")
+
+		const { data } = await call("get_circuit")
+		expect(data).toMatchObject({
+			circuit: { components: [{ id: "V1", rotation: 90 }, { id: "R1", position: { x: 160, y: 60 }, rotation: 270 }] },
+			pinPositions: {
+				"V1.positive": { x: 0, y: 60 },
+				"V1.negative": { x: 0, y: 140 },
+				"R1.a": { x: 160, y: 100 },
+				"R1.b": { x: 160, y: 20 },
+			},
+		})
+	})
+
+	test("rotate_component without an angle turns a quarter turn", async () => {
+		await call("add_component", { type: "resistor" })
+		expect((await call("rotate_component", { componentId: "R1" })).text).toBe("Rotated R1 to 90°")
+	})
+
+	test("moving or turning a missing part is a clear error", async () => {
+		const moved = await call("move_component", { componentId: "R7", x: 0, y: 0 })
+		expect(moved.isError).toBe(true)
+		expect(moved.text).toContain('No component with id "R7"')
 	})
 })

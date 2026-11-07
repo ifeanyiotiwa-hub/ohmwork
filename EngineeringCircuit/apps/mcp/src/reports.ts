@@ -4,10 +4,13 @@ import {
 	COMPONENT_DEFINITIONS,
 	type Circuit,
 	type ComponentType,
+	PIN_OFFSETS,
 	type PinRef,
+	type Point,
 	buildNets,
 	definitionOf,
 	pinKey,
+	pinPosition,
 	pinsOf,
 } from "@engineering-circuit/format"
 import { z } from "zod"
@@ -30,10 +33,20 @@ export function componentTypesReport() {
 		type: definition.type,
 		idPrefix: definition.idPrefix,
 		pins: definition.pins,
+		pinOffsets: PIN_OFFSETS[definition.type],
 		simulated: isDcSimulated(definition.type),
 		defaults: definition.defaults,
 		params: paramsSchemaOf(definition.type),
 	}))
+}
+
+/** Where every pin is on the canvas, keyed "R1.a". */
+export function pinPositionsReport(circuit: Circuit): Record<string, Point> {
+	return Object.fromEntries(
+		circuit.components.flatMap((component) =>
+			pinsOf(component.type).map((pin) => [`${component.id}.${pin}`, pinPosition(component, pin)]),
+		),
+	)
 }
 
 function nodesOf(circuit: Circuit, solution?: DcSolution) {

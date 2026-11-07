@@ -6,10 +6,12 @@ import {
 	type Component as Part,
 	buildNets,
 	pinKey,
+	pinPosition,
 	pinsOf,
+	rotate,
 } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
-import { pinPosition, rotate, snap, wirePath } from "../circuit/geometry"
+import { snap, wirePath } from "../circuit/geometry"
 import { valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
 import { SYMBOLS, type SymbolShape, switchLeverPath } from "../circuit/symbols"

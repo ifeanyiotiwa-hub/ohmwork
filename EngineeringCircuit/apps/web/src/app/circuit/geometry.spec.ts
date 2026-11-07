@@ -1,25 +1,5 @@
-import type { Component } from "@engineering-circuit/format"
 import { expect, test } from "vitest"
-import { pinPosition, rotate, snap, wirePath } from "./geometry"
-
-const resistor = (rotation: Component["rotation"]): Component => ({
-	id: "R1",
-	type: "resistor",
-	position: { x: 100, y: 100 },
-	rotation,
-	params: { resistance: 1 },
-})
-
-test("rotation turns clockwise in screen coordinates", () => {
-	expect(rotate({ x: 40, y: 0 }, 90)).toEqual({ x: -0, y: 40 })
-	expect(rotate({ x: 40, y: 0 }, 180)).toEqual({ x: -40, y: -0 })
-	expect(rotate({ x: 40, y: 0 }, 270)).toEqual({ x: 0, y: -40 })
-})
-
-test("pin positions follow the part's position and rotation", () => {
-	expect(pinPosition(resistor(0), "a")).toEqual({ x: 60, y: 100 })
-	expect(pinPosition(resistor(90), "b")).toEqual({ x: 100, y: 140 })
-})
+import { snap, wirePath } from "./geometry"
 
 test("snap rounds to the grid", () => {
 	expect(snap(29, 20)).toBe(20)
