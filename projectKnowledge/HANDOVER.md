@@ -17,8 +17,6 @@ D2: DC engine in `EngineeringCircuit/packages/engine`. MNA solver for resistor, 
 
 ## Blockers / open questions
 - CircuitJS1 upstream is now TypeScript (`ts/` folder; the Java `CirSim.java` is gone, 2026-11-07). ADR-003 assumed a Java/GWT port. Before D2: read their MNA code in `ts/` and decide whether to port from it (likely simpler), then add an ADR superseding ADR-003's "port from Java".
-- Unclear icons in the owner's reference screenshots are listed in `COMPONENTS.md`; confirm with the owner.
-
 ## Known gaps (do not hide; fix in the listed deliverable)
 - Diode/LED have no electrical params yet → D4 adds them with a version bump + migration.
 - Wires connect pin to pin only; no mid-wire junction → D6.

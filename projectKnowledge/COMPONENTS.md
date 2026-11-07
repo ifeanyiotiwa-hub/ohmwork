@@ -24,7 +24,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `voltage-rail` | terminal | voltage (V) | source to ground drawn as one pin (e.g. +5 V) | CJS | D5 | planned |
 | `ac-source` | positive, negative | amplitude (V), frequency (Hz), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping | EC, CJS, SPICE | D3 | planned |
 | `square-source` | positive, negative | low (V), high (V), frequency (Hz), dutyCycle (0–1) | pulse, SPICE `PULSE` with fixed fast edges | CJS, SPICE | D3 | planned |
-| `clock` | out | frequency (Hz), dutyCycle | logic square wave | EC, CJS | D5 | planned |
+| `clock` | out | frequency (Hz), dutyCycle | logic square wave | EC (Logic Train), CJS | D5 | planned |
 
 ## Passive
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
@@ -55,6 +55,7 @@ Diode-family params follow SPICE §7.2: saturationCurrent (IS, default 1e-14 A),
 | `diode` | anode, cathode | diode-family params | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | in format (no electrical params yet) |
 | `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | planned |
 | `led` | anode, cathode | color, diode-family params, maxBrightnessCurrent (CJS 10 mA) | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | in format (no electrical params yet) |
+| `rgb-led` | red, green, blue, common | commonCathode, diode-family params per colour | three LEDs sharing one pin; colours mix | EC | D4 | planned |
 | `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13) | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | planned |
 | `pnp-transistor` | collector, base, emitter | as NPN | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | planned |
 | `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²) | square-law (SPICE level 1). Defaults not yet checked | EC, CJS, SPICE `M` | D4 | planned |
@@ -65,9 +66,9 @@ Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chainin
 
 | Type | Pins | Params | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|
-| `logic-input` (toggle) | out | high | EC?, CJS | D5 | planned |
+| `logic-input` (toggle) | out | high | EC (Logic Source), CJS | D5 | planned |
 | `logic-output` (indicator) | in | – | CJS | D5 | planned |
-| `not-gate` | in, out | – | EC?, CJS (Inverter) | D5 | planned |
+| `not-gate` | in, out | – | EC, CJS (Inverter) | D5 | planned |
 | `and-gate`, `or-gate`, `nand-gate`, `nor-gate`, `xor-gate`, `xnor-gate` | a, b, out | – | EC, CJS | D5 | planned |
 | `sr-latch` (NOR, active-high) | s, r, q, qNot | – | EC | D5 | planned |
 | `sr-latch-inverted` (NAND, active-low S̄R̄) | sNot, rNot, q, qNot | – | EC | D5 | planned |
@@ -103,16 +104,17 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 | Labeled node (net label, e.g. "VCC") | Connect distant points by name | CJS | later |
 | Text notes | Lessons and AI explanations (separate `annotations` list) | CJS | D12 |
 | Simulation settings | Time step, duration, logic family; saved with the circuit | SPICE (TSTEP/TSTOP) | D3 / D5 |
-| Subcircuits ("custom chips") | Learner builds a half adder, saves it as a reusable part | CJS, SPICE `X`, EC `+`? | later |
+| Subcircuits ("custom chips") | Learner builds a half adder, saves it as a reusable part | CJS, SPICE `X`, EC `+` | later |
+| Parts browser + "request a new part" | Browse all parts; request a missing one with an explanation and sources, which the AI drafts into a `COMPONENTS.md` row + `defineComponent` entry for review | EC `+` | after D7 |
 
 ## Considered and left out (for now)
 From CJS / SPICE, not in EC: battery (covered by `voltage-source`; internal resistance could be added later), DPDT and make-before-break switches, analog switches, transmission lines (SPICE `T`/`O`), photoresistor, thermistor, memristor, spark gap, fuse, crystal, gyrator, AM/FM/noise/audio sources, antenna, JFET (SPICE `J`), MESFET (`Z`), SCR, DIAC, TRIAC, Darlington, varactor, tunnel diode, triode, UJT, real op-amp, comparator, Schmitt trigger, OTA, CCII, optocoupler, LM317, TL431, buffers/tristate, multiplexers, shift registers, RAM/ROM, VCO, phase comparator, monostable, wattmeter, 3-phase motor, LED array, behavioural source (SPICE `B`), microcontrollers (D13). Add any of them with the checklist below.
 
-## Unclear readings of the reference screenshots
-- Second LED-like icon (LED symbol with bars beneath): not identified. Possibly a photodiode or LED variant.
-- Circle with a vertical bar: read as `logic-input`.
-- Third gate icon (`=1` with bubble, before NAND): read as `not-gate`.
-- `+` at the end of the toolbar: read as "more parts / custom". Not confirmed.
+## Reference screenshot readings (confirmed by owner, 2026-11-07)
+- LED icon with bars beneath: RGB LED → `rgb-led`.
+- Circle icons: AC voltage source (Hz) → `ac-source`; DC voltage source (V) → `voltage-source`; current source; voltmeter; ammeter; ohmmeter; Logic Source → `logic-input`; Logic Train → `clock`; lamp; DC motor.
+- `=1` with a bubble: NOT gate.
+- Yellow `+`: more parts / custom parts / request a new part with explanation and sources.
 
 ## How to add a component
 1. Add a row to this file (pins, params with units, model, seen in, deliverable).

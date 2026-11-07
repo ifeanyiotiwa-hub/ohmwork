@@ -17,4 +17,5 @@
 
 ## Git
 - Small commits, message format: `D<id>: <what changed>`.
+- No AI `Co-Authored-By` trailers (Claude, Anthropic, or any agent). Enforced by `.githooks/commit-msg`; `pnpm install` activates it (`core.hooksPath`).
 - Parallel agents: one git worktree per agent, one deliverable per worktree.
