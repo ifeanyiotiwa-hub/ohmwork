@@ -49,7 +49,7 @@ function cleanRoute(start: Point, startDirection: Point, end: Point, endDirectio
 }
 
 /** Drops repeated points and corners that sit on a straight line. */
-function simplify(points: readonly Point[]): Point[] {
+export function simplify(points: readonly Point[]): Point[] {
 	const distinct = points.filter((point, index) => {
 		const previous = points[index - 1]
 		return !previous || previous.x !== point.x || previous.y !== point.y

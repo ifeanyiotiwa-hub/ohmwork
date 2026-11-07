@@ -12,7 +12,8 @@ import {
 	rotate,
 } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
-import { pathThrough, routeWire, snap } from "../circuit/geometry"
+import { pathThrough, snap } from "../circuit/geometry"
+import { placeBox, routeAround } from "../circuit/routing"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
 import { SYMBOLS, type SymbolShape, pushButtonPath, switchLeverPath } from "../circuit/symbols"
@@ -112,6 +113,7 @@ export class CircuitCanvas {
 		const selection = this.store.selection()
 		const dragged = this.dragPreview()?.componentId
 		const agentChanged = this.store.agentChanges().wires
+		const bodies = circuit.components.map((part) => placeBox(SYMBOLS[part.type].body, this.positionOf(part), part.rotation))
 
 		return circuit.wires.flatMap((wire) => {
 			const from = partsById.get(wire.from.componentId)
@@ -123,9 +125,10 @@ export class CircuitCanvas {
 			const points =
 				bends.length > 0
 					? [start, ...bends, end]
-					: routeWire(
+					: routeAround(
 							{ at: start, direction: pinDirection(from, wire.from.pin) },
 							{ at: end, direction: pinDirection(to, wire.to.pin) },
+							bodies,
 							this.config.gridSize,
 						)
 			const voltage = voltages[pinKey(wire.from)]
