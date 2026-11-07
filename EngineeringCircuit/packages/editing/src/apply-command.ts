@@ -11,6 +11,8 @@ import {
 
 const GRID_SPACING = 100
 const GRID_COLUMNS = 8
+const QUARTER_TURN = 90
+const FULL_TURN = 360
 
 export type NewComponent = {
 	id?: string | undefined
@@ -26,6 +28,8 @@ export type EditCommand =
 	| { type: "connect"; from: PinRef; to: PinRef }
 	| { type: "disconnect"; wireId: string }
 	| { type: "set-parameter"; componentId: string; name: string; value: unknown }
+	| { type: "move-component"; componentId: string; position: Point }
+	| { type: "rotate-component"; componentId: string }
 
 export type EditResult = { ok: true; circuit: Circuit; summary: string } | { ok: false; errors: CircuitError[] }
 
@@ -94,18 +98,37 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 			}
 		}
 
-		case "set-parameter": {
-			const target = draft.components.find((component) => component.id === command.componentId)
-			if (!target) return notFound("components", "component", command.componentId)
-			const updated = { ...target, params: { ...target.params, [command.name]: command.value } }
-			return {
-				candidate: {
-					...draft,
-					components: draft.components.map((component) => (component === target ? updated : component)),
-				},
+		case "set-parameter":
+			return updateComponent(draft, command.componentId, (target) => ({
+				component: { ...target, params: { ...target.params, [command.name]: command.value } },
 				summary: `Set ${target.id} ${command.name} to ${String(command.value)}`,
-			}
-		}
+			}))
+
+		case "move-component":
+			return updateComponent(draft, command.componentId, (target) => ({
+				component: { ...target, position: command.position },
+				summary: `Moved ${target.id} to (${command.position.x}, ${command.position.y})`,
+			}))
+
+		case "rotate-component":
+			return updateComponent(draft, command.componentId, (target) => {
+				const rotation = (target.rotation + QUARTER_TURN) % FULL_TURN
+				return { component: { ...target, rotation }, summary: `Rotated ${target.id} to ${rotation}°` }
+			})
+	}
+}
+
+function updateComponent(
+	draft: Circuit,
+	componentId: string,
+	change: (target: Component) => { component: unknown; summary: string },
+): Proposal {
+	const target = draft.components.find((component) => component.id === componentId)
+	if (!target) return notFound("components", "component", componentId)
+	const { component, summary } = change(target)
+	return {
+		candidate: { ...draft, components: draft.components.map((existing) => (existing === target ? component : existing)) },
+		summary,
 	}
 }
 

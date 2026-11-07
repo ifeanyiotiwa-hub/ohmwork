@@ -144,6 +144,29 @@ describe("set-parameter", () => {
 	})
 })
 
+describe("move and rotate", () => {
+	test("moves a part to a new position", () => {
+		const circuit = run(createCircuit("t"), resistor, {
+			type: "move-component",
+			componentId: "R1",
+			position: { x: 240, y: 60 },
+		})
+		expect(circuit.components[0]?.position).toEqual({ x: 240, y: 60 })
+	})
+
+	test("rotates a quarter turn clockwise, wrapping after 270", () => {
+		const rotate: EditCommand = { type: "rotate-component", componentId: "R1" }
+		const circuit = run(createCircuit("t"), resistor, rotate, rotate, rotate, rotate, rotate)
+		expect(circuit.components[0]?.rotation).toBe(90)
+	})
+
+	test("rejects an unknown component", () => {
+		expect(errorsOf(createCircuit("t"), { type: "rotate-component", componentId: "Q1" })).toEqual([
+			{ path: "components", message: 'No component with id "Q1"' },
+		])
+	})
+})
+
 describe("remove-component", () => {
 	test("removes the part and every wire attached to it", () => {
 		const circuit = run(
