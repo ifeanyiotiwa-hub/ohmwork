@@ -4,6 +4,8 @@ Every part the app will support up to scope level 3, plus what was considered an
 Status: `in format` (defined in `packages/format`) · `simulated` (engine model + golden test) · `planned`.
 Units are SI. Pin names are lowercase words. Parameter names are ours; defaults are confirmed by the owning deliverable's golden test.
 
+**One stored value per quantity.** The file stores one canonical value; the UI and MCP accept equivalent forms and convert, and display both. Frequency (Hz) is stored, and period (s) = 1/frequency is accepted and shown. A sine's amplitude (peak V) is stored, and RMS = amplitude/√2 is accepted and shown. Storing both would let them disagree.
+
 ## Sources (checked 2026-11-07)
 | Key | Source | What it gave us |
 |---|---|---|
@@ -22,9 +24,9 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `ccvs` | senseIn, senseOut, positive, negative | transresistance (Ω) | current through sense pins (0 V path) controls voltage | EC, CJS, SPICE `H` | D3 | planned |
 | `cccs` | senseIn, senseOut, positive, negative | gain (A/A) | current through sense pins controls current | EC, CJS, SPICE `F` | D3 | planned |
 | `voltage-rail` | terminal | voltage (V) | source to ground drawn as one pin (e.g. +5 V) | CJS | D5 | planned |
-| `ac-source` | positive, negative | amplitude (V), frequency (Hz), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping | EC, CJS, SPICE | D3 | planned |
-| `square-source` | positive, negative | low (V), high (V), frequency (Hz), dutyCycle (0–1) | pulse, SPICE `PULSE` with fixed fast edges | CJS, SPICE | D3 | planned |
-| `clock` | out | frequency (Hz), dutyCycle | logic square wave | EC (Logic Train), CJS | D5 | planned |
+| `ac-source` | positive, negative | amplitude (peak V; RMS accepted), frequency (Hz; period accepted), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping | EC, CJS, SPICE | D3 | planned |
+| `square-source` | positive, negative | low (V), high (V), frequency (Hz; period accepted), dutyCycle (0–1) | pulse, SPICE `PULSE` with fixed fast edges | CJS, SPICE | D3 | planned |
+| `clock` | out | frequency (Hz; period accepted), dutyCycle | logic square wave | EC (Logic Train), CJS | D5 | planned |
 
 ## Passive
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
