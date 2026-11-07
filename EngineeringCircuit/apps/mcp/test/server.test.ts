@@ -75,7 +75,9 @@ test("offers the build, inspect and file tools", async () => {
 		"rotate_component",
 		"save_circuit",
 		"set_parameter",
+		"set_simulation",
 		"simulate",
+		"simulate_over_time",
 		"undo",
 	])
 })
@@ -302,5 +304,47 @@ describe("meters and push buttons", () => {
 		expect((await call("probe", { target: "R1", pressed: ["PB1"] })).data).toMatchObject({ current: 0.005 })
 		const simulated = (await call("simulate", { pressed: ["PB1"] })).data
 		expect(simulated).toMatchObject({ components: expect.arrayContaining([expect.objectContaining({ id: "R1", current: 0.005 })]) })
+	})
+})
+
+describe("over time", () => {
+	async function buildRc() {
+		await call("add_component", { type: "voltage-source", params: { voltage: 5 } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "capacitor", params: { capacitance: 1e-6 } })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "V1.positive", to: "R1.a" })
+		await call("connect", { from: "R1.b", to: "C1.a" })
+		await call("connect", { from: "C1.b", to: "GND1.terminal" })
+		await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+	}
+
+	test("simulate_over_time samples probes as a capacitor charges", async () => {
+		await buildRc()
+		const { data, isError } = await call("simulate_over_time", { duration: 0.005, probes: ["C1", "R1.a"], samples: 5 })
+		expect(isError).toBe(false)
+		expect(data).toMatchObject({
+			timeStep: 5e-6,
+			samples: [
+				{ time: 0.001, values: { C1: { voltage: expect.closeTo(3.1606, 3) }, "R1.a": { voltage: 5 } } },
+				{ time: 0.002 },
+				{ time: 0.003 },
+				{ time: 0.004 },
+				{ time: 0.005, values: { C1: { voltage: expect.closeTo(4.96631, 3) } } },
+			],
+		})
+	})
+
+	test("a run that would take too many steps is refused with a way forward", async () => {
+		await buildRc()
+		const result = await call("simulate_over_time", { duration: 1000, probes: ["C1"] })
+		expect(result.isError).toBe(true)
+		expect(result.text).toContain("set_simulation")
+	})
+
+	test("set_simulation changes the time step and speed, and period is accepted for frequency", async () => {
+		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001")
+		await call("add_component", { type: "ac-source" })
+		expect((await call("set_parameter", { componentId: "AC1", name: "period", value: 0.01 })).text).toBe("Set AC1 frequency to 100")
 	})
 })

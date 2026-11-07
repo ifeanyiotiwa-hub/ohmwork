@@ -16,6 +16,9 @@
 						[value]="field.text"
 						(change)="setNumber(part.id, field.name, $event)"
 					/>
+					@if (field.hint) {
+						<span class="field-hint">{{ field.hint }}</span>
+					}
 				} @else if (field.kind === "boolean") {
 					<input type="checkbox" [attr.data-field]="field.name" [checked]="field.checked" (change)="setBoolean(part.id, field.name, $event)" />
 				} @else {
@@ -62,6 +65,19 @@
 		</header>
 		@if (store.circuit().description) {
 			<p class="description">{{ store.circuit().description }}</p>
+		}
+		@if (store.timeDependent()) {
+			<h3>Simulation</h3>
+			<label class="field">
+				<span class="field-name">time step</span>
+				<input type="text" inputmode="decimal" data-field="timeStep" [value]="settings().timeStep" (change)="setSimulation('timeStep', $event)" />
+				<span class="field-hint">smaller is more accurate, but slower</span>
+			</label>
+			<label class="field">
+				<span class="field-name">speed</span>
+				<input type="text" inputmode="decimal" data-field="speed" [value]="settings().speed" (change)="setSimulation('speed', $event)" />
+				<span class="field-hint">simulated seconds per real second</span>
+			</label>
 		}
 		<ol class="help">
 			<li>Pick a part above, then click the canvas to place it.</li>

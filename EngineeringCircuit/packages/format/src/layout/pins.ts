@@ -12,6 +12,8 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	ground: { terminal: { x: 0, y: -20 } },
 	"voltage-source": POLARISED_LEADS,
 	"current-source": POLARISED_LEADS,
+	"ac-source": POLARISED_LEADS,
+	"square-source": POLARISED_LEADS,
 	resistor: LEADS,
 	capacitor: LEADS,
 	inductor: LEADS,

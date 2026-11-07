@@ -1,8 +1,7 @@
-import type { Circuit } from "@engineering-circuit/format"
+import { type Circuit, createCircuit } from "@engineering-circuit/format"
 
 export const kvlExample = (): Circuit => ({
-	format: "engineering-circuit",
-	version: 1,
+	...createCircuit("KVL and voltage divider"),
 	name: "KVL and voltage divider",
 	description: "6 V shared by 1 Ω and 2 Ω: the 2 Ω resistor gets two thirds of the voltage.",
 	components: [

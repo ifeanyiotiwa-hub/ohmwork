@@ -8,6 +8,12 @@ export type UiConfig = {
 	zoomFactor: number
 	dragThreshold: number
 	agentHighlightMs: number
+	simulation: {
+		/** Most time steps run for one animation frame; beyond it the simulation slows down instead of freezing. */
+		maxStepsPerFrame: number
+		/** Longest real gap counted between frames (a hidden tab must not cause a huge catch-up). */
+		maxFrameSeconds: number
+	}
 	flow: {
 		dashPeriod: number
 		minCurrent: number
@@ -24,6 +30,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	zoomFactor: 1.15,
 	dragThreshold: 4,
 	agentHighlightMs: 2000,
+	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	flow: { dashPeriod: 16, minCurrent: 1e-9, pixelsPerSecondPerDecade: 12, maxPixelsPerSecond: 160 },
 }
 

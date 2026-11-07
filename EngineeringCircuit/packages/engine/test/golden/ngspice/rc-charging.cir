@@ -1,0 +1,12 @@
+* RC charging: 5 V through 1 kOhm into 1 uF (tau = 1 ms), capacitor starts empty
+V1 in 0 DC 5
+R1 in out 1k
+C1 out 0 1u IC=0
+.tran 1u 5m uic
+.control
+run
+meas tran v_1ms FIND v(out) AT=1m
+meas tran v_2ms FIND v(out) AT=2m
+meas tran v_5ms FIND v(out) AT=5m
+.endc
+.end

@@ -12,6 +12,22 @@ const NO_READING = "–"
 const OPEN_CIRCUIT = "OL (open)"
 
 export function valueText(component: Component): string {
+	switch (component.type) {
+		case "ac-source": {
+			const { amplitude, frequency, offset } = component.params
+			const shifted = offset === 0 ? "" : ` ${offset > 0 ? "+" : ""}${formatSi(offset, "V")}`
+			return `${formatSi(amplitude, "V")} ${formatSi(frequency, "Hz")}${shifted}`
+		}
+		case "square-source": {
+			const { low, high, frequency } = component.params
+			return `${formatSi(low, "V")}–${formatSi(high, "V")} ${formatSi(frequency, "Hz")}`
+		}
+		default:
+			return paramText(component)
+	}
+}
+
+function paramText(component: Component): string {
 	const params: Record<string, unknown> = component.params
 	return paramFieldsOf(component.type)
 		.map((field) => {

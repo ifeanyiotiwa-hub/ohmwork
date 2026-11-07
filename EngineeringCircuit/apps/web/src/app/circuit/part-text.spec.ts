@@ -12,6 +12,15 @@ test("parameters read in their own words", () => {
 	expect(valueText(part({ id: "PB2", type: "push-button", params: { normallyOpen: false } }))).toBe("NC")
 })
 
+test("wave sources read compactly: peak and frequency, or low–high and frequency", () => {
+	const ac = part({ id: "AC1", type: "ac-source", params: { amplitude: 5, frequency: 40, offset: 0, phase: 0, delay: 0 } })
+	expect(valueText(ac)).toBe("5 V 40 Hz")
+	expect(valueText({ ...ac, params: { ...ac.params, offset: 1 } } as Component)).toBe("5 V 40 Hz +1 V")
+	expect(valueText(part({ id: "SQ1", type: "square-source", params: { low: 0, high: 5, frequency: 1000, dutyCycle: 0.5 } }))).toBe(
+		"0 V–5 V 1 kHz",
+	)
+})
+
 test("meters show what they measure", () => {
 	const reading = { voltage: 4, current: -0.002, resistance: 1500 }
 	expect(meterText(part({ id: "VM1", type: "voltmeter", params: {} }), reading)).toBe("4 V")

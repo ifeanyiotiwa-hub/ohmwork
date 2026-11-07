@@ -1,7 +1,7 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
 import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
-import { solveDc } from "@engineering-circuit/engine"
+import { type TransientState, initialTransientState, solveDc, stepTransient } from "@engineering-circuit/engine"
 import {
 	COMPONENT_DEFINITIONS,
 	type ComponentType,
@@ -21,6 +21,7 @@ import {
 	findProbeTarget,
 	pinPositionsReport,
 	probeReport,
+	probeValues,
 	simulationReport,
 } from "./reports"
 
@@ -64,6 +65,8 @@ const pressedSchema = z
 	.array(z.string().min(1))
 	.optional()
 	.describe("Push buttons to hold down for this reading, e.g. [\"PB1\"]; all others are released")
+const DEFAULT_SAMPLES = 20
+const MAX_SAMPLES = 200
 const inputsOf = (pressed: readonly string[] | undefined) => ({ pressed: new Set(pressed) })
 
 export type ServerContext = {
@@ -243,6 +246,60 @@ export function createServer(
 			const outcome = solveDc(document.circuit, inputsOf(pressed))
 			return outcome.ok ? text(probeReport(outcome.solution, found)) : failure(outcome.errors)
 		},
+	)
+
+	server.registerTool(
+		"simulate_over_time",
+		{
+			description:
+				"Run the circuit over time from rest (capacitors empty, inductors at 0 A) with its time step, and sample probes (parts or pins, as in probe) at evenly spaced times.",
+			inputSchema: z.object({
+				duration: z.number().positive().describe("seconds of simulated time"),
+				probes: z.array(z.string().min(1)).min(1).describe('Parts ("C1") or pins ("R1.b") to record'),
+				samples: z.number().int().min(1).max(MAX_SAMPLES).optional().describe(`How many times to record (default ${DEFAULT_SAMPLES})`),
+				pressed: pressedSchema,
+			}),
+			annotations: READ_ONLY,
+		},
+		({ duration, probes, samples = DEFAULT_SAMPLES, pressed }) => {
+			const circuit = document.circuit
+			const targets = probes.map((probe) => ({ probe, found: findProbeTarget(circuit, probe) }))
+			const unknown = targets.flatMap(({ found }) => ("error" in found ? [found.error] : []))
+			if (unknown.length > 0) return failure(unknown.join("\n"))
+
+			const { timeStep } = circuit.simulation
+			const steps = Math.round(duration / timeStep)
+			if (steps > options.maxTransientSteps) {
+				return failure(
+					`That is ${steps} steps of ${timeStep} s; the limit is ${options.maxTransientSteps}. Use a shorter duration or a larger time step (set_simulation).`,
+				)
+			}
+
+			const sampleSteps = new Set(Array.from({ length: samples }, (_, index) => Math.round(((index + 1) * steps) / samples)))
+			const recorded: { time: number; values: Record<string, unknown> }[] = []
+			let state: TransientState = initialTransientState()
+			for (let step = 1; step <= steps; step++) {
+				const result = stepTransient(circuit, state, { timeStep, ...inputsOf(pressed) })
+				if (!result.ok) return failure(result.errors)
+				state = result.state
+				if (!sampleSteps.has(step)) continue
+				const values = Object.fromEntries(
+					targets.flatMap(({ probe, found }) => ("error" in found ? [] : [[probe, probeValues(result.solution, found)]])),
+				)
+				recorded.push({ time: Number(state.time.toPrecision(6)), values })
+			}
+			return text({ timeStep, samples: recorded })
+		},
+	)
+
+	server.registerTool(
+		"set_simulation",
+		{
+			description:
+				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower) and speed (simulated seconds per real second in the app).",
+			inputSchema: z.object({ timeStep: z.number().positive().optional(), speed: z.number().positive().optional() }),
+		},
+		({ timeStep, speed }) => edit({ type: "set-simulation", timeStep, speed }),
 	)
 
 	server.registerTool(

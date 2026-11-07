@@ -1,8 +1,17 @@
-import { Injectable, computed, inject, signal } from "@angular/core"
+import { Injectable, computed, effect, inject, signal } from "@angular/core"
 import { CircuitDocument, type EditCommand, type LiveState, applyCommand } from "@engineering-circuit/editing"
-import { type SimIssue, solveDc, wireCurrents } from "@engineering-circuit/engine"
+import {
+	type DcResult,
+	type SimIssue,
+	initialTransientState,
+	isTimeDependent,
+	solveDc,
+	stepTransient,
+	wireCurrents,
+} from "@engineering-circuit/engine"
 import { type Circuit, type ComponentType, type PinRef, createCircuit } from "@engineering-circuit/format"
 import { LiveLink } from "../live/live-link"
+import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
 import { kvlExample } from "./examples"
 import { UI_CONFIG } from "./ui-config"
@@ -17,6 +26,10 @@ export type Selection = { kind: "component" | "wire"; id: string }
 export class CircuitStore {
 	private readonly config = inject(UI_CONFIG)
 	private readonly live = inject(LiveLink)
+	private readonly clock = inject(SimulationClock)
+	/** A number per circuit version, so a frame from the worker is only used for the circuit it was solved for. */
+	private readonly circuitIds = new WeakMap<Circuit, number>()
+	private nextCircuitId = 1
 	private readonly local = new CircuitDocument(kvlExample())
 	private readonly localRevision = signal(0)
 	private readonly shared = signal<LiveState | undefined>(undefined)
@@ -41,14 +54,33 @@ export class CircuitStore {
 	/** Push buttons held down right now. Momentary, so never saved or shared over the live link. */
 	readonly pressed = signal<ReadonlySet<string>>(new Set())
 
-	readonly result = computed(() => solveDc(this.circuit(), { pressed: this.pressed() }))
+	/** Whether anything in the circuit changes over time (capacitors, inductors, wave sources). */
+	readonly timeDependent = computed(() => isTimeDependent(this.circuit()))
+
+	/** Plain circuits are solved here at once; time-dependent ones come from the simulation worker each frame. */
+	readonly result = computed<DcResult>(() => {
+		const circuit = this.circuit()
+		const pressed = this.pressed()
+		if (!this.timeDependent()) return solveDc(circuit, { pressed })
+		const frame = this.clock.frame()
+		if (frame?.circuitId === this.idOf(circuit)) return frame.result
+		const first = stepTransient(circuit, initialTransientState(), { timeStep: circuit.simulation.timeStep, pressed })
+		return first.ok ? { ok: true, solution: first.solution } : first
+	})
+	/** Simulated seconds, for time-dependent circuits. */
+	readonly time = computed(() => {
+		const frame = this.clock.frame()
+		return this.timeDependent() && frame?.circuitId === this.idOf(this.circuit()) ? frame.time : undefined
+	})
+	readonly slowed = computed(() => this.time() !== undefined && this.clock.frame()?.slowed === true)
 	readonly solution = computed(() => {
 		const result = this.result()
 		return result.ok ? result.solution : undefined
 	})
 	readonly errors = computed<SimIssue[]>(() => {
 		const result = this.result()
-		return result.ok ? [] : result.errors
+		const failure = this.clock.failure()
+		return [...(result.ok ? [] : result.errors), ...(failure ? [{ componentIds: [], message: failure }] : [])]
 	})
 	readonly warnings = computed<SimIssue[]>(() => this.solution()?.warnings ?? [])
 	readonly wireCurrents = computed<Record<string, number>>(() => {
@@ -72,6 +104,20 @@ export class CircuitStore {
 	readonly wiringFrom = signal<PinRef | undefined>(undefined)
 	readonly paused = signal(false)
 	readonly editError = signal<string | undefined>(undefined)
+
+	constructor() {
+		effect(() => {
+			const circuit = this.circuit()
+			this.clock.load(this.timeDependent() ? circuit : undefined, this.idOf(circuit))
+		})
+		effect(() => this.clock.press([...this.pressed()]))
+		effect(() => this.clock.setRunning(!this.paused()))
+	}
+
+	/** Starts the time simulation again from rest: capacitors empty, inductors at 0 A. */
+	restartTime(): void {
+		this.clock.restart()
+	}
 
 	/** Applies an edit; returns the resulting circuit, or undefined (with editError set) if it was refused. */
 	apply(command: EditCommand): Circuit | undefined {
@@ -102,6 +148,7 @@ export class CircuitStore {
 	}
 
 	replace(circuit: Circuit, summary: string): void {
+		this.clock.restart()
 		this.selection.set(undefined)
 		this.editError.set(undefined)
 		if (this.shared()) {
@@ -166,6 +213,15 @@ export class CircuitStore {
 				this.localRevision.update((revision) => revision + 1)
 			},
 		})
+	}
+
+	private idOf(circuit: Circuit): number {
+		let id = this.circuitIds.get(circuit)
+		if (id === undefined) {
+			id = this.nextCircuitId++
+			this.circuitIds.set(circuit, id)
+		}
+		return id
 	}
 
 	private highlight(changes: ChangedIds): void {

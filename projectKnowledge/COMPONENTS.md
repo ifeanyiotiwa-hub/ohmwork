@@ -24,17 +24,17 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `ccvs` | senseIn, senseOut, positive, negative | transresistance (Ω) | current through sense pins (0 V path) controls voltage | EC, CJS, SPICE `H` | D3 | planned |
 | `cccs` | senseIn, senseOut, positive, negative | gain (A/A) | current through sense pins controls current | EC, CJS, SPICE `F` | D3 | planned |
 | `voltage-rail` | terminal | voltage (V) | source to ground drawn as one pin (e.g. +5 V) | CJS | D5 | planned |
-| `ac-source` | positive, negative | amplitude (peak V; RMS accepted), frequency (Hz; period accepted), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping | EC, CJS, SPICE | D3 | planned |
-| `square-source` | positive, negative | low (V), high (V), frequency (Hz; period accepted), dutyCycle (0–1) | pulse, SPICE `PULSE` with fixed fast edges | CJS, SPICE | D3 | planned |
+| `ac-source` | positive, negative | amplitude (peak V; RMS accepted), frequency (Hz; period accepted), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping; DC value = offset | EC, CJS, SPICE | D3 | simulated |
+| `square-source` | positive, negative | low (V), high (V), frequency (Hz; period accepted), dutyCycle (0–1) | pulse, SPICE `PULSE` with instant edges, high first; DC value = low | CJS, SPICE | D3 | simulated |
 | `clock` | out | frequency (Hz; period accepted), dutyCycle | logic square wave | EC (Logic Train), CJS | D5 | planned |
 
 ## Passive
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
 | `resistor` | a, b | resistance (Ω) | Ohm's law | EC, CJS, SPICE `R` | D2 | in format |
-| `capacitor` | a, b | capacitance (F) | companion model (trapezoidal) | EC, CJS, SPICE `C` | D3 | in format |
+| `capacitor` | a, b | capacitance (F) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `C` | D3 | simulated |
 | `polarized-capacitor` | positive, negative | capacitance (F) | capacitor; warns when reverse-biased | EC, CJS | D3 | planned |
-| `inductor` | a, b | inductance (H) | companion model (trapezoidal) | EC, CJS, SPICE `L` | D3 | in format |
+| `inductor` | a, b | inductance (H) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `L` | D3 | simulated |
 | `potentiometer` | a, b, wiper | resistance (Ω), position (0–1) | two resistors split at the wiper | EC, CJS | D3 | planned |
 | `transformer` | primaryA, primaryB, secondaryA, secondaryB | primaryInductance (H), turnsRatio, coupling (0–1] | coupled inductors, SPICE `K` | EC, CJS, SPICE `K` | D3 | planned |
 | `tapped-transformer` | primaryA, primaryB, secondaryA, secondaryTap, secondaryB | as transformer | coupled inductors, centre tap | EC, CJS | later | planned |

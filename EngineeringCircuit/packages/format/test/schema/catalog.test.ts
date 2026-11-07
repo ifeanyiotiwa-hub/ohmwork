@@ -33,3 +33,12 @@ test("isComponentType recognises catalog types only", () => {
 	expect(isComponentType("flux-capacitor")).toBe(false)
 	expect(isComponentType(42)).toBe(false)
 })
+
+test("wave sources need a positive frequency and a duty cycle between 0 and 1", () => {
+	const square = COMPONENT_DEFINITIONS.find((definition) => definition.type === "square-source")
+	const ac = COMPONENT_DEFINITIONS.find((definition) => definition.type === "ac-source")
+	if (!square || !ac) throw new Error("wave sources missing")
+	expect(square.schema.shape.params.safeParse({ ...square.defaults, dutyCycle: 1.5 }).success).toBe(false)
+	expect(ac.schema.shape.params.safeParse({ ...ac.defaults, frequency: 0 }).success).toBe(false)
+	expect(ac.schema.shape.params.safeParse({ ...ac.defaults, amplitude: -1 }).success).toBe(true)
+})

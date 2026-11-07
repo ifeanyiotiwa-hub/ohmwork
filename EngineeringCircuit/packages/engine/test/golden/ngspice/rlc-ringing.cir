@@ -1,0 +1,13 @@
+* Series RLC step: 5 V, 1 Ohm, 1 mH, 1 uF (rings at about 5.03 kHz), all at rest
+V1 in 0 DC 5
+R1 in a 1
+L1 a b 1m IC=0
+C1 b 0 1u IC=0
+.tran 0.1u 1m uic
+.control
+run
+meas tran v_50us FIND v(b) AT=50u
+meas tran v_100us FIND v(b) AT=100u
+meas tran v_200us FIND v(b) AT=200u
+.endc
+.end

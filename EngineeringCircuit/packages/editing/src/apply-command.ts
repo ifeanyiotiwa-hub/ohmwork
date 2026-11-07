@@ -10,6 +10,7 @@ import {
 	parseCircuit,
 } from "@engineering-circuit/format"
 import type { EditCommand } from "./edit-command"
+import { storedParam, storedParams } from "./equivalents"
 
 const GRID_SPACING = 100
 const GRID_COLUMNS = 8
@@ -30,7 +31,7 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 	switch (command.type) {
 		case "add-component": {
 			const { type } = command.component
-			const params = { ...definitionOf(type).defaults, ...command.component.params }
+			const params = { ...definitionOf(type).defaults, ...storedParams(type, command.component.params ?? {}) }
 			const id = command.component.id ?? nextId(draft.components, idPrefixOf(type))
 			const component = {
 				id,
@@ -83,10 +84,24 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 		}
 
 		case "set-parameter":
-			return updateComponent(draft, command.componentId, (target) => ({
-				component: { ...target, params: { ...target.params, [command.name]: command.value } },
-				summary: `Set ${target.id} ${command.name} to ${String(command.value)}`,
-			}))
+			return updateComponent(draft, command.componentId, (target) => {
+				const { name, value } = storedParam(target.type, command.name, command.value)
+				return {
+					component: { ...target, params: { ...target.params, [name]: value } },
+					summary: `Set ${target.id} ${name} to ${String(value)}`,
+				}
+			})
+
+		case "set-simulation": {
+			const simulation = {
+				timeStep: command.timeStep ?? draft.simulation.timeStep,
+				speed: command.speed ?? draft.simulation.speed,
+			}
+			return {
+				candidate: { ...draft, simulation },
+				summary: `Simulation: time step ${String(simulation.timeStep)} s, speed ${String(simulation.speed)}`,
+			}
+		}
 
 		case "move-component":
 			return updateComponent(

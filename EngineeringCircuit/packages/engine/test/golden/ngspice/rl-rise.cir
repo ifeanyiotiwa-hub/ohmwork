@@ -1,0 +1,11 @@
+* RL current rise: 5 V into 10 Ohm and 10 mH (tau = 1 ms), inductor starts at 0 A
+V1 in 0 DC 5
+R1 in mid 10
+L1 mid 0 10m IC=0
+.tran 1u 5m uic
+.control
+run
+meas tran i_1ms FIND i(V1) AT=1m
+meas tran i_2ms FIND i(V1) AT=2m
+.endc
+.end

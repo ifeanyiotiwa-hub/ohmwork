@@ -1,6 +1,6 @@
 import { type Circuit, type ComponentType, type Net, buildNets, pinKey, pinsOf } from "@engineering-circuit/format"
 import type { DisjointSets } from "../graph/disjoint-sets"
-import { type DcInputs, OHMMETER_TEST_CURRENT, dcModelOf } from "./branches"
+import { type DcInputs, OHMMETER_TEST_CURRENT, type SolveInputs, dcModelOf } from "./branches"
 import type { SimIssue } from "./issues"
 import { type MnaSolution, solveMna } from "./mna"
 import { type NetBranch, chooseReferences, conductiveSets, findCurrentWithoutPath, findShortCircuits } from "./topology"
@@ -21,7 +21,13 @@ export type DcSolution = {
 
 export type DcResult = { ok: true; solution: DcSolution } | { ok: false; errors: SimIssue[] }
 
+/** The DC steady state: capacitors open, inductors shorted, wave sources at their DC value. */
 export function solveDc(circuit: Circuit, inputs: DcInputs = {}): DcResult {
+	return solveCircuit(circuit, inputs.pressed ? { pressed: inputs.pressed } : {})
+}
+
+/** Solves the circuit once; with `inputs.transient`, that is one time step. */
+export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 	const notSimulated = circuit.components
 		.filter((component) => dcModelOf(component) === "not-simulated")
 		.map((component) => ({

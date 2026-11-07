@@ -9,7 +9,17 @@
 		<button type="button" class="issue warning" (click)="show(issue)">{{ issue.message }}</button>
 	}
 	@if (healthy()) {
-		<p class="issue ok">Simulating · {{ store.circuit().components.length }} parts · DC steady state</p>
+		<p class="issue ok" data-sim-time>
+			Simulating · {{ store.circuit().components.length }} parts ·
+			@if (time(); as now) {
+				t = {{ now }}
+			} @else {
+				DC steady state
+			}
+		</p>
+	}
+	@if (store.slowed()) {
+		<p class="issue warning">Running slower than the set speed: too many time steps per frame. Raise the time step or lower the speed.</p>
 	}
 	@switch (store.liveStatus()) {
 		@case ("connecting") {

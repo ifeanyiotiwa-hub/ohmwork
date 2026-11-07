@@ -21,7 +21,8 @@ export const CONVENTIONS = [
 	"Units are SI: volts (V), amps (A), watts (W), ohms, farads, henries.",
 	"A part's current flows into its first pin and out of its second; voltage = first pin minus second pin.",
 	"Negative power means the part supplies energy (e.g. a battery driving a load).",
-	"Values are the DC steady state: capacitors act as open gaps, inductors as wires.",
+	"simulate and probe give the DC steady state: capacitors act as open gaps, inductors as wires, wave sources sit at their DC value (sine: offset; square: low).",
+	"simulate_over_time starts from rest: capacitors empty, inductors at 0 A.",
 ]
 
 const rounded = (value: number) => Number(value.toPrecision(SIGNIFICANT_DIGITS)) || 0
@@ -99,6 +100,12 @@ export function findProbeTarget(circuit: Circuit, target: string): ProbeTarget |
 		return { error: `${owner.type} "${componentId}" has no pin "${pin}" (valid: ${pinsOf(owner.type).join(", ")})` }
 	}
 	return { kind: "pin", pin: { componentId, pin } }
+}
+
+/** One probe's values without the target name, for time series. */
+export function probeValues(solution: DcSolution, target: ProbeTarget) {
+	const { target: _name, ...values } = probeReport(solution, target)
+	return values
 }
 
 export function probeReport(solution: DcSolution, target: ProbeTarget) {

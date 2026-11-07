@@ -7,6 +7,8 @@ export type LiveOptions = {
 export type ServerOptions = {
 	historyLimit: number
 	maxFileBytes: number
+	/** The most time steps one simulate_over_time call may run. */
+	maxTransientSteps: number
 	workspaceDirectory: string
 	live: LiveOptions
 }
@@ -17,6 +19,7 @@ const DEFAULT_APP_URL = "http://localhost:4200"
 export const DEFAULT_OPTIONS: Omit<ServerOptions, "workspaceDirectory"> = {
 	historyLimit: 200,
 	maxFileBytes: 5 * 1024 * 1024,
+	maxTransientSteps: 200_000,
 	live: liveOptions(ANY_FREE_PORT, DEFAULT_APP_URL, []),
 }
 
@@ -24,6 +27,7 @@ export function optionsFromEnvironment(environment: NodeJS.ProcessEnv, currentDi
 	return {
 		historyLimit: positiveInteger(environment.EC_HISTORY_LIMIT) ?? DEFAULT_OPTIONS.historyLimit,
 		maxFileBytes: positiveInteger(environment.EC_MAX_FILE_BYTES) ?? DEFAULT_OPTIONS.maxFileBytes,
+		maxTransientSteps: positiveInteger(environment.EC_MAX_TRANSIENT_STEPS) ?? DEFAULT_OPTIONS.maxTransientSteps,
 		workspaceDirectory: environment.EC_WORKSPACE_DIR || environment.INIT_CWD || currentDirectory,
 		live: liveOptions(
 			positiveInteger(environment.EC_LIVE_PORT) ?? ANY_FREE_PORT,

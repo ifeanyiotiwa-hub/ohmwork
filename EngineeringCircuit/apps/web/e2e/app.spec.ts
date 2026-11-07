@@ -122,3 +122,47 @@ test("a push button conducts only while held down", async ({ page }) => {
 	await page.mouse.up()
 	await expect(current).toHaveCount(0)
 })
+
+test("a capacitor charges over time, and Restart empties it again", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-source", 200, 300],
+		["resistor", 400, 200],
+		["capacitor", 600, 300],
+		["ground", 400, 450],
+	] as const) {
+		await page.locator(`[data-palette="${type}"]`).click()
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "R1:a"],
+		["R1:b", "C1:a"],
+		["C1:b", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	// 1 kΩ × 1 µF = 1 ms; at this speed one time constant takes 5 real seconds.
+	const speed = page.locator('[data-field="speed"]')
+	await speed.fill("0.0002")
+	await speed.press("Enter")
+	await page.getByRole("button", { name: "Restart" }).click()
+	await expect(page.locator("[data-sim-time]")).toContainText("t =")
+
+	await page.locator('[data-part="C1"]').click()
+	const voltage = async () => {
+		const text = (await page.locator("[data-readings] dd").first().textContent()) ?? ""
+		const [number = "NaN", unit = ""] = text.trim().split(" ")
+		return Number(number) * (unit.startsWith("m") ? 1e-3 : unit.startsWith("µ") ? 1e-6 : 1)
+	}
+	await expect.poll(voltage).toBeGreaterThan(0.5)
+	const early = await voltage()
+	await expect.poll(voltage).toBeGreaterThan(early + 0.3)
+	expect(await voltage()).toBeLessThan(5)
+
+	await page.getByRole("button", { name: "Restart" }).click()
+	await expect.poll(voltage).toBeLessThan(early)
+})

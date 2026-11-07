@@ -1,0 +1,10 @@
+* RC low-pass at its corner frequency: 1 V peak sine, 1 kOhm, 1 uF, f = 1/(2 pi R C) = 159.155 Hz
+V1 in 0 SIN(0 1 159.155)
+R1 in out 1k
+C1 out 0 1u IC=0
+.tran 1u 60m uic
+.control
+run
+meas tran peak MAX v(out) FROM=50m TO=60m
+.endc
+.end

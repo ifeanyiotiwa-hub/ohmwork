@@ -12,7 +12,16 @@ const PREFIXES = [
 
 const FACTOR_BY_PREFIX: Record<string, number> = { ...Object.fromEntries(PREFIXES.map((p) => [p.symbol, p.factor])), u: 1e-6 }
 
-const UNIT_SYMBOLS: Record<string, string> = { ohms: "Ω", volts: "V", amps: "A", farads: "F", henries: "H" }
+const UNIT_SYMBOLS: Record<string, string> = {
+	ohms: "Ω",
+	volts: "V",
+	amps: "A",
+	farads: "F",
+	henries: "H",
+	hertz: "Hz",
+	seconds: "s",
+	degrees: "°",
+}
 
 const SIGNIFICANT_DIGITS = 3
 const ROUNDING_HEADROOM = 0.9995

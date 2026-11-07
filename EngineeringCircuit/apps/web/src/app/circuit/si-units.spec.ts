@@ -39,4 +39,6 @@ test("unit symbols come from the parameter description", () => {
 	expect(unitSymbolOf("ohms")).toBe("Ω")
 	expect(unitSymbolOf("amps, flowing out of the positive pin")).toBe("A")
 	expect(unitSymbolOf("true = conducting")).toBe("")
+	expect(unitSymbolOf("volts (peak)")).toBe("V")
+	expect(unitSymbolOf("hertz")).toBe("Hz")
 })

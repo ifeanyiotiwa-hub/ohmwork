@@ -1,15 +1,22 @@
 import { Component, computed, inject } from "@angular/core"
-import { paramFieldsOf } from "@engineering-circuit/format"
+import { type ComponentType, paramFieldsOf } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
 import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
 import { PART_NAMES } from "../circuit/symbols"
 
 type FieldView =
-	| { name: string; kind: "number"; text: string; unit: string }
+	| { name: string; kind: "number"; text: string; unit: string; hint: string | undefined }
 	| { name: string; kind: "boolean"; checked: boolean }
 	| { name: string; kind: "choice"; value: string; options: string[] }
 
 const RECENT_HISTORY = 5
+
+/** The other form of a stored quantity, shown under its field (agents may also set it by that name). */
+function equivalentHint(type: ComponentType, name: string, value: number): string | undefined {
+	if (name === "frequency") return `period ${formatSi(1 / value, "s")}`
+	if (name === "amplitude" && type === "ac-source") return `RMS ${formatSi(value / Math.SQRT2, "V")}`
+	return undefined
+}
 
 @Component({
 	selector: "app-part-inspector",
@@ -29,7 +36,14 @@ export class PartInspector {
 			switch (field.kind) {
 				case "number": {
 					const unit = unitSymbolOf(field.description)
-					return { name: field.name, kind: "number", unit, text: typeof value === "number" ? formatSi(value, unit) : "" }
+					const number = typeof value === "number" ? value : undefined
+					return {
+						name: field.name,
+						kind: "number",
+						unit,
+						text: number === undefined ? "" : formatSi(number, unit),
+						hint: number === undefined ? undefined : equivalentHint(part.type, field.name, number),
+					}
 				}
 				case "boolean":
 					return { name: field.name, kind: "boolean", checked: value === true }
@@ -65,6 +79,21 @@ export class PartInspector {
 			return
 		}
 		this.store.apply({ type: "set-parameter", componentId, name, value })
+	}
+
+	protected readonly settings = computed(() => {
+		const { timeStep, speed } = this.store.circuit().simulation
+		return { timeStep: formatSi(timeStep, "s"), speed: String(speed) }
+	})
+
+	protected setSimulation(name: "timeStep" | "speed", event: Event): void {
+		const text = (event.target as HTMLInputElement).value
+		const value = parseSi(text)
+		if (value === undefined) {
+			this.store.editError.set(`Couldn't read "${text}" as a number. Try 5u, 0.01 or 1e-6.`)
+			return
+		}
+		this.store.apply({ type: "set-simulation", [name]: value })
 	}
 
 	protected setBoolean(componentId: string, name: string, event: Event): void {

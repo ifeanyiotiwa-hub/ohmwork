@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { createCircuit } from "../../src/schema/circuit"
+import { CURRENT_VERSION, createCircuit } from "../../src/schema/circuit"
 import { voltageDivider } from "../fixtures/voltage-divider"
 import { parseCircuit, parseCircuitJson, serializeCircuit } from "../../src/io/parse"
 
@@ -20,6 +20,21 @@ describe("valid circuits", () => {
 	})
 })
 
+describe("older files", () => {
+	test("a version 1 file opens with the default simulation settings", () => {
+		const { simulation: _settings, ...circuit } = voltageDivider()
+		const result = parseCircuit({ ...circuit, version: 1 })
+		expect(result).toEqual({ ok: true, circuit: voltageDivider() })
+	})
+})
+
+describe("simulation settings", () => {
+	test("time step and speed must be positive", () => {
+		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1 } })
+		expect(errors.map((error) => error.path)).toEqual(["simulation.timeStep", "simulation.speed"])
+	})
+})
+
 describe("header", () => {
 	test("rejects a file from another app", () => {
 		expect(errorsOf({ format: "something-else", version: 1 })).toEqual([
@@ -28,7 +43,7 @@ describe("header", () => {
 	})
 
 	test("rejects a newer version with an update hint", () => {
-		const [error] = errorsOf({ ...voltageDivider(), version: 2 })
+		const [error] = errorsOf({ ...voltageDivider(), version: CURRENT_VERSION + 1 })
 		expect(error?.message).toContain("Update the app")
 	})
 

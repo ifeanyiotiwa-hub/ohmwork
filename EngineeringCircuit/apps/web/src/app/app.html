@@ -6,6 +6,9 @@
 		<button type="button" [attr.aria-pressed]="store.paused()" (click)="store.paused.set(!store.paused())">
 			{{ store.paused() ? "Resume" : "Pause" }}
 		</button>
+		@if (store.timeDependent()) {
+			<button type="button" (click)="store.restartTime()" title="Start again from rest: capacitors empty">Restart</button>
+		}
 		<button type="button" (click)="store.newCircuit()">New</button>
 		<button type="button" (click)="store.loadExample()">Example</button>
 	</div>

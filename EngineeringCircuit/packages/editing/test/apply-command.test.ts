@@ -219,3 +219,41 @@ test("commands never modify the circuit they were given", () => {
 	applyCommand(circuit, { type: "set-parameter", componentId: "R1", name: "resistance", value: 7 })
 	expect(circuit).toEqual(snapshot)
 })
+
+describe("equivalent quantities", () => {
+	const ac = { type: "add-component", component: { type: "ac-source" } } as const
+
+	test("a period is stored as its frequency", () => {
+		const circuit = run(createCircuit("t"), ac, { type: "set-parameter", componentId: "AC1", name: "period", value: 0.02 })
+		expect(circuit.components[0]?.params).toMatchObject({ frequency: 50 })
+		expect(circuit.components[0]?.params).not.toHaveProperty("period")
+	})
+
+	test("an RMS voltage is stored as its peak", () => {
+		const circuit = run(createCircuit("t"), ac, { type: "set-parameter", componentId: "AC1", name: "rms", value: 230 })
+		expect(circuit.components[0]?.params).toMatchObject({ amplitude: 230 * Math.SQRT2 })
+	})
+
+	test("new parts accept them too", () => {
+		const circuit = run(createCircuit("t"), {
+			type: "add-component",
+			component: { type: "square-source", params: { period: 0.5 } },
+		})
+		expect(circuit.components[0]?.params).toMatchObject({ frequency: 2 })
+	})
+
+	test("a part without the matching quantity keeps the usual error", () => {
+		expect(errorsOf(run(createCircuit("t"), resistor), { type: "set-parameter", componentId: "R1", name: "period", value: 1 }).length).toBeGreaterThan(0)
+	})
+})
+
+describe("set-simulation", () => {
+	test("changes the time step and speed", () => {
+		const circuit = run(createCircuit("t"), { type: "set-simulation", timeStep: 1e-6, speed: 0.5 })
+		expect(circuit.simulation).toEqual({ timeStep: 1e-6, speed: 0.5 })
+	})
+
+	test("rejects a time step of zero", () => {
+		expect(errorsOf(createCircuit("t"), { type: "set-simulation", timeStep: 0 })[0]?.path).toBe("simulation.timeStep")
+	})
+})

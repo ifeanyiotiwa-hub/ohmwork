@@ -1,6 +1,7 @@
 import { Component, computed, inject } from "@angular/core"
 import type { SimIssue } from "@engineering-circuit/engine"
 import { CircuitStore } from "../circuit/circuit-store"
+import { formatSi } from "../circuit/si-units"
 
 @Component({
 	selector: "app-sim-status",
@@ -13,6 +14,11 @@ export class SimStatus {
 	protected readonly healthy = computed(
 		() => this.store.errors().length === 0 && this.store.warnings().length === 0 && !this.store.editError(),
 	)
+
+	protected readonly time = computed(() => {
+		const time = this.store.time()
+		return time === undefined ? undefined : formatSi(time, "s")
+	})
 
 	protected show(issue: SimIssue): void {
 		const [first] = issue.componentIds

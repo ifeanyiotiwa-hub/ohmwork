@@ -16,7 +16,7 @@ Device (works offline)                     Server (optional, later)
 |---|---|---|
 | `packages/format` | Circuit JSON format: types, validation, version migrations | none |
 | `packages/engine` | Simulation: analog (MNA), digital (event-driven), mixed | `format` |
-| `apps/web` | Angular 22 UI (signals, standalone, zoneless), SVG canvas; engine runs in-thread until D3 adds a Web Worker | `format`, `engine`, `editing` |
+| `apps/web` | Angular 22 UI (signals, standalone, zoneless), SVG canvas; plain circuits solved in-thread, time-dependent ones in a Web Worker | `format`, `engine`, `editing` |
 | `packages/editing` | Shared edit commands (`applyCommand`, validated `editCommandSchema`), `CircuitDocument` (author-tagged history, undo, change subscription) and the live-link protocol (`live-protocol.ts`). Used by the MCP server and the UI | `format` |
 | `apps/mcp` | MCP server (TypeScript SDK v2, stdio): build/simulate/explain tools; hosts the live link (WebSocket on 127.0.0.1) that shares its `CircuitDocument` with the app | `format`, `engine`, `editing` |
 | `apps/desktop` | Tauri 2 shell around `apps/web` (desktop + mobile) | `apps/web` build |
@@ -34,6 +34,7 @@ Device (works offline)                     Server (optional, later)
 ## Engine conventions
 - Readings use the passive sign convention: a part's `current` flows into its first pin (`a`, `positive`, `anode`) and out of its second; `voltage` = first pin − second pin. Power = voltage × current; negative power means the part is supplying energy (a battery driving a load reads negative current). Same as SPICE.
 - Each part type maps to simple branches (resistor, voltage, current) in `DC_MODELS`; that table must list every catalog type, so a new part can't compile until the engine decides how to model it.
+- Over time (`stepTransient`), capacitors and inductors are companion models stepped with a fixed time step from rest; see ADR-015. A plain DC solve treats capacitors as open, inductors as wires, and wave sources at their DC value.
 - Floating sections are solved relative to a stated reference pin and produce a warning; they are not silently tied to ground with a hidden resistor.
 
 ## Live link (D8)

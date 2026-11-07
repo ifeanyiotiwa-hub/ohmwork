@@ -1,7 +1,12 @@
+import { DEFAULT_SIMULATION } from "../schema/circuit"
+
 export type JsonObject = Record<string, unknown>
 export type Migration = (document: JsonObject) => JsonObject
 
-export const MIGRATIONS: Readonly<Record<number, Migration>> = {}
+/** Keyed by the version migrated from. */
+export const MIGRATIONS: Readonly<Record<number, Migration>> = {
+	1: (document) => ({ ...document, simulation: { ...DEFAULT_SIMULATION } }),
+}
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }
 

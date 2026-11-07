@@ -7,8 +7,11 @@ test("defaults apply when nothing is set", () => {
 
 test("environment overrides limits and the workspace folder", () => {
 	expect(
-		optionsFromEnvironment({ EC_HISTORY_LIMIT: "50", EC_MAX_FILE_BYTES: "1024", EC_WORKSPACE_DIR: "/circuits" }, "/work"),
-	).toMatchObject({ historyLimit: 50, maxFileBytes: 1024, workspaceDirectory: "/circuits" })
+		optionsFromEnvironment(
+			{ EC_HISTORY_LIMIT: "50", EC_MAX_FILE_BYTES: "1024", EC_MAX_TRANSIENT_STEPS: "1000", EC_WORKSPACE_DIR: "/circuits" },
+			"/work",
+		),
+	).toMatchObject({ historyLimit: 50, maxFileBytes: 1024, maxTransientSteps: 1000, workspaceDirectory: "/circuits" })
 })
 
 test("pnpm's launch folder is used when no workspace is set", () => {
