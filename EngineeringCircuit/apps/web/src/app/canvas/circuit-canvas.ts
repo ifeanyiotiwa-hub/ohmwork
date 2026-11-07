@@ -5,13 +5,14 @@ import {
 	type Point,
 	type Component as Part,
 	buildNets,
+	pinDirection,
 	pinKey,
 	pinPosition,
 	pinsOf,
 	rotate,
 } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
-import { snap, wirePath } from "../circuit/geometry"
+import { pathThrough, routeWire, snap } from "../circuit/geometry"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
 import { SYMBOLS, type SymbolShape, pushButtonPath, switchLeverPath } from "../circuit/symbols"
@@ -117,11 +118,21 @@ export class CircuitCanvas {
 			const to = partsById.get(wire.to.componentId)
 			if (!from || !to) return []
 			const bends = dragged === from.id || dragged === to.id ? [] : wire.bends
+			const start = pinPosition(from, wire.from.pin, this.positionOf(from))
+			const end = pinPosition(to, wire.to.pin, this.positionOf(to))
+			const points =
+				bends.length > 0
+					? [start, ...bends, end]
+					: routeWire(
+							{ at: start, direction: pinDirection(from, wire.from.pin) },
+							{ at: end, direction: pinDirection(to, wire.to.pin) },
+							this.config.gridSize,
+						)
 			const voltage = voltages[pinKey(wire.from)]
 			return [
 				{
 					id: wire.id,
-					path: wirePath(pinPosition(from, wire.from.pin, this.positionOf(from)), pinPosition(to, wire.to.pin, this.positionOf(to)), bends),
+					path: pathThrough(points),
 					colour: voltage === undefined ? null : voltageColour(voltage, largest),
 					flow: solution ? flowOf(currents[wire.id] ?? 0, this.config.flow) : undefined,
 					selected: selection?.kind === "wire" && selection.id === wire.id,

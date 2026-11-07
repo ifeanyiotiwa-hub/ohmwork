@@ -31,7 +31,7 @@ Explain from the tool results (real simulated values and warnings), in plain lan
 Edits are recorded with their author and can be undone.
 Layout (the learner sees it, so make it read like a textbook diagram): x grows right, y grows down, grid 20.
 pinOffsets (list_component_types) are at rotation 0; rotation turns parts clockwise in 90° steps, so 90 makes a two-pin part vertical with its first pin on top.
-A wire is drawn from its first pin horizontally, then vertically; put connected pins on the same x or y for straight wires.
+A wire leaves each pin in the direction the pin points (away from its part) and turns at right angles; pins facing each other on the same x or y join with a straight wire.
 get_circuit lists every pin's position; use move_component / rotate_component to tidy up.
 Meters are ideal: a voltmeter goes across a part, an ammeter in series (across a battery it is a short circuit), an ohmmeter across an unpowered part.
 Push buttons are released unless you list them in simulate/probe "pressed"; in the app the learner holds them with the mouse.

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { PIN_OFFSETS, pinPosition, rotate } from "../../src/layout/pins"
+import { PIN_OFFSETS, pinDirection, pinPosition, rotate } from "../../src/layout/pins"
 import { COMPONENT_DEFINITIONS, type Component, pinsOf } from "../../src/schema/components/catalog"
 
 const resistor = (rotation: Component["rotation"]): Component => ({
@@ -30,4 +30,11 @@ test("pin positions follow the part's position and rotation", () => {
 
 test("a position can be overridden, e.g. while a part is being dragged", () => {
 	expect(pinPosition(resistor(0), "b", { x: 0, y: 0 })).toEqual({ x: 40, y: 0 })
+})
+
+test("a pin points away from its part, turning with it", () => {
+	expect(pinDirection(resistor(0), "a")).toEqual({ x: -1, y: 0 })
+	expect(pinDirection(resistor(0), "b")).toEqual({ x: 1, y: 0 })
+	expect(pinDirection(resistor(90), "a")).toEqual({ x: 0, y: -1 })
+	expect(pinDirection({ ...resistor(0), id: "G", type: "ground", params: {} }, "terminal")).toEqual({ x: 0, y: -1 })
 })

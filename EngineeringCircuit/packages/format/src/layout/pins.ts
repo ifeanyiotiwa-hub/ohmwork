@@ -43,3 +43,9 @@ export function pinPosition(component: Component, pin: string, at: Point = compo
 	const turned = rotate(local, component.rotation)
 	return { x: at.x + turned.x, y: at.y + turned.y }
 }
+
+/** The unit direction a pin points, away from its part (pins sit on the part's axes). */
+export function pinDirection(component: Component, pin: string): Point {
+	const turned = rotate(PIN_OFFSETS[component.type][pin] ?? { x: 0, y: 0 }, component.rotation)
+	return { x: Math.sign(turned.x) || 0, y: Math.sign(turned.y) || 0 }
+}

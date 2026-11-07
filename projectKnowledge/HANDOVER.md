@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- Wire routing: `pinDirection(component, pin)` in `packages/format/src/layout/pins.ts`; `routeWire(from, to, stub)` + `pathThrough(points)` in `apps/web/src/app/circuit/geometry.ts` (one-corner route that leaves outward and arrives from outside; else step out one grid square; else detour). Wires with saved bends are drawn through them unchanged.
 - D6 leftovers done: `push-button` (switches.ts), `voltmeter` / `ammeter` / `ohmmeter` (`measurement.ts`). Engine: `solveDc(circuit, { pressed })` (`DcInputs`); ohmmeter = 1 mA test current branch flagged `test` (dropped when open → `resistance: Infinity`), `ComponentReading.resistance`, warning on powered circuits, no ground warning for an unpowered measurement. MCP: `simulate` / `probe` take `pressed`; ohmmeter `resistance` or "open (…)". App: `store.pressed`, `press` / `releaseButtons`, `meterText`, `pushButtonPath`, palette shows meter letters.
 - Agent layout (after D8): pin geometry moved to `packages/format/src/layout/pins.ts` (`PIN_OFFSETS`, `rotate`, `pinPosition`; the app's `SYMBOLS` no longer hold pins). `rotate-component` takes an optional exact `rotation`. MCP: `add_component` takes `rotation`; new `move_component`, `rotate_component`; `get_circuit` adds `pinPositions`; `list_component_types` adds `pinOffsets`; layout rules in the server instructions (18 tools). Env `EC_APP_URL`, `EC_LIVE_ORIGINS`, `EC_LIVE_PORT`.
   - `apps/web`: `live/live-link.ts` (socket wrapper, status signal), `CircuitStore.joinLive(url)` (shared vs local document, predicted state, `agentChanges` highlight for `agentHighlightMs`), `circuit/changes.ts`; `App` joins when the URL has `live` + `token`; status bar shows "Live with agent · Agent: …". `store.apply` now returns the resulting `Circuit | undefined`.
@@ -50,7 +51,7 @@ Owner tries the live link (restart Claude Code or `/mcp` reconnect so the server
 - Diode/LED have no electrical params yet → D4 adds them with a version bump + migration.
 - Wires connect pin to pin only; no mid-wire junction → D6.
 - No simulation settings (time step, duration, logic family) in the file → D3/D5.
-- Wires always route horizontally then vertically from the first pin, so a wire can run over a part's own body (e.g. to the top pin of a vertical resistor) and look connected to its middle. Fix: leave each pin along its lead direction. `apps/web` `geometry.ts` `wirePath`.
+- Wire routing avoids each wire's own two parts, not other parts in between (no obstacle routing); a wire can still cross an unrelated part. Learners can add bends; obstacle-aware routing if it becomes a problem.
 - The parts palette scrolls sideways at 1280 px wide (13 parts); group it by category when D3 adds more.
 - Planned for later deliverables (by design, see `COMPONENTS.md`): AC/square sources, polarized capacitor, potentiometer, SPDT, transformer, lamp (D3); diodes/transistors (D4); logic (D5); ICs (D9).
 - No canvas text notes → D12.
@@ -59,6 +60,7 @@ Owner tries the live link (restart Claude Code or `/mcp` reconnect so the server
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | Wire routing: wires leave pins outward (`pinDirection` in format, `routeWire` in apps/web geometry), never back over their own parts | Owner tries it; then D3 |
 | 2026-11-07 | Claude (Opus) | D6 leftovers: push button, voltmeter, ammeter, ohmmeter (engine `DcInputs.pressed`, ohmmeter test current / open / powered warning, MCP `pressed` + resistance, app hold-to-press and meter displays) | Owner tries it; wire routing; then D3 |
 | 2026-11-07 | Claude (Opus) | Agent layout: shared pin geometry in format, `move_component` / `rotate_component`, `rotation` on add, pin positions in `get_circuit` | Owner tries it; then D3 |
 | 2026-11-07 | Claude (Opus) | D8 live link: MCP-hosted WebSocket, shared document, `open_in_app` / `recent_changes`, agent-change glow; 147 core + 46 web unit + 8 e2e tests; ADR-014 | Owner tries it; agent move/rotate tools; then D3 |
