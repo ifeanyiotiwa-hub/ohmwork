@@ -1,0 +1,13 @@
+{
+	"name": "@engineering-circuit/editing",
+	"version": "0.1.0",
+	"private": true,
+	"license": "GPL-2.0-or-later",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"@engineering-circuit/format": "workspace:*"
+	}
+}

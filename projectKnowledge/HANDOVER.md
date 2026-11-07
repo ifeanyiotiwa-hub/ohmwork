@@ -18,10 +18,15 @@
   - `src/dc/mna.ts`: builds and solves the MNA system. `src/dc/solve-dc.ts`: orchestration and readings.
   - Tests: `test/golden/` (textbook + ngspice bridge, netlists in `test/golden/ngspice/`), `test/dc/`, `test/linear/`; helper `test/support/circuit-of.ts` builds circuits as `circuitOf(parts, [["V1.positive", "R1.a"], ...])`.
 - Conventions: tabs (width 4); SI units; pin names are per type (`positive/negative`, `a/b`, `anode/cathode`, `terminal`). Current-source current flows out of `positive`. Readings use the passive sign convention (ARCHITECTURE "Engine conventions").
-- Tooling: ngspice 47 installed via Homebrew on the owner's Mac (ADR-010).
+- D7 done:
+  - `packages/editing` (`@engineering-circuit/editing`): `applyCommand(circuit, command)` for add-component / remove-component / connect / disconnect / set-parameter (validated by `parseCircuit`, never mutates input; auto ids from catalog `idPrefix`, grid placement). `CircuitDocument`: `apply(command, author)`, `replace`, `undo`, `history` (`"learner" | "agent"`, bounded).
+  - `apps/mcp`: `src/server.ts` (`createServer(options)` registers 14 tools), `src/reports.ts` (pure report builders: catalog, simulation, probe, explanation), `src/options.ts` (env config), `src/main.ts` (stdio). Engine exports `isDcSimulated`.
+  - `.mcp.json` at repo root registers the server for Claude Code. Verified with an in-memory MCP client (tests) and a real stdio client.
+- Format: `defineComponent` now takes `idPrefix`; catalog exports `definitionOf`, `idPrefixOf`, `ComponentDefinition`.
+- Tooling: ngspice 47 installed via Homebrew on the owner's Mac (ADR-010). `@types/node@24` + `"types": ["node"]` in `tsconfig.base.json` (MCP SDK needs it).
 
 ## Next step
-Recommended: D7 MCP server (`apps/mcp`), the project's core feature. With D2 done, an agent can already build a circuit, solve it, and explain real readings and warnings, before any UI exists. Design its edits as the shared command layer from ARCHITECTURE rule 7, so D6 (UI) and D8 (live link) reuse it. D3 (transient) and D6 (web UI) can run in parallel worktrees.
+Owner tries the MCP in Claude Code (restart Claude Code in `circuitProject/`, approve `engineering-circuit`). Then, recommended: D3 transient analysis (capacitor charging, AC/square sources; time-stepping with the existing LU) or D6 web UI (Angular; must reuse `packages/editing` for every edit). They can run in parallel worktrees. D8 (live link) joins MCP and UI on one `CircuitDocument`.
 
 ## Blockers / open questions
 - None.
@@ -36,6 +41,7 @@ Recommended: D7 MCP server (`apps/mcp`), the project's core feature. With D2 don
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | D7 MCP server (SDK v2, 14 tools) + `packages/editing` (commands, author history, undo); 104 tests; `.mcp.json`; ADR-012 | Owner tries MCP; then D3 or D6 |
 | 2026-11-07 | Claude (Opus) | D2 DC engine: MNA + LU, plain-language diagnostics, 26 engine tests (67 total), ngspice bridge check; ADR-010/011 | D7 MCP (recommended) |
 | 2026-11-07 | Claude (Opus) | COMPONENTS.md inventory; per-category component catalog; unknown-type error; 41 tests | Start D2 |
 | 2026-11-07 | Claude (Opus) | Restructured format pkg (src/schema, io, topology; test/ mirror), tabs width 4 | Start D2 |

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { COMPONENT_DEFINITIONS, isComponentType, pinsOf } from "../../src/schema/components/catalog"
+import { COMPONENT_DEFINITIONS, idPrefixOf, isComponentType, pinsOf } from "../../src/schema/components/catalog"
 
 const types = COMPONENT_DEFINITIONS.map((definition) => definition.type)
 
@@ -15,6 +15,13 @@ test.each(COMPONENT_DEFINITIONS)("$type has unique, non-empty pin names", (defin
 
 test.each(COMPONENT_DEFINITIONS)("$type pins are what pinsOf returns", (definition) => {
 	expect(pinsOf(definition.type)).toEqual(definition.pins)
+})
+
+test("every type has its own id prefix, e.g. R for resistor", () => {
+	const prefixes = types.map(idPrefixOf)
+	expect(prefixes.every((prefix) => /^[A-Z]+$/.test(prefix))).toBe(true)
+	expect(new Set(prefixes).size).toBe(prefixes.length)
+	expect(idPrefixOf("resistor")).toBe("R")
 })
 
 test("isComponentType recognises catalog types only", () => {

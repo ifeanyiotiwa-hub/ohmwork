@@ -31,3 +31,5 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 export function dcModelOf(component: Component): DcModel<ComponentType> {
 	return DC_MODELS[component.type] as DcModel<ComponentType>
 }
+
+export const isDcSimulated = (type: ComponentType): boolean => DC_MODELS[type] !== "not-simulated"

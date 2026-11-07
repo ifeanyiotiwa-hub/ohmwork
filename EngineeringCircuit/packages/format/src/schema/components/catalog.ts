@@ -17,15 +17,21 @@ export const componentSchema = z.discriminatedUnion("type", schemasOf(COMPONENT_
 export type Component = z.infer<typeof componentSchema>
 export type ComponentType = Component["type"]
 
-const PINS_BY_TYPE: ReadonlyMap<string, readonly string[]> = new Map(
-	COMPONENT_DEFINITIONS.map((definition) => [definition.type, definition.pins]),
+export type ComponentDefinition = (typeof COMPONENT_DEFINITIONS)[number]
+
+const DEFINITIONS_BY_TYPE: ReadonlyMap<string, ComponentDefinition> = new Map(
+	COMPONENT_DEFINITIONS.map((definition) => [definition.type, definition]),
 )
 
 export const isComponentType = (value: unknown): value is ComponentType =>
-	typeof value === "string" && PINS_BY_TYPE.has(value)
+	typeof value === "string" && DEFINITIONS_BY_TYPE.has(value)
 
-export function pinsOf(type: ComponentType): readonly string[] {
-	const pins = PINS_BY_TYPE.get(type)
-	if (!pins) throw new Error(`No pins defined for component type "${type}"`)
-	return pins
+export function definitionOf(type: ComponentType): ComponentDefinition {
+	const definition = DEFINITIONS_BY_TYPE.get(type)
+	if (!definition) throw new Error(`No definition for component type "${type}"`)
+	return definition
 }
+
+export const pinsOf = (type: ComponentType): readonly string[] => definitionOf(type).pins
+
+export const idPrefixOf = (type: ComponentType): string => definitionOf(type).idPrefix

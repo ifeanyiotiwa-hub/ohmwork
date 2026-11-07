@@ -12,7 +12,7 @@ A deliverable is `done` only when every acceptance criterion passes and is verif
 | D4 | Non-linear parts | Diode, LED, BJT, MOSFET (Newton–Raphson). Golden tests: diode drop, transistor switch | D3 | todo |
 | D5 | Digital + mixed signal | Logic gates, flip-flops, clock, analog↔digital thresholds. Golden tests: half/full adder, counter | D2 | todo |
 | D6 | Web UI MVP (`apps/web`) | Place, wire, delete parts; run/pause; animated current; voltage colours; probe values. Engine in Web Worker. Playwright smoke test | D2 | todo |
-| D7 | MCP server (`apps/mcp`) | Tools: create_circuit, add_component, connect, set_parameter, simulate, probe, explain_circuit. Tested from an MCP client | D2 | todo |
+| D7 | MCP server (`apps/mcp`) + shared edit commands (`packages/editing`) | Tools: list_component_types, create_circuit, add_component, remove_component, connect, disconnect, set_parameter, undo, get_circuit, simulate, probe, explain_circuit, open_circuit, save_circuit. Edits record author + undo. Tested from an MCP client (in-memory) and over real stdio; registered in `.mcp.json` | D2 | done |
 | D8 | Live link | MCP edits appear live in the open web app (WebSocket) | D6, D7 | todo |
 | D9 | Oscilloscope + ICs | Scope view; 555 timer, op-amp, 7-segment. Golden tests: 555 astable frequency, op-amp gain | D4, D5, D6 | todo |
 | D10 | Save/load + PWA | Save/load files, IndexedDB library, installable offline PWA | D6 | todo |

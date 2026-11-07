@@ -120,7 +120,7 @@ From CJS / SPICE, not in EC: battery (covered by `voltage-source`; internal resi
 
 ## How to add a component
 1. Add a row to this file (pins, params with units, model, seen in, deliverable).
-2. Add one `defineComponent(...)` entry in the matching category file in `packages/format/src/schema/components/` (`sources`, `passives`, `switches`, `semiconductors`). For a new category, add a file and spread it into `catalog.ts`.
+2. Add one `defineComponent(type, { idPrefix, pins, params })` entry in the matching category file in `packages/format/src/schema/components/` (`sources`, `passives`, `switches`, `semiconductors`). `idPrefix` gives automatic ids (R1, R2…). Describe each param with its unit (`positive("ohms")`, `.describe(...)`): the AI reads these. For a new category, add a file and spread it into `catalog.ts`.
 3. Add format tests for valid and invalid params in `packages/format/test/`.
 4. No format version bump for a **new** type: older apps report "Unknown component type ... update the app". Changing an **existing** part's pins or params needs a version bump plus a migration that fills defaults (ADR-008).
-5. The engine model ships in its deliverable with a golden test, then status becomes `simulated`.
+5. Add the part to `DC_MODELS` in `packages/engine/src/dc/branches.ts` (TypeScript fails until you do): a model, or `"not-simulated"` until its deliverable. The engine model ships with a golden test, then status becomes `simulated`.

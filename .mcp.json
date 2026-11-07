@@ -1,0 +1,8 @@
+{
+	"mcpServers": {
+		"engineering-circuit": {
+			"command": "pnpm",
+			"args": ["--silent", "--dir", "EngineeringCircuit/apps/mcp", "start"]
+		}
+	}
+}
