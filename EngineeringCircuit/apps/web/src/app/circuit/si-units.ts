@@ -19,6 +19,8 @@ const UNIT_SYMBOLS: Record<string, string> = {
 	farads: "F",
 	henries: "H",
 	hertz: "Hz",
+	watts: "W",
+	siemens: "S",
 	seconds: "s",
 	degrees: "°",
 }
@@ -27,6 +29,8 @@ const SIGNIFICANT_DIGITS = 3
 const ROUNDING_HEADROOM = 0.9995
 
 export function formatSi(value: number, unit: string): string {
+	// A plain ratio or fraction reads better without prefixes: 0.999, not 999 m.
+	if (unit === "") return String(Number.isFinite(value) ? Number(value.toPrecision(SIGNIFICANT_DIGITS)) : 0)
 	if (value === 0 || !Number.isFinite(value)) return `0 ${unit}`
 	const magnitude = Math.abs(value)
 	const prefix = PREFIXES.find((candidate) => magnitude >= candidate.factor * ROUNDING_HEADROOM) ?? SMALLEST_PREFIX

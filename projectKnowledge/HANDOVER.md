@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- D3b done (ADR-016): format `vcvs` / `vccs` / `ccvs` / `cccs` (sources.ts), `polarized-capacitor` / `potentiometer` / `lamp` / `transformer` (passives.ts), `switch-spdt` (switches.ts), `COMPONENT_CATEGORIES`, `ParamField.range`; `pinDirection` now uses the longer axis. Engine: branch kinds `vcvs`/`vccs`/`ccvs`/`cccs`, `VOLTAGE_KINDS`/`CURRENT_KINDS`, `port` + `DcSolution.ports`, transformer model, reversed-capacitor warning; `POWERING_TYPES` now includes wave and controlled sources. MCP: probe/simulate report `ports`. App: symbols, palette tabs (`data-category`, `data-types`), slider for ranged params, port readings, SPDT click, lamp glow; e2e helper `e2e/support/parts.ts` `choosePart`.
 - D3a done (ADR-015): format v2 (`simulation: { timeStep, speed }`, migration 1→2, `DEFAULT_SIMULATION`), `ac-source` / `square-source`. Engine `src/transient/` (`stepTransient(circuit, state, { timeStep, pressed })`, `initialTransientState`, `isTimeDependent`, `waveforms.ts`), companion models in `dc/branches.ts` (`SolveInputs.transient`), `solveCircuit` (general) vs `solveDc`. Editing: `set-simulation` command, `equivalents.ts` (period, rms). MCP: `simulate_over_time`, `set_simulation` (20 tools), `EC_MAX_TRANSIENT_STEPS`. App: `simulation/` (`SimulationRunner`, `simulation.worker.ts`, `SimulationClock`, protocol), store `timeDependent` / `time` / `slowed` / `restartTime`, Restart button, simulation settings and period/RMS hints in the inspector. Golden netlists: `packages/engine/test/golden/ngspice/{rc-charging,rl-rise,rlc-ringing,rc-lowpass-ac}.cir`.
 - Obstacle routing: `apps/web/src/app/circuit/routing.ts` `routeAround(from, to, bodies, grid)` (A* on the grid, corners cost 3 squares, keeps one square from every part body incl. its own, falls back to `routeWire` for off-grid pins or no path); `placeBox`; each `SYMBOLS` entry has a `body` box.
 - Wire routing: `pinDirection(component, pin)` in `packages/format/src/layout/pins.ts`; `routeWire(from, to, stub)` + `pathThrough(points)` in `apps/web/src/app/circuit/geometry.ts` (one-corner route that leaves outward and arrives from outside; else step out one grid square; else detour). Wires with saved bends are drawn through them unchanged.
@@ -44,7 +45,7 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-D3b: the remaining D3 parts (`COMPONENTS.md`): polarized capacitor, potentiometer, SPDT, lamp, transformer, controlled sources; group the palette by category. Before that, owner tries D3a (`pnpm web`, place an AC source or a capacitor). Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
+Owner tries D3 (`pnpm web`: AC source, capacitor, transformer + lamp, potentiometer slider). Next deliverable: D4 non-linear parts (diode, LED, BJT, MOSFET with Newton–Raphson) or D5 digital logic. Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
 
 ## Blockers / open questions
 - None.
@@ -55,7 +56,7 @@ D3b: the remaining D3 parts (`COMPONENTS.md`): polarized capacitor, potentiomete
 - No logic family settings in the file → D5. Time step is fixed (no adaptive stepping); trapezoidal can ring after an abrupt switch on an inductor (as in CircuitJS1).
 - A deleted capacitor's stored charge is reused if a new part later gets the same id during the same run (state is keyed by id). Restart clears it.
 - Wire routing avoids part bodies but not labels or other wires: a wire may pass close to a part's name, and wires of different nodes can overlap along a grid line.
-- The parts palette scrolls sideways at 1280 px wide (13 parts); group it by category when D3 adds more.
+- A transformer's isolated secondary gets the "Not connected to ground" warning: true (it is isolated) but noisy for a normal transformer circuit; consider wording it as information.
 - Planned for later deliverables (by design, see `COMPONENTS.md`): AC/square sources, polarized capacitor, potentiometer, SPDT, transformer, lamp (D3); diodes/transistors (D4); logic (D5); ICs (D9).
 - No canvas text notes → D12.
 - Horizontal voltage source: its value label and current reading overlap (label placement in `apps/web` canvas).
@@ -63,6 +64,7 @@ D3b: the remaining D3 parts (`COMPONENTS.md`): polarized capacitor, potentiomete
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | D3b parts: controlled sources, transformer (ngspice K), potentiometer, lamp, SPDT, polarized capacitor; palette categories; ADR-016. 248 core + 71 web + 12 e2e | Owner tries D3; then D4 or D5 |
 | 2026-11-07 | Claude (Opus) | D3a time simulation: trapezoidal companions (BE first step), AC/square sources, format v2 settings, worker + clock, MCP over-time tools; 4 ngspice goldens; ADR-015 | D3b parts |
 | 2026-11-07 | Claude (Opus) | Obstacle routing (A*) | – |
 | 2026-11-07 | Claude (Opus) | Wire routing: wires leave pins outward (`pinDirection` in format, `routeWire` in apps/web geometry), never back over their own parts | Owner tries it; then D3 |

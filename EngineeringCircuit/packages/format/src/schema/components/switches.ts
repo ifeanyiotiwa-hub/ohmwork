@@ -8,6 +8,12 @@ export const SWITCHES = [
 		params: { closed: z.boolean().describe("true = conducting") },
 		defaults: { closed: true },
 	}),
+	defineComponent("switch-spdt", {
+		idPrefix: "SW",
+		pins: ["common", "a", "b"],
+		params: { position: z.enum(["a", "b"]).describe("which pin the common pin is connected to") },
+		defaults: { position: "a" },
+	}),
 	defineComponent("push-button", {
 		idPrefix: "PB",
 		pins: ["a", "b"],

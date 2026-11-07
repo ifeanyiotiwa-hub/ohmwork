@@ -11,11 +11,26 @@ export type { DcInputs } from "./branches"
 export type ComponentReading = { voltage: number; current: number; resistance?: number }
 
 /** Parts that push energy into the circuit; an ohmmeter sharing a circuit with one can't read resistance. */
-const POWERING_TYPES: ReadonlySet<ComponentType> = new Set(["voltage-source", "current-source", "ohmmeter"])
+const POWERING_TYPES: ReadonlySet<ComponentType> = new Set([
+	"voltage-source",
+	"current-source",
+	"ac-source",
+	"square-source",
+	"vcvs",
+	"vccs",
+	"ccvs",
+	"cccs",
+	"ohmmeter",
+])
 
+/**
+ * `readings`: two-pin parts. `ports`: each port of a multi-port part, keyed "T1/primary" or "E1/output", with the
+ * voltage across its two pins and the current into its first pin.
+ */
 export type DcSolution = {
 	pinVoltages: Record<string, number>
 	readings: Record<string, ComponentReading>
+	ports: Record<string, ComponentReading>
 	warnings: SimIssue[]
 }
 
@@ -43,10 +58,11 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 			const model = dcModelOf(component)
 			return model === "not-simulated" ? [] : model(component, inputs)
 		})
-		.map((branch) => ({
-			...branch,
-			nets: [netOf(branch.componentId, branch.pins[0]), netOf(branch.componentId, branch.pins[1])],
-		}))
+		.map((branch): NetBranch => {
+			const nets: NetBranch["nets"] = [netOf(branch.componentId, branch.pins[0]), netOf(branch.componentId, branch.pins[1])]
+			if (!("control" in branch)) return { ...branch, nets }
+			return { ...branch, nets, controlNets: [netOf(branch.componentId, branch.control[0]), netOf(branch.componentId, branch.control[1])] }
+		})
 
 	const conductive = conductiveSets(nets, modelled)
 	const openMeters = new Set(
@@ -67,8 +83,30 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		return { ok: false, errors: [{ componentIds: [], message: "The circuit's equations have no single solution." }] }
 	}
 
-	const warnings = [...references.warnings, ...poweredOhmmeterWarnings(circuit, branches, conductive)]
-	return { ok: true, solution: { ...readingsOf(circuit, nets, branches, mna, netOf, openMeters), warnings } }
+	const readings = readingsOf(circuit, nets, branches, mna, netOf, openMeters)
+	const warnings = [
+		...references.warnings,
+		...poweredOhmmeterWarnings(circuit, branches, conductive),
+		...reversedCapacitorWarnings(circuit, readings.readings),
+	]
+	return { ok: true, solution: { ...readings, warnings } }
+}
+
+const volts = (value: number) => `${Number(value.toPrecision(3))} V`
+
+/** CircuitJS1 stops the simulation past a polarized capacitor's reverse limit; we explain it instead. */
+function reversedCapacitorWarnings(circuit: Circuit, readings: Record<string, ComponentReading>): SimIssue[] {
+	return circuit.components.flatMap((component) => {
+		if (component.type !== "polarized-capacitor") return []
+		const reverse = -(readings[component.id]?.voltage ?? 0)
+		if (reverse <= component.params.maxReverseVoltage) return []
+		return [
+			{
+				componentIds: [component.id],
+				message: `Polarized capacitor "${component.id}" is reversed: its negative pin is ${volts(reverse)} above its positive pin (limit ${volts(component.params.maxReverseVoltage)}). A real one could fail; turn it around.`,
+			},
+		]
+	})
 }
 
 /** An ohmmeter measuring a passive network needs no ground: its reading is a voltage difference. */
@@ -131,5 +169,13 @@ function readingsOf(
 		}),
 	)
 
-	return { pinVoltages, readings }
+	const ports: Record<string, ComponentReading> = {}
+	branches.forEach((branch, index) => {
+		if (!branch.port) return
+		const key = `${branch.componentId}/${branch.port}`
+		const voltage = voltageAt(branch.componentId, branch.pins[0]) - voltageAt(branch.componentId, branch.pins[1])
+		ports[key] = { voltage, current: (ports[key]?.current ?? 0) + (mna.branchCurrents[index] ?? 0) }
+	})
+
+	return { pinVoltages, readings, ports }
 }

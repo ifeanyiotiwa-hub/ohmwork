@@ -15,6 +15,23 @@ const LABEL_ABOVE = { x: 0, y: -24 }
 const TWO_PIN_BODY: Box = { left: -40, top: -20, right: 40, bottom: 20 }
 const METER_PATHS = ["M-40 0 H-16 M16 0 H40", "M-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0"]
 const POSITIVE_LEAD_MARK = { text: "+", at: { x: -26, y: -10 } }
+
+/** Controlled sources: a diamond on the output side (right); control or sense pins on the left. */
+const DIAMOND = "M14 -16 L30 0 L14 16 L-2 0 Z"
+const OUTPUT_LEADS = "M40 -20 H14 V-16 M40 20 H14 V16"
+const VOLTAGE_CONTROL = "M-40 -20 H-26 M-40 20 H-26"
+const CURRENT_SENSE = "M-40 -20 H-22 V20 H-40 M-26 -4 L-22 4 L-18 -4"
+const VOLTAGE_OUTPUT_MARKS = [
+	{ text: "+", at: { x: 14, y: -6 } },
+	{ text: "−", at: { x: 14, y: 7 } },
+]
+const CURRENT_OUTPUT_ARROW = "M14 9 V-9 M9 -4 L14 -9 L19 -4"
+const CONTROL_MARKS = [
+	{ text: "+", at: { x: -30, y: -9 } },
+	{ text: "−", at: { x: -30, y: 9 } },
+]
+const CONTROLLED_BODY: Box = { left: -40, top: -20, right: 40, bottom: 20 }
+const CONTROLLED_LABEL = { x: 0, y: -30 }
 /** Room above the dial for the name and, under it, the big reading. */
 const METER_LABEL = { x: 0, y: -42 }
 
@@ -55,6 +72,33 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 0, y: -26 },
 		labelAnchor: "middle",
 	},
+	vcvs: {
+		body: CONTROLLED_BODY,
+		paths: [VOLTAGE_CONTROL, OUTPUT_LEADS, DIAMOND],
+		marks: [...CONTROL_MARKS, ...VOLTAGE_OUTPUT_MARKS],
+		label: CONTROLLED_LABEL,
+		labelAnchor: "middle",
+	},
+	vccs: {
+		body: CONTROLLED_BODY,
+		paths: [VOLTAGE_CONTROL, OUTPUT_LEADS, DIAMOND, CURRENT_OUTPUT_ARROW],
+		marks: CONTROL_MARKS,
+		label: CONTROLLED_LABEL,
+		labelAnchor: "middle",
+	},
+	ccvs: {
+		body: CONTROLLED_BODY,
+		paths: [CURRENT_SENSE, OUTPUT_LEADS, DIAMOND],
+		marks: VOLTAGE_OUTPUT_MARKS,
+		label: CONTROLLED_LABEL,
+		labelAnchor: "middle",
+	},
+	cccs: {
+		body: CONTROLLED_BODY,
+		paths: [CURRENT_SENSE, OUTPUT_LEADS, DIAMOND, CURRENT_OUTPUT_ARROW],
+		label: CONTROLLED_LABEL,
+		labelAnchor: "middle",
+	},
 	resistor: {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-24 L-20 -8 L-12 8 L-4 -8 L4 8 L12 -8 L20 8 L24 0 H40"],
@@ -65,6 +109,37 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-5 M-5 -14 V14 M5 -14 V14 M5 0 H40"],
 		label: LABEL_ABOVE,
+		labelAnchor: "middle",
+	},
+	"polarized-capacitor": {
+		body: TWO_PIN_BODY,
+		paths: ["M-40 0 H-5 M-5 -14 V14 M3 0 H40", "M9 -14 Q1 0 9 14"],
+		marks: [{ text: "+", at: { x: -14, y: -12 } }],
+		label: LABEL_ABOVE,
+		labelAnchor: "middle",
+	},
+	potentiometer: {
+		body: TWO_PIN_BODY,
+		paths: ["M-40 0 H-24 L-20 -8 L-12 8 L-4 -8 L4 8 L12 -8 L20 8 L24 0 H40", "M0 -40 V-12 M-5 -18 L0 -11 L5 -18"],
+		label: { x: 26, y: -30 },
+		labelAnchor: "start",
+	},
+	lamp: {
+		body: TWO_PIN_BODY,
+		paths: ["M-40 0 H-14 M14 0 H40", "M-14 0 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0", "M-10 -10 L10 10 M-10 10 L10 -10"],
+		label: LABEL_ABOVE,
+		labelAnchor: "middle",
+	},
+	transformer: {
+		body: { left: -40, top: -40, right: 40, bottom: 40 },
+		paths: [
+			"M-40 -40 H-14 V-24 M-40 40 H-14 V24",
+			"M-14 -24 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12",
+			"M40 -40 H14 V-24 M40 40 H14 V24",
+			"M14 -24 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12",
+			"M-3 -26 V26 M3 -26 V26",
+		],
+		label: { x: 0, y: -50 },
 		labelAnchor: "middle",
 	},
 	inductor: {
@@ -89,6 +164,15 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-10 M10 0 H40", "M-10 -10 V10 L10 0 Z", "M10 -10 V10", "M0 -12 L6 -20 M3 -20 H6 V-17 M6 -10 L12 -18 M9 -18 H12 V-15"],
 		label: { x: 0, y: 26 },
+		labelAnchor: "middle",
+	},
+	"switch-spdt": {
+		body: { left: -40, top: -20, right: 40, bottom: 20 },
+		paths: [
+			"M-40 0 H-18 M40 -20 H18 M40 20 H18",
+			"M-18 0 a2.5 2.5 0 1 0 0.1 0 M18 -20 a2.5 2.5 0 1 0 0.1 0 M18 20 a2.5 2.5 0 1 0 0.1 0",
+		],
+		label: { x: 0, y: -30 },
 		labelAnchor: "middle",
 	},
 	"push-button": {
@@ -122,6 +206,9 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 
 export const switchLeverPath = (closed: boolean) => (closed ? "M-16 0 L16 0" : "M-16 0 L14 -14")
 
+/** The two-way switch's lever, from the common contact to the selected one. */
+export const spdtLeverPath = (position: "a" | "b") => (position === "a" ? "M-16 -1 L16 -18" : "M-16 1 L16 18")
+
 /** A plunger bar that touches both contacts while the button conducts. */
 export const pushButtonPath = (conducting: boolean) => (conducting ? "M-18 -3 H18 M0 -3 V-16" : "M-18 -11 H18 M0 -11 V-24")
 
@@ -131,6 +218,15 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"current-source": "Current source",
 	"ac-source": "AC source",
 	"square-source": "Square wave",
+	vcvs: "VCVS",
+	vccs: "VCCS",
+	ccvs: "CCVS",
+	cccs: "CCCS",
+	"polarized-capacitor": "Polarized capacitor",
+	potentiometer: "Potentiometer",
+	lamp: "Lamp",
+	transformer: "Transformer",
+	"switch-spdt": "Two-way switch",
 	resistor: "Resistor",
 	capacitor: "Capacitor",
 	inductor: "Inductor",

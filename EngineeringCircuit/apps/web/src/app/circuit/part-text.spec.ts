@@ -21,6 +21,12 @@ test("wave sources read compactly: peak and frequency, or low–high and frequen
 	)
 })
 
+test("a transformer reads as its primary inductance and turns ratio", () => {
+	expect(valueText(part({ id: "T1", type: "transformer", params: { primaryInductance: 4, turnsRatio: 2, coupling: 0.999 } }))).toBe(
+		"4 H 1:2",
+	)
+})
+
 test("meters show what they measure", () => {
 	const reading = { voltage: 4, current: -0.002, resistance: 1500 }
 	expect(meterText(part({ id: "VM1", type: "voltmeter", params: {} }), reading)).toBe("4 V")

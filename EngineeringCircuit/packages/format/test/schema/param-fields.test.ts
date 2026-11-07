@@ -26,3 +26,13 @@ test("an LED colour is a choice", () => {
 test("ground has no fields", () => {
 	expect(paramFieldsOf("ground")).toEqual([])
 })
+
+test("a number with both limits carries its range, for a slider", () => {
+	expect(paramFieldsOf("potentiometer")).toContainEqual({
+		name: "position",
+		kind: "number",
+		description: "wiper position from pin a (0) to pin b (1)",
+		positiveOnly: false,
+		range: { min: 0, max: 1 },
+	})
+})

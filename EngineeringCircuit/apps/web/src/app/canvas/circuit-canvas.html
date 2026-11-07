@@ -46,7 +46,17 @@
 			[attr.transform]="item.transform"
 			(pointerdown)="onPartDown($event, item.part)"
 		>
-			<rect class="part-hit" x="-40" y="-22" width="80" height="44" [attr.transform]="item.rotation" />
+			<rect
+				class="part-hit"
+				[attr.x]="item.body.left"
+				[attr.y]="item.body.top - 2"
+				[attr.width]="item.body.right - item.body.left"
+				[attr.height]="item.body.bottom - item.body.top + 4"
+				[attr.transform]="item.rotation"
+			/>
+			@if (item.glow !== undefined) {
+				<circle class="lamp-glow" r="13" [attr.opacity]="item.glow" />
+			}
 			<g [attr.transform]="item.rotation">
 				@for (d of item.paths; track $index) {
 					<path class="symbol" [attr.d]="d" />

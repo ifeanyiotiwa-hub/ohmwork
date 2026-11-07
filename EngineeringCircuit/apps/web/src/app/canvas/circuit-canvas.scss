@@ -174,3 +174,9 @@
 	font-size: 13px;
 	font-weight: 700;
 }
+
+.lamp-glow {
+	fill: var(--flow);
+	filter: drop-shadow(0 0 8px var(--flow));
+	pointer-events: none;
+}

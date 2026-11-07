@@ -1,5 +1,5 @@
 import { expect, test } from "vitest"
-import { COMPONENT_DEFINITIONS, idPrefixOf, isComponentType, pinsOf } from "../../src/schema/components/catalog"
+import { COMPONENT_CATEGORIES, COMPONENT_DEFINITIONS, idPrefixOf, isComponentType, pinsOf } from "../../src/schema/components/catalog"
 
 const types = COMPONENT_DEFINITIONS.map((definition) => definition.type)
 
@@ -41,4 +41,10 @@ test("wave sources need a positive frequency and a duty cycle between 0 and 1", 
 	expect(square.schema.shape.params.safeParse({ ...square.defaults, dutyCycle: 1.5 }).success).toBe(false)
 	expect(ac.schema.shape.params.safeParse({ ...ac.defaults, frequency: 0 }).success).toBe(false)
 	expect(ac.schema.shape.params.safeParse({ ...ac.defaults, amplitude: -1 }).success).toBe(true)
+})
+
+test("every type belongs to exactly one palette category", () => {
+	const listed = COMPONENT_CATEGORIES.flatMap((category) => category.types)
+	expect([...listed].sort()).toEqual([...types].sort())
+	expect(COMPONENT_CATEGORIES.map((category) => category.name)).toEqual(["Sources", "Passive", "Switches", "Semiconductors", "Meters"])
 })

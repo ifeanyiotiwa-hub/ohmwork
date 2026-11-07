@@ -11,6 +11,9 @@ describe("formatSi", () => {
 		[1e-6, "F", "1 µF"],
 		[0.9999, "V", "1 V"],
 		[0, "V", "0 V"],
+		[0.999, "", "0.999"],
+		[0.5, "", "0.5"],
+		[0, "", "0"],
 	])("%d %s → %s", (value, unit, expected) => {
 		expect(formatSi(value, unit)).toBe(expected)
 	})
@@ -41,4 +44,5 @@ test("unit symbols come from the parameter description", () => {
 	expect(unitSymbolOf("true = conducting")).toBe("")
 	expect(unitSymbolOf("volts (peak)")).toBe("V")
 	expect(unitSymbolOf("hertz")).toBe("Hz")
+	expect(unitSymbolOf("watts at the rated voltage")).toBe("W")
 })

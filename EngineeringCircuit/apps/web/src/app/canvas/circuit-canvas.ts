@@ -11,12 +11,13 @@ import {
 	pinsOf,
 	rotate,
 } from "@engineering-circuit/format"
+import type { ComponentReading } from "@engineering-circuit/engine"
 import { CircuitStore } from "../circuit/circuit-store"
 import { pathThrough, snap } from "../circuit/geometry"
 import { placeBox, routeAround } from "../circuit/routing"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
-import { SYMBOLS, type SymbolShape, pushButtonPath, switchLeverPath } from "../circuit/symbols"
+import { SYMBOLS, type SymbolShape, pushButtonPath, spdtLeverPath, switchLeverPath } from "../circuit/symbols"
 import { UI_CONFIG } from "../circuit/ui-config"
 import { flowOf, voltageColour } from "../circuit/visuals"
 
@@ -30,6 +31,12 @@ type Interaction =
 const READING_OFFSET = 14
 const NODE_LABEL_OFFSET = { x: 6, y: -8 }
 const SIDE_LABEL_OFFSET = { x: 24, y: -2 }
+
+/** How brightly a lamp glows: its power as a share of its rating (a fixed-resistance lamp, see COMPONENTS.md). */
+function lampBrightness(params: { ratedPower: number }, reading: ComponentReading | undefined): number {
+	const power = reading ? Math.abs(reading.voltage * reading.current) : 0
+	return Math.min(1, power / params.ratedPower)
+}
 
 function labelPlacement(symbol: SymbolShape, rotation: Part["rotation"], at: Point) {
 	if (rotation === 90 || rotation === 270) {
@@ -88,6 +95,8 @@ export class CircuitCanvas {
 				reading:
 					meterText(part, solution?.readings[part.id]) ?? (current === 0 ? undefined : formatSi(Math.abs(current), "A")),
 				meter: isMeter(part),
+				body: symbol.body,
+				glow: part.type === "lamp" ? lampBrightness(part.params, solution?.readings[part.id]) : undefined,
 				selected: selection?.kind === "component" && selection.id === part.id,
 				agentChanged: agentChanged.has(part.id),
 				pins: pinsOf(part.type).map((pin) => {
@@ -267,6 +276,10 @@ export class CircuitCanvas {
 		if (part?.type === "switch") {
 			this.store.apply({ type: "set-parameter", componentId: part.id, name: "closed", value: !part.params.closed })
 		}
+		if (part?.type === "switch-spdt") {
+			const position = part.params.position === "a" ? "b" : "a"
+			this.store.apply({ type: "set-parameter", componentId: part.id, name: "position", value: position })
+		}
 	}
 
 	protected onWheel(event: WheelEvent): void {
@@ -287,6 +300,7 @@ export class CircuitCanvas {
 	private leverOf(part: Part, pressed: ReadonlySet<string>): string | undefined {
 		if (part.type === "switch") return switchLeverPath(part.params.closed)
 		if (part.type === "push-button") return pushButtonPath(part.params.normallyOpen === pressed.has(part.id))
+		if (part.type === "switch-spdt") return spdtLeverPath(part.params.position)
 		return undefined
 	}
 

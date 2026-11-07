@@ -39,4 +39,29 @@ export const SOURCES = [
 		},
 		defaults: { low: 0, high: 5, frequency: 40, dutyCycle: 0.5 },
 	}),
+	// Controlled sources as in SPICE E, G, H, F. Output current (G, F) flows out of the positive pin, like current-source.
+	defineComponent("vcvs", {
+		idPrefix: "E",
+		pins: ["controlPositive", "controlNegative", "positive", "negative"],
+		params: { gain: z.number().describe("ratio, volts out per volt between the control pins") },
+		defaults: { gain: 2 },
+	}),
+	defineComponent("vccs", {
+		idPrefix: "G",
+		pins: ["controlPositive", "controlNegative", "positive", "negative"],
+		params: { transconductance: z.number().describe("siemens, amps out of the positive pin per volt between the control pins") },
+		defaults: { transconductance: 0.001 },
+	}),
+	defineComponent("ccvs", {
+		idPrefix: "H",
+		pins: ["senseIn", "senseOut", "positive", "negative"],
+		params: { transresistance: z.number().describe("ohms, volts out per amp flowing from senseIn to senseOut") },
+		defaults: { transresistance: 1000 },
+	}),
+	defineComponent("cccs", {
+		idPrefix: "F",
+		pins: ["senseIn", "senseOut", "positive", "negative"],
+		params: { gain: z.number().describe("ratio, amps out of the positive pin per amp flowing from senseIn to senseOut") },
+		defaults: { gain: 2 },
+	}),
 ] as const

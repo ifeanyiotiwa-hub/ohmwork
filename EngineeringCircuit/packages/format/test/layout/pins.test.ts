@@ -38,3 +38,11 @@ test("a pin points away from its part, turning with it", () => {
 	expect(pinDirection(resistor(90), "a")).toEqual({ x: 0, y: -1 })
 	expect(pinDirection({ ...resistor(0), id: "G", type: "ground", params: {} }, "terminal")).toEqual({ x: 0, y: -1 })
 })
+
+test("a corner pin points along its longer offset, sideways on a tie", () => {
+	const transformer = { ...resistor(0), id: "T1", type: "transformer", params: { primaryInductance: 4, turnsRatio: 1, coupling: 0.999 } } as const
+	expect(pinDirection(transformer, "primaryA")).toEqual({ x: -1, y: 0 })
+	const spdt = { ...resistor(0), id: "SW1", type: "switch-spdt", params: { position: "a" } } as const
+	expect(pinDirection(spdt, "b")).toEqual({ x: 1, y: 0 })
+	expect(pinDirection({ ...spdt, rotation: 90 }, "b")).toEqual({ x: 0, y: 1 })
+})

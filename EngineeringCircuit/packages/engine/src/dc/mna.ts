@@ -1,6 +1,7 @@
 // Modified nodal analysis; stamp conventions follow CircuitJS1 (Paul Falstad, GPL-2.0) SimulationManager.stamp*.
 import { DenseMatrix } from "../linear/dense-matrix"
 import { solveLinear } from "../linear/lu"
+import { VOLTAGE_KINDS } from "./branches"
 import type { NetBranch } from "./topology"
 
 export type MnaSolution = {
@@ -19,8 +20,14 @@ export function solveMna(
 	}
 	const rowOfSource = new Map<NetBranch, number>()
 	branches
-		.filter((branch) => branch.kind === "voltage")
+		.filter((branch) => VOLTAGE_KINDS.has(branch.kind))
 		.forEach((branch) => rowOfSource.set(branch, rowOfNet.size + rowOfSource.size))
+	/** The row of the 0 V sense branch a CCVS / CCCS of the same part reads its current from. */
+	const senseRowOf = (branch: NetBranch) =>
+		rowOfSource.get(
+			branches.find((candidate) => candidate.componentId === branch.componentId && candidate.kind === "voltage" && candidate.sense) ??
+				branch,
+		)
 
 	const size = rowOfNet.size + rowOfSource.size
 	const matrix = new DenseMatrix(size)
@@ -33,9 +40,24 @@ export function solveMna(
 		if (row !== undefined) rightSide[row] = (rightSide[row] ?? 0) + amount
 	}
 
+	/** Injects `factor` × (the column's unknown) into the first net and draws it from the second. */
+	const injectFrom = (first: number | undefined, second: number | undefined, column: number | undefined, factor: number) => {
+		add(first, column, -factor)
+		add(second, column, factor)
+	}
+	/** The source row's equation V(first) − V(second) = …, with the branch current in both node rows. */
+	const voltageRow = (source: number | undefined, first: number | undefined, second: number | undefined) => {
+		add(first, source, 1)
+		add(second, source, -1)
+		add(source, first, 1)
+		add(source, second, -1)
+	}
+
 	for (const branch of branches) {
 		const first = rowOfNet.get(branch.nets[0])
 		const second = rowOfNet.get(branch.nets[1])
+		const controlFirst = branch.controlNets ? rowOfNet.get(branch.controlNets[0]) : undefined
+		const controlSecond = branch.controlNets ? rowOfNet.get(branch.controlNets[1]) : undefined
 		switch (branch.kind) {
 			case "resistor": {
 				const conductance = 1 / branch.resistance
@@ -51,13 +73,30 @@ export function solveMna(
 				break
 			case "voltage": {
 				const source = rowOfSource.get(branch)
-				add(first, source, 1)
-				add(second, source, -1)
-				add(source, first, 1)
-				add(source, second, -1)
+				voltageRow(source, first, second)
 				addRight(source, branch.voltage)
 				break
 			}
+			case "vcvs": {
+				const source = rowOfSource.get(branch)
+				voltageRow(source, first, second)
+				add(source, controlFirst, -branch.gain)
+				add(source, controlSecond, branch.gain)
+				break
+			}
+			case "ccvs": {
+				const source = rowOfSource.get(branch)
+				voltageRow(source, first, second)
+				add(source, senseRowOf(branch), -branch.transresistance)
+				break
+			}
+			case "vccs":
+				injectFrom(first, second, controlFirst, branch.transconductance)
+				injectFrom(first, second, controlSecond, -branch.transconductance)
+				break
+			case "cccs":
+				injectFrom(first, second, senseRowOf(branch), branch.gain)
+				break
 		}
 	}
 
@@ -71,6 +110,10 @@ export function solveMna(
 	const voltageAcross = (branch: NetBranch) =>
 		(netVoltages[branch.nets[0]] ?? 0) - (netVoltages[branch.nets[1]] ?? 0)
 
+	const voltageAt = (net: number | undefined) => (net === undefined ? 0 : (netVoltages[net] ?? 0))
+	const unknown = (row: number | undefined) => (row === undefined ? 0 : (solution[row] ?? 0))
+
+	// Each branch's current into its first pin.
 	const branchCurrents = branches.map((branch) => {
 		switch (branch.kind) {
 			case "resistor":
@@ -78,7 +121,13 @@ export function solveMna(
 			case "current":
 				return -branch.current
 			case "voltage":
-				return solution[rowOfSource.get(branch) ?? -1] ?? 0
+			case "vcvs":
+			case "ccvs":
+				return unknown(rowOfSource.get(branch))
+			case "vccs":
+				return -branch.transconductance * (voltageAt(branch.controlNets?.[0]) - voltageAt(branch.controlNets?.[1]))
+			case "cccs":
+				return -branch.gain * unknown(senseRowOf(branch))
 		}
 	})
 

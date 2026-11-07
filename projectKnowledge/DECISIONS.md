@@ -54,3 +54,11 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - App: plain circuits are still solved synchronously on the main thread; circuits with time-dependent parts run in a Web Worker (`SimulationRunner` behind `simulation.worker.ts`). Each animation frame asks for real seconds × speed; one request in flight, steps per frame capped (`UI_CONFIG.simulation`) so a heavy circuit slows down instead of freezing, shown as a warning. Frames carry a circuit id so a frame solved for an older edit is never shown against a newer circuit.
 - Format v2 adds required `simulation: { timeStep, speed }` (CircuitJS1 also saves both); migration 1→2 fills the defaults (5 µs, CircuitJS1's default step; speed 0.01).
 - Equivalent quantities are converted in `packages/editing` (`period`→`frequency`, `rms`→`amplitude`), so the UI and agents share one rule and the file stores one value.
+
+## ADR-016: D3b modelling: controlled sources as MNA stamps, transformer from them, ports for multi-port parts
+- Controlled sources are new branch kinds stamped directly into MNA (SPICE E, G, H, F). Current-output kinds push current out of their `positive` pin, matching our `current-source` (SPICE G/F define the opposite direction). CCVS/CCCS read the current of a 0 V sense branch of the same part.
+- A transformer is coupled inductors: per step each winding is a conductance, a VCCS for the mutual term and a history current (Γ = (Δt/2)·L⁻¹, Δt·L⁻¹ on the first step). Coupling must be below 1 (k = 1 makes L singular). Checked against ngspice `K` within 1% (light and loaded secondary).
+- Multi-port parts tag branches with a `port`; solutions carry `ports` ("T1/primary") alongside two-pin `readings`, and stored state is kept per port.
+- Lamp: fixed resistance V²/P, defaults 6 V / 1 W (CircuitJS1's lamp is a 120 V / 100 W filament with thermal lag; ours is chosen to light from the default 5 V source).
+- Polarized capacitor past its reverse limit is a warning (CircuitJS1 stops the simulation).
+- The palette groups parts by the catalog's category files (`COMPONENT_CATEGORIES`); unitless numbers show without SI prefixes (0.999, not 999 m).

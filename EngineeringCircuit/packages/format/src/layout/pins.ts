@@ -7,6 +7,19 @@ import type { Point } from "../schema/geometry"
  */
 const LEADS = { a: { x: -40, y: 0 }, b: { x: 40, y: 0 } }
 const POLARISED_LEADS = { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } }
+/** Four-pin controlled sources: control or sense pins on the left, output on the right. */
+const CONTROLLED_LEADS = {
+	controlPositive: { x: -40, y: -20 },
+	controlNegative: { x: -40, y: 20 },
+	positive: { x: 40, y: -20 },
+	negative: { x: 40, y: 20 },
+}
+const SENSED_LEADS = {
+	senseIn: { x: -40, y: -20 },
+	senseOut: { x: -40, y: 20 },
+	positive: { x: 40, y: -20 },
+	negative: { x: 40, y: 20 },
+}
 
 export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	ground: { terminal: { x: 0, y: -20 } },
@@ -14,6 +27,20 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"current-source": POLARISED_LEADS,
 	"ac-source": POLARISED_LEADS,
 	"square-source": POLARISED_LEADS,
+	vcvs: CONTROLLED_LEADS,
+	vccs: CONTROLLED_LEADS,
+	ccvs: SENSED_LEADS,
+	cccs: SENSED_LEADS,
+	"polarized-capacitor": POLARISED_LEADS,
+	potentiometer: { a: { x: -40, y: 0 }, b: { x: 40, y: 0 }, wiper: { x: 0, y: -40 } },
+	lamp: LEADS,
+	transformer: {
+		primaryA: { x: -40, y: -40 },
+		primaryB: { x: -40, y: 40 },
+		secondaryA: { x: 40, y: -40 },
+		secondaryB: { x: 40, y: 40 },
+	},
+	"switch-spdt": { common: { x: -40, y: 0 }, a: { x: 40, y: -20 }, b: { x: 40, y: 20 } },
 	resistor: LEADS,
 	capacitor: LEADS,
 	inductor: LEADS,
@@ -46,8 +73,10 @@ export function pinPosition(component: Component, pin: string, at: Point = compo
 	return { x: at.x + turned.x, y: at.y + turned.y }
 }
 
-/** The unit direction a pin points, away from its part (pins sit on the part's axes). */
+/** The unit direction a pin points, away from its part: along the offset's longer axis (x on a tie). */
 export function pinDirection(component: Component, pin: string): Point {
 	const turned = rotate(PIN_OFFSETS[component.type][pin] ?? { x: 0, y: 0 }, component.rotation)
-	return { x: Math.sign(turned.x) || 0, y: Math.sign(turned.y) || 0 }
+	return Math.abs(turned.x) >= Math.abs(turned.y)
+		? { x: Math.sign(turned.x) || 0, y: 0 }
+		: { x: 0, y: Math.sign(turned.y) || 0 }
 }

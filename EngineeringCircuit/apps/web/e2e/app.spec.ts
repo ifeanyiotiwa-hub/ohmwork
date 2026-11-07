@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { choosePart } from "./support/parts"
 
 test.beforeEach(async ({ page }) => {
 	await page.goto("/")
@@ -23,7 +24,7 @@ test("editing a value re-solves: R2 = 4 Ω gets 4.8 V", async ({ page }) => {
 })
 
 test("placing a part from the palette, then undo", async ({ page }) => {
-	await page.locator('[data-palette="resistor"]').click()
+	await choosePart(page, "resistor")
 	await page.getByRole("application", { name: "Circuit canvas" }).click({ position: { x: 700, y: 500 } })
 
 	await expect(page.locator('[data-part="R3"]')).toBeVisible()
@@ -56,7 +57,7 @@ test("a switch flips when clicked and stops the current", async ({ page }) => {
 		["resistor", 600, 300],
 		["ground", 400, 450],
 	] as const) {
-		await page.locator(`[data-palette="${type}"]`).click()
+		await choosePart(page, type)
 		await page.getByRole("application", { name: "Circuit canvas" }).click({ position: { x, y } })
 	}
 	for (const [from, to] of [
@@ -79,7 +80,7 @@ test("a switch flips when clicked and stops the current", async ({ page }) => {
 
 test("a voltmeter across R2 shows 4 V; an ohmmeter touching nothing reads open", async ({ page }) => {
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })
-	await page.locator('[data-palette="voltmeter"]').click()
+	await choosePart(page, "voltmeter")
 	await canvas.click({ position: { x: 800, y: 200 } })
 	await page.locator('[data-pin="VM1:positive"]').click()
 	await page.locator('[data-pin="R2:a"]').click()
@@ -87,7 +88,7 @@ test("a voltmeter across R2 shows 4 V; an ohmmeter touching nothing reads open",
 	await page.locator('[data-pin="R2:b"]').click()
 	await expect(canvas.locator(".meter-reading", { hasText: "4 V" })).toBeVisible()
 
-	await page.locator('[data-palette="ohmmeter"]').click()
+	await choosePart(page, "ohmmeter")
 	await canvas.click({ position: { x: 800, y: 500 } })
 	await expect(canvas.locator(".meter-reading", { hasText: "OL (open)" })).toBeVisible()
 })
@@ -101,7 +102,7 @@ test("a push button conducts only while held down", async ({ page }) => {
 		["resistor", 600, 300],
 		["ground", 400, 450],
 	] as const) {
-		await page.locator(`[data-palette="${type}"]`).click()
+		await choosePart(page, type)
 		await canvas.click({ position: { x, y } })
 	}
 	for (const [from, to] of [
@@ -132,7 +133,7 @@ test("a capacitor charges over time, and Restart empties it again", async ({ pag
 		["capacitor", 600, 300],
 		["ground", 400, 450],
 	] as const) {
-		await page.locator(`[data-palette="${type}"]`).click()
+		await choosePart(page, type)
 		await canvas.click({ position: { x, y } })
 	}
 	for (const [from, to] of [
@@ -165,4 +166,64 @@ test("a capacitor charges over time, and Restart empties it again", async ({ pag
 
 	await page.getByRole("button", { name: "Restart" }).click()
 	await expect.poll(voltage).toBeLessThan(early)
+})
+
+test("a potentiometer's slider moves the wiper voltage; a two-way switch moves the current", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-source", 150, 300],
+		["potentiometer", 400, 300],
+		["voltmeter", 650, 300],
+		["ground", 400, 480],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "POT1:a"],
+		["POT1:b", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+		["POT1:wiper", "VM1:positive"],
+		["VM1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	const meter = canvas.locator(".meter-reading")
+	await expect(meter).toHaveText("2.5 V")
+
+	await page.locator('[data-part="POT1"]').click()
+	await page.locator('[data-slider="position"]').fill("0.2")
+	await expect(meter).toHaveText("4 V")
+
+	await page.getByRole("button", { name: "New" }).click()
+	for (const [type, x, y] of [
+		["voltage-source", 150, 300],
+		["switch-spdt", 400, 300],
+		["resistor", 650, 200],
+		["resistor", 650, 400],
+		["ground", 400, 500],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "SW1:common"],
+		["SW1:a", "R1:a"],
+		["SW1:b", "R2:a"],
+		["R1:b", "GND1:terminal"],
+		["R2:b", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const r1 = canvas.locator(".part-reading").filter({ hasText: "5 mA" })
+	await expect(r1).toHaveCount(2)
+	await page.locator('[data-part="SW1"]').click()
+	await expect(r1).toHaveCount(2)
+	await page.locator('[data-part="R1"]').click()
+	await expect(page.locator("[data-readings]")).toContainText("0 A")
 })

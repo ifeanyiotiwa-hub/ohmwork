@@ -1,0 +1,13 @@
+* Same transformer with a 1 kOhm load on the secondary
+V1 p 0 SIN(0 10 1k)
+L1 p 0 4 IC=0
+L2 s 0 16 IC=0
+K1 L1 L2 0.999
+Rload s 0 1k
+.tran 1u 5m uic
+.control
+run
+meas tran peak_loaded MAX v(s) FROM=4m TO=5m
+meas tran peak_primary_current MAX i(V1) FROM=4m TO=5m
+.endc
+.end

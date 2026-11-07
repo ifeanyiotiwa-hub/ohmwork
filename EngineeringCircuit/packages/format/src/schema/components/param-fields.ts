@@ -2,7 +2,7 @@ import { z } from "zod"
 import { type ComponentType, definitionOf } from "./catalog"
 
 export type ParamField =
-	| { name: string; kind: "number"; description: string; positiveOnly: boolean }
+	| { name: string; kind: "number"; description: string; positiveOnly: boolean; range?: { min: number; max: number } }
 	| { name: string; kind: "boolean"; description: string }
 	| { name: string; kind: "choice"; description: string; options: string[] }
 
@@ -16,6 +16,8 @@ export function paramFieldsOf(type: ComponentType): ParamField[] {
 			return [{ name, kind: "choice", description, options: property.enum.map(String) }]
 		}
 		if (property.type === "boolean") return [{ name, kind: "boolean", description }]
-		return [{ name, kind: "number", description, positiveOnly: property.exclusiveMinimum === 0 }]
+		const { minimum, maximum } = property
+		const field = { name, kind: "number" as const, description, positiveOnly: property.exclusiveMinimum === 0 }
+		return [typeof minimum === "number" && typeof maximum === "number" ? { ...field, range: { min: minimum, max: maximum } } : field]
 	})
 }

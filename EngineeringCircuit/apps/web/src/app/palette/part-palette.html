@@ -1,26 +1,44 @@
 <nav class="palette" aria-label="Parts">
-	@for (item of items; track item.type) {
-		<button
-			type="button"
-			class="part-button"
-			[class.active]="active() === item.type"
-			[attr.aria-pressed]="active() === item.type"
-			[attr.data-palette]="item.type"
-			[title]="item.simulated ? 'Add ' + item.name : item.name + ' (shown, not simulated yet)'"
-			(click)="choose.emit(item.type)"
-		>
-			<svg class="icon" viewBox="-44 -24 88 48" aria-hidden="true">
-				@for (d of item.paths; track $index) {
-					<path [attr.d]="d" />
+	<div class="categories" role="tablist" aria-label="Part categories">
+		@for (category of categories; track category.name) {
+			<button
+				type="button"
+				role="tab"
+				class="category"
+				[class.current]="category.name === currentCategory()"
+				[attr.aria-selected]="category.name === currentCategory()"
+				[attr.data-category]="category.name"
+				[attr.data-types]="category.typeList"
+				(click)="currentCategory.set(category.name)"
+			>
+				{{ category.name }}
+			</button>
+		}
+	</div>
+	<div class="parts" role="tabpanel">
+		@for (item of items(); track item.type) {
+			<button
+				type="button"
+				class="part-button"
+				[class.active]="active() === item.type"
+				[attr.aria-pressed]="active() === item.type"
+				[attr.data-palette]="item.type"
+				[title]="item.simulated ? 'Add ' + item.name : item.name + ' (shown, not simulated yet)'"
+				(click)="choose.emit(item.type)"
+			>
+				<svg class="icon" [attr.viewBox]="item.viewBox" aria-hidden="true">
+					@for (d of item.paths; track $index) {
+						<path [attr.d]="d" />
+					}
+					@for (mark of item.marks; track $index) {
+						<text class="mark" [attr.x]="mark.at.x" [attr.y]="mark.at.y">{{ mark.text }}</text>
+					}
+				</svg>
+				<span class="name">{{ item.name }}</span>
+				@if (!item.simulated) {
+					<span class="badge">soon</span>
 				}
-				@for (mark of item.marks; track $index) {
-					<text class="mark" [attr.x]="mark.at.x" [attr.y]="mark.at.y">{{ mark.text }}</text>
-				}
-			</svg>
-			<span class="name">{{ item.name }}</span>
-			@if (!item.simulated) {
-				<span class="badge">soon</span>
-			}
-		</button>
-	}
+			</button>
+		}
+	</div>
 </nav>

@@ -69,26 +69,44 @@ const readingReport = ({ voltage, current, resistance }: ComponentReading) => ({
 	...(resistance === undefined ? {} : { resistance: Number.isFinite(resistance) ? rounded(resistance) : OPEN_READING }),
 })
 
+/** A multi-port part's ports by name ("primary", "output"), each with voltage, current and power. */
+function portsReport(solution: DcSolution, componentId: string) {
+	const prefix = `${componentId}/`
+	return Object.fromEntries(
+		Object.entries(solution.ports)
+			.filter(([key]) => key.startsWith(prefix))
+			.map(([key, reading]) => [key.slice(prefix.length), readingReport(reading)]),
+	)
+}
+
+type ReadingReport = ReturnType<typeof readingReport>
+type ComponentReport = { id: string; type: ComponentType } & (ReadingReport | { ports: Record<string, ReadingReport> })
+
 export function simulationReport(circuit: Circuit, solution: DcSolution) {
 	return {
 		nodes: nodesOf(circuit, solution),
-		components: circuit.components.flatMap((component) => {
+		components: circuit.components.flatMap((component): ComponentReport[] => {
 			const reading = solution.readings[component.id]
-			return reading ? [{ id: component.id, type: component.type, ...readingReport(reading) }] : []
+			if (reading) return [{ id: component.id, type: component.type, ...readingReport(reading) }]
+			const ports = portsReport(solution, component.id)
+			return Object.keys(ports).length > 0 ? [{ id: component.id, type: component.type, ports }] : []
 		}),
 		warnings: solution.warnings,
 		conventions: CONVENTIONS,
 	}
 }
 
-export type ProbeTarget = { kind: "component"; componentId: string } | { kind: "pin"; pin: PinRef }
+export type ProbeTarget =
+	| { kind: "component"; componentId: string }
+	| { kind: "ports"; componentId: string }
+	| { kind: "pin"; pin: PinRef }
 
 export function findProbeTarget(circuit: Circuit, target: string): ProbeTarget | { error: string } {
 	const component = circuit.components.find((candidate) => candidate.id === target)
 	if (component) {
 		return pinsOf(component.type).length === 2
 			? { kind: "component", componentId: component.id }
-			: { error: `"${target}" has no single reading; probe one of its pins instead` }
+			: { kind: "ports", componentId: component.id }
 	}
 
 	const separator = target.lastIndexOf(".")
@@ -111,6 +129,12 @@ export function probeValues(solution: DcSolution, target: ProbeTarget) {
 export function probeReport(solution: DcSolution, target: ProbeTarget) {
 	if (target.kind === "pin") {
 		return { target: pinLabel(target.pin), voltage: rounded(solution.pinVoltages[pinKey(target.pin)] ?? 0) }
+	}
+	if (target.kind === "ports") {
+		const ports = portsReport(solution, target.componentId)
+		return Object.keys(ports).length > 0
+			? { target: target.componentId, ports }
+			: { target: target.componentId, note: "No single reading; probe its pins (e.g. a potentiometer's wiper)." }
 	}
 	const reading = solution.readings[target.componentId] ?? { voltage: 0, current: 0 }
 	return { target: target.componentId, ...readingReport(reading) }

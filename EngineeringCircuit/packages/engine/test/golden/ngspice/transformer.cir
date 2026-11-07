@@ -1,0 +1,12 @@
+* Transformer: 10 V peak, 1 kHz into a 4 H primary; turns ratio 2 (secondary 16 H), coupling 0.999
+V1 p 0 SIN(0 10 1k)
+L1 p 0 4 IC=0
+L2 s 0 16 IC=0
+K1 L1 L2 0.999
+Rload s 0 1meg
+.tran 1u 5m uic
+.control
+run
+meas tran peak_light MAX v(s) FROM=4m TO=5m
+.endc
+.end

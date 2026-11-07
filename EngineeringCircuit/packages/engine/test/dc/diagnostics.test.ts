@@ -12,7 +12,7 @@ const errorsOf = (circuit: ReturnType<typeof circuitOf>) => {
 test("an empty circuit solves to nothing", () => {
 	expect(solveDc(createCircuit("Empty"))).toEqual({
 		ok: true,
-		solution: { pinVoltages: {}, readings: {}, warnings: [] },
+		solution: { pinVoltages: {}, readings: {}, ports: {}, warnings: [] },
 	})
 })
 

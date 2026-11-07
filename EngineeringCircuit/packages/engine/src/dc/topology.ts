@@ -1,9 +1,10 @@
 import type { Circuit, Net, PinRef } from "@engineering-circuit/format"
 import { DisjointSets } from "../graph/disjoint-sets"
-import type { Branch } from "./branches"
+import { type Branch, CURRENT_KINDS, VOLTAGE_KINDS } from "./branches"
 import type { SimIssue } from "./issues"
 
-export type NetBranch = Branch & { nets: [first: number, second: number] }
+/** A branch with its pins resolved to nets (and its control pins, for a VCVS / VCCS). */
+export type NetBranch = Branch & { nets: [first: number, second: number]; controlNets?: [first: number, second: number] }
 
 const quoted = (ids: readonly string[]) => ids.map((id) => `"${id}"`).join(", ")
 
@@ -18,7 +19,7 @@ export function findShortCircuits(nets: readonly Net[], branches: readonly NetBr
 	const sourceLoops = groundedSets(nets)
 	const issues: SimIssue[] = []
 	for (const branch of branches) {
-		if (branch.kind !== "voltage" || sourceLoops.union(...branch.nets)) continue
+		if (!VOLTAGE_KINDS.has(branch.kind) || sourceLoops.union(...branch.nets)) continue
 		issues.push({
 			componentIds: [branch.componentId],
 			message: `Short circuit: "${branch.componentId}" is connected in a loop of voltage sources, closed switches, inductors, ammeters and wires with no resistance.`,
@@ -29,13 +30,13 @@ export function findShortCircuits(nets: readonly Net[], branches: readonly NetBr
 
 export function conductiveSets(nets: readonly Net[], branches: readonly NetBranch[]): DisjointSets {
 	const sets = groundedSets(nets)
-	branches.filter((branch) => branch.kind !== "current").forEach((branch) => sets.union(...branch.nets))
+	branches.filter((branch) => !CURRENT_KINDS.has(branch.kind)).forEach((branch) => sets.union(...branch.nets))
 	return sets
 }
 
 export function findCurrentWithoutPath(branches: readonly NetBranch[], conductive: DisjointSets): SimIssue[] {
 	return branches
-		.filter((branch) => branch.kind === "current" && !conductive.connected(...branch.nets))
+		.filter((branch) => CURRENT_KINDS.has(branch.kind) && !conductive.connected(...branch.nets))
 		.map((branch) => ({
 			componentIds: [branch.componentId],
 			message: `No path for current: "${branch.componentId}" pushes current into a part of the circuit with no way back.`,

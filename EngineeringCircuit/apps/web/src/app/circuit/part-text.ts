@@ -18,6 +18,10 @@ export function valueText(component: Component): string {
 			const shifted = offset === 0 ? "" : ` ${offset > 0 ? "+" : ""}${formatSi(offset, "V")}`
 			return `${formatSi(amplitude, "V")} ${formatSi(frequency, "Hz")}${shifted}`
 		}
+		case "transformer": {
+			const { primaryInductance, turnsRatio } = component.params
+			return `${formatSi(primaryInductance, "H")} 1:${formatSi(turnsRatio, "")}`
+		}
 		case "square-source": {
 			const { low, high, frequency } = component.params
 			return `${formatSi(low, "V")}–${formatSi(high, "V")} ${formatSi(frequency, "Hz")}`

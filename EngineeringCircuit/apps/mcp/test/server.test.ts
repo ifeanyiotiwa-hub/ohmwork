@@ -348,3 +348,26 @@ describe("over time", () => {
 		expect((await call("set_parameter", { componentId: "AC1", name: "period", value: 0.01 })).text).toBe("Set AC1 frequency to 100")
 	})
 })
+
+describe("multi-port parts", () => {
+	test("probing a controlled source reports each of its ports", async () => {
+		await call("add_component", { type: "voltage-source", params: { voltage: 3 } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "vcvs", params: { gain: 2 } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "V1.positive", to: "R1.a" })
+		await call("connect", { from: "R1.b", to: "GND1.terminal" })
+		await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+		await call("connect", { from: "E1.controlPositive", to: "V1.positive" })
+		await call("connect", { from: "E1.controlNegative", to: "GND1.terminal" })
+		await call("connect", { from: "E1.positive", to: "R2.a" })
+		await call("connect", { from: "E1.negative", to: "GND1.terminal" })
+		await call("connect", { from: "R2.b", to: "GND1.terminal" })
+
+		expect((await call("probe", { target: "E1" })).data).toMatchObject({ target: "E1", ports: { output: { voltage: 6, current: -0.006 } } })
+		expect((await call("simulate")).data).toMatchObject({
+			components: expect.arrayContaining([expect.objectContaining({ id: "E1", ports: { output: expect.objectContaining({ voltage: 6 }) } })]),
+		})
+	})
+})

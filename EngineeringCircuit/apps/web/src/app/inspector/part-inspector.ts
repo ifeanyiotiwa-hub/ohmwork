@@ -5,7 +5,14 @@ import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
 import { PART_NAMES } from "../circuit/symbols"
 
 type FieldView =
-	| { name: string; kind: "number"; text: string; unit: string; hint: string | undefined }
+	| {
+			name: string
+			kind: "number"
+			text: string
+			unit: string
+			hint: string | undefined
+			slider: { min: number; max: number; value: number } | undefined
+	  }
 	| { name: string; kind: "boolean"; checked: boolean }
 	| { name: string; kind: "choice"; value: string; options: string[] }
 
@@ -43,6 +50,7 @@ export class PartInspector {
 						unit,
 						text: number === undefined ? "" : formatSi(number, unit),
 						hint: number === undefined ? undefined : equivalentHint(part.type, field.name, number),
+						slider: field.range && number !== undefined ? { ...field.range, value: number } : undefined,
 					}
 				}
 				case "boolean":
@@ -62,6 +70,21 @@ export class PartInspector {
 			current: formatSi(reading.current, "A"),
 			power: formatSi(reading.voltage * reading.current, "W"),
 		}
+	})
+
+	/** Multi-port parts (transformer, controlled sources): each port's voltage and current. */
+	protected readonly ports = computed(() => {
+		const part = this.store.selectedComponent()
+		const ports = this.store.solution()?.ports ?? {}
+		if (!part) return []
+		const prefix = `${part.id}/`
+		return Object.entries(ports)
+			.filter(([key]) => key.startsWith(prefix))
+			.map(([key, reading]) => ({
+				name: key.slice(prefix.length),
+				voltage: formatSi(reading.voltage, "V"),
+				current: formatSi(reading.current, "A"),
+			}))
 	})
 
 	protected readonly wireCurrent = computed(() => {
@@ -94,6 +117,10 @@ export class PartInspector {
 			return
 		}
 		this.store.apply({ type: "set-simulation", [name]: value })
+	}
+
+	protected slide(componentId: string, name: string, event: Event): void {
+		this.store.apply({ type: "set-parameter", componentId, name, value: Number((event.target as HTMLInputElement).value) })
 	}
 
 	protected setBoolean(componentId: string, name: string, event: Event): void {

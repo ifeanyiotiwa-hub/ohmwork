@@ -7,6 +7,15 @@ import { SWITCHES } from "./switches"
 
 export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS, ...MEASUREMENT] as const
 
+/** The category files, in palette order. */
+export const COMPONENT_CATEGORIES: readonly { name: string; types: readonly ComponentType[] }[] = [
+	{ name: "Sources", types: SOURCES.map((definition) => definition.type) },
+	{ name: "Passive", types: PASSIVES.map((definition) => definition.type) },
+	{ name: "Switches", types: SWITCHES.map((definition) => definition.type) },
+	{ name: "Semiconductors", types: SEMICONDUCTORS.map((definition) => definition.type) },
+	{ name: "Meters", types: MEASUREMENT.map((definition) => definition.type) },
+]
+
 type SchemasOf<Definitions extends readonly { schema: unknown }[]> = {
 	[Index in keyof Definitions]: Definitions[Index]["schema"]
 }

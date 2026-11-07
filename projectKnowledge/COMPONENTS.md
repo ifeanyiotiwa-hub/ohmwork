@@ -19,10 +19,10 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `ground` | terminal | – | 0 V reference node | EC, CJS | D2 | in format |
 | `voltage-source` (DC) | positive, negative | voltage (V) | ideal voltage source | EC, CJS, SPICE `V` | D2 | in format |
 | `current-source` | positive, negative | current (A), flows out of `positive` | ideal current source | EC, CJS, SPICE `I` | D2 | in format |
-| `vcvs` | controlPositive, controlNegative, positive, negative | gain (V/V) | voltage-controlled voltage source | EC, CJS, SPICE `E` | D3 | planned |
-| `vccs` | controlPositive, controlNegative, positive, negative | transconductance (A/V) | voltage-controlled current source | EC, CJS, SPICE `G` | D3 | planned |
-| `ccvs` | senseIn, senseOut, positive, negative | transresistance (Ω) | current through sense pins (0 V path) controls voltage | EC, CJS, SPICE `H` | D3 | planned |
-| `cccs` | senseIn, senseOut, positive, negative | gain (A/A) | current through sense pins controls current | EC, CJS, SPICE `F` | D3 | planned |
+| `vcvs` | controlPositive, controlNegative, positive, negative | gain (V/V) | voltage-controlled voltage source | EC, CJS, SPICE `E` | D3 | simulated |
+| `vccs` | controlPositive, controlNegative, positive, negative | transconductance (S = A/V) | voltage-controlled current source; output current flows out of `positive` (like `current-source`; SPICE G is the reverse) | EC, CJS, SPICE `G` | D3 | simulated |
+| `ccvs` | senseIn, senseOut, positive, negative | transresistance (Ω) | current through sense pins (0 V path) controls voltage | EC, CJS, SPICE `H` | D3 | simulated |
+| `cccs` | senseIn, senseOut, positive, negative | gain (A/A) | current through sense pins controls current, out of `positive` | EC, CJS, SPICE `F` | D3 | simulated |
 | `voltage-rail` | terminal | voltage (V) | source to ground drawn as one pin (e.g. +5 V) | CJS | D5 | planned |
 | `ac-source` | positive, negative | amplitude (peak V; RMS accepted), frequency (Hz; period accepted), offset (V), phase (deg), delay (s) | sine, SPICE `SIN(VO VA FREQ TD THETA PHASE)` without damping; DC value = offset | EC, CJS, SPICE | D3 | simulated |
 | `square-source` | positive, negative | low (V), high (V), frequency (Hz; period accepted), dutyCycle (0–1) | pulse, SPICE `PULSE` with instant edges, high first; DC value = low | CJS, SPICE | D3 | simulated |
@@ -33,19 +33,19 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 |---|---|---|---|---|---|---|
 | `resistor` | a, b | resistance (Ω) | Ohm's law | EC, CJS, SPICE `R` | D2 | in format |
 | `capacitor` | a, b | capacitance (F) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `C` | D3 | simulated |
-| `polarized-capacitor` | positive, negative | capacitance (F) | capacitor; warns when reverse-biased | EC, CJS | D3 | planned |
+| `polarized-capacitor` | positive, negative | capacitance (F), maxReverseVoltage (V, default 1 as CJS) | capacitor; warns when reversed past the limit (CJS stops the simulation) | EC, CJS | D3 | simulated |
 | `inductor` | a, b | inductance (H) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `L` | D3 | simulated |
-| `potentiometer` | a, b, wiper | resistance (Ω), position (0–1) | two resistors split at the wiper | EC, CJS | D3 | planned |
-| `transformer` | primaryA, primaryB, secondaryA, secondaryB | primaryInductance (H), turnsRatio, coupling (0–1] | coupled inductors, SPICE `K` | EC, CJS, SPICE `K` | D3 | planned |
+| `potentiometer` | a, b, wiper | resistance (Ω), position (0–1) | two resistors split at the wiper (a wire at an end stop) | EC, CJS | D3 | simulated |
+| `transformer` | primaryA, primaryB, secondaryA, secondaryB | primaryInductance (H), turnsRatio, coupling (0–1, exclusive: k = 1 makes the inductance matrix singular) | coupled inductors, SPICE `K`; defaults 4 H, 1, 0.999 as CJS; windings are wires at DC | EC, CJS, SPICE `K` | D3 | simulated |
 | `tapped-transformer` | primaryA, primaryB, secondaryA, secondaryTap, secondaryB | as transformer | coupled inductors, centre tap | EC, CJS | later | planned |
-| `lamp` | a, b | ratedVoltage (V), ratedPower (W) | resistor R = V²/P; brightness from power | EC, CJS | D3 | planned |
+| `lamp` | a, b | ratedVoltage (V), ratedPower (W) | resistor R = V²/P; brightness from power. Defaults 6 V / 1 W (CJS: 120 V / 100 W mains lamp with a heating filament; ours is fixed-resistance so a 5 V source lights it) | EC, CJS | D3 | simulated |
 | `dc-motor` | a, b | resistance (Ω), inductance (H), back-EMF constant | electrical + simple rotation model | EC, CJS | later | planned |
 
 ## Switches
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
 | `switch` (SPST) | a, b | closed | tiny / huge resistance | EC, CJS | D2 | in format |
-| `switch-spdt` | common, a, b | position (a/b) | two switches | EC, CJS | D3 | planned |
+| `switch-spdt` | common, a, b | position (a/b) | common wired to the selected pin; click flips it | EC, CJS | D3 | simulated |
 | `push-button` | a, b | normallyOpen (true = NO, false = NC) | switch, toggles while pressed (held state is an engine input, never saved) | EC (NO and NC), CJS | D6 | simulated |
 | `relay` | coilA, coilB, common, normallyOpen, normallyClosed | coilVoltage (V), coilResistance (Ω) | coil current drives switch | EC, CJS | D9 | planned |
 
