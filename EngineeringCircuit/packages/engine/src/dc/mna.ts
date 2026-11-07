@@ -97,6 +97,17 @@ export function solveMna(
 			case "cccs":
 				injectFrom(first, second, senseRowOf(branch), branch.gain)
 				break
+			case "device": {
+				// The device draws I = G·V + offset from each terminal's node.
+				const rows = (branch.terminalNets ?? []).map((net) => rowOfNet.get(net))
+				const linearization = branch.linearization
+				if (!linearization) break
+				rows.forEach((row, terminal) => {
+					rows.forEach((column, other) => add(row, column, linearization.conductance[terminal]?.[other] ?? 0))
+					addRight(row, -(linearization.offset[terminal] ?? 0))
+				})
+				break
+			}
 		}
 	}
 
@@ -128,8 +139,22 @@ export function solveMna(
 				return -branch.transconductance * (voltageAt(branch.controlNets?.[0]) - voltageAt(branch.controlNets?.[1]))
 			case "cccs":
 				return -branch.gain * unknown(senseRowOf(branch))
+			case "device":
+				return terminalCurrents(branch, netVoltages)[0] ?? 0
 		}
 	})
 
 	return { netVoltages, branchCurrents }
+}
+
+/** A device's current into each terminal at the given net voltages, from its linearization. */
+export function terminalCurrents(branch: NetBranch, netVoltages: readonly number[]): number[] {
+	const voltages = (branch.terminalNets ?? []).map((net) => netVoltages[net] ?? 0)
+	const linearization = branch.linearization
+	if (!linearization) return voltages.map(() => 0)
+	return voltages.map(
+		(_, terminal) =>
+			voltages.reduce((sum, voltage, other) => sum + (linearization.conductance[terminal]?.[other] ?? 0) * voltage, 0) +
+			(linearization.offset[terminal] ?? 0),
+	)
 }

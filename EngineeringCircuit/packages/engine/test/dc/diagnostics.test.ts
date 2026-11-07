@@ -75,21 +75,6 @@ test("a current source with nowhere for its current to go is rejected", () => {
 	])
 })
 
-test("parts not yet simulated are listed by name", () => {
-	const circuit = circuitOf(
-		[
-			{ id: "D1", type: "diode", params: {} },
-			{ id: "LED1", type: "led", params: { color: "red" } },
-		],
-		[],
-	)
-
-	expect(errorsOf(circuit)).toEqual([
-		{ componentIds: ["D1"], message: '"D1" (diode) can\'t be simulated yet.' },
-		{ componentIds: ["LED1"], message: '"LED1" (led) can\'t be simulated yet.' },
-	])
-})
-
 test("a part not connected to ground still solves, with a warning", () => {
 	const circuit = circuitOf(
 		[

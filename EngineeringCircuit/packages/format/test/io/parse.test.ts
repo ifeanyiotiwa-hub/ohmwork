@@ -26,6 +26,23 @@ describe("older files", () => {
 		const result = parseCircuit({ ...circuit, version: 1 })
 		expect(result).toEqual({ ok: true, circuit: voltageDivider() })
 	})
+
+	test("version 2 diodes and LEDs gain electrical parameters; the LED keeps its colour", () => {
+		const at = { position: { x: 0, y: 0 }, rotation: 0 }
+		const result = parseCircuit({
+			...createCircuit("Old"),
+			version: 2,
+			components: [
+				{ id: "D1", type: "diode", ...at, params: {} },
+				{ id: "LED1", type: "led", ...at, params: { color: "green" } },
+			],
+		})
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.circuit.components.map((component) => component.params)).toEqual([
+			{ saturationCurrent: 1.7143528192808883e-7, emissionCoefficient: 2, seriesResistance: 0 },
+			{ color: "green", saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042, maxBrightnessCurrent: 0.01 },
+		])
+	})
 })
 
 describe("simulation settings", () => {

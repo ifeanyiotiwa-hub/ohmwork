@@ -7,6 +7,8 @@ import type { Point } from "../schema/geometry"
  */
 const LEADS = { a: { x: -40, y: 0 }, b: { x: 40, y: 0 } }
 const POLARISED_LEADS = { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } }
+const TRANSISTOR_LEADS = { collector: { x: 20, y: -40 }, base: { x: -40, y: 0 }, emitter: { x: 20, y: 40 } }
+const MOSFET_LEADS = { drain: { x: 20, y: -40 }, gate: { x: -40, y: 0 }, source: { x: 20, y: 40 } }
 /** Four-pin controlled sources: control or sense pins on the left, output on the right. */
 const CONTROLLED_LEADS = {
 	controlPositive: { x: -40, y: -20 },
@@ -48,6 +50,13 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"push-button": LEADS,
 	diode: { anode: { x: -40, y: 0 }, cathode: { x: 40, y: 0 } },
 	led: { anode: { x: -40, y: 0 }, cathode: { x: 40, y: 0 } },
+	"zener-diode": { anode: { x: -40, y: 0 }, cathode: { x: 40, y: 0 } },
+	"rgb-led": { red: { x: -40, y: -20 }, green: { x: -40, y: 0 }, blue: { x: -40, y: 20 }, common: { x: 40, y: 0 } },
+	// Transistors: base or gate on the left, collector or drain up, emitter or source down (as drawn in textbooks).
+	"npn-transistor": TRANSISTOR_LEADS,
+	"pnp-transistor": TRANSISTOR_LEADS,
+	"n-mosfet": MOSFET_LEADS,
+	"p-mosfet": MOSFET_LEADS,
 	voltmeter: POLARISED_LEADS,
 	ammeter: POLARISED_LEADS,
 	ohmmeter: LEADS,

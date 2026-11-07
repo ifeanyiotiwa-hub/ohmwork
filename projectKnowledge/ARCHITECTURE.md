@@ -35,6 +35,7 @@ Device (works offline)                     Server (optional, later)
 - Readings use the passive sign convention: a part's `current` flows into its first pin (`a`, `positive`, `anode`) and out of its second; `voltage` = first pin − second pin. Power = voltage × current; negative power means the part is supplying energy (a battery driving a load reads negative current). Same as SPICE.
 - Each part type maps to simple branches (resistor, voltage, current) in `DC_MODELS`; that table must list every catalog type, so a new part can't compile until the engine decides how to model it.
 - Over time (`stepTransient`), capacitors and inductors are companion models stepped with a fixed time step from rest; see ADR-015. A plain DC solve treats capacitors as open, inductors as wires, and wave sources at their DC value.
+- Diodes and transistors are `device` branches linearized each Newton–Raphson iteration (ADR-017); a circuit without them is one linear solve.
 - Floating sections are solved relative to a stated reference pin and produce a warning; they are not silently tied to ground with a hidden resistor.
 
 ## Live link (D8)

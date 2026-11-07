@@ -11,8 +11,8 @@ import {
 	pinsOf,
 	rotate,
 } from "@engineering-circuit/format"
-import type { ComponentReading } from "@engineering-circuit/engine"
 import { CircuitStore } from "../circuit/circuit-store"
+import { glowOf } from "../circuit/glow"
 import { pathThrough, snap } from "../circuit/geometry"
 import { placeBox, routeAround } from "../circuit/routing"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
@@ -31,12 +31,6 @@ type Interaction =
 const READING_OFFSET = 14
 const NODE_LABEL_OFFSET = { x: 6, y: -8 }
 const SIDE_LABEL_OFFSET = { x: 24, y: -2 }
-
-/** How brightly a lamp glows: its power as a share of its rating (a fixed-resistance lamp, see COMPONENTS.md). */
-function lampBrightness(params: { ratedPower: number }, reading: ComponentReading | undefined): number {
-	const power = reading ? Math.abs(reading.voltage * reading.current) : 0
-	return Math.min(1, power / params.ratedPower)
-}
 
 function labelPlacement(symbol: SymbolShape, rotation: Part["rotation"], at: Point) {
 	if (rotation === 90 || rotation === 270) {
@@ -96,7 +90,7 @@ export class CircuitCanvas {
 					meterText(part, solution?.readings[part.id]) ?? (current === 0 ? undefined : formatSi(Math.abs(current), "A")),
 				meter: isMeter(part),
 				body: symbol.body,
-				glow: part.type === "lamp" ? lampBrightness(part.params, solution?.readings[part.id]) : undefined,
+				glow: glowOf(part, solution),
 				selected: selection?.kind === "component" && selection.id === part.id,
 				agentChanged: agentChanged.has(part.id),
 				pins: pinsOf(part.type).map((pin) => {

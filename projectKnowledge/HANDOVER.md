@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- D4 done (ADR-017): format v3 (`semiconductors.ts`: diode, zener-diode, led, rgb-led, npn/pnp-transistor, n/p-mosfet with params; migration 2→3). Engine `src/nonlinear/` (`junction.ts` limiting, `device.ts` interface, `diode.ts`, `bipolar.ts`, `mosfet.ts`), branch kind `device`, `solveIterating` in `solve-dc.ts`, `terminalCurrents` in `mna.ts`, `SolveInputs.guess`, transistor ports ("Q1/base-emitter", "Q1/collector-emitter", "M1/gate-source", "M1/drain-source"). App: symbols, `circuit/glow.ts` (lamp, LED, RGB mixing). Goldens: `test/golden/semiconductors.test.ts` + netlists `diode, led, npn, pnp, nmos, pmos, half-wave .cir`; `test/dc/nonlinear-robustness.test.ts`.
 - D3b done (ADR-016): format `vcvs` / `vccs` / `ccvs` / `cccs` (sources.ts), `polarized-capacitor` / `potentiometer` / `lamp` / `transformer` (passives.ts), `switch-spdt` (switches.ts), `COMPONENT_CATEGORIES`, `ParamField.range`; `pinDirection` now uses the longer axis. Engine: branch kinds `vcvs`/`vccs`/`ccvs`/`cccs`, `VOLTAGE_KINDS`/`CURRENT_KINDS`, `port` + `DcSolution.ports`, transformer model, reversed-capacitor warning; `POWERING_TYPES` now includes wave and controlled sources. MCP: probe/simulate report `ports`. App: symbols, palette tabs (`data-category`, `data-types`), slider for ranged params, port readings, SPDT click, lamp glow; e2e helper `e2e/support/parts.ts` `choosePart`.
 - D3a done (ADR-015): format v2 (`simulation: { timeStep, speed }`, migration 1→2, `DEFAULT_SIMULATION`), `ac-source` / `square-source`. Engine `src/transient/` (`stepTransient(circuit, state, { timeStep, pressed })`, `initialTransientState`, `isTimeDependent`, `waveforms.ts`), companion models in `dc/branches.ts` (`SolveInputs.transient`), `solveCircuit` (general) vs `solveDc`. Editing: `set-simulation` command, `equivalents.ts` (period, rms). MCP: `simulate_over_time`, `set_simulation` (20 tools), `EC_MAX_TRANSIENT_STEPS`. App: `simulation/` (`SimulationRunner`, `simulation.worker.ts`, `SimulationClock`, protocol), store `timeDependent` / `time` / `slowed` / `restartTime`, Restart button, simulation settings and period/RMS hints in the inspector. Golden netlists: `packages/engine/test/golden/ngspice/{rc-charging,rl-rise,rlc-ringing,rc-lowpass-ac}.cir`.
 - Obstacle routing: `apps/web/src/app/circuit/routing.ts` `routeAround(from, to, bodies, grid)` (A* on the grid, corners cost 3 squares, keeps one square from every part body incl. its own, falls back to `routeWire` for off-grid pins or no path); `placeBox`; each `SYMBOLS` entry has a `body` box.
@@ -45,13 +46,16 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries D3 (`pnpm web`: AC source, capacitor, transformer + lamp, potentiometer slider). Next deliverable: D4 non-linear parts (diode, LED, BJT, MOSFET with Newton–Raphson) or D5 digital logic. Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
+Owner tries D4 (`pnpm web`: Semiconductors tab; a push button → 1 kΩ → NPN base, LED + resistor on the collector). Next deliverable: D5 digital logic (gates, flip-flops, clock, analog↔digital thresholds), then D9 (oscilloscope + 555, op-amp). Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
 
 ## Blockers / open questions
 - None.
 
 ## Known gaps (do not hide; fix in the listed deliverable)
-- Diode/LED have no electrical params yet → D4 adds them with a version bump + migration.
+- A diode straight across a battery solves to an absurd but finite current (about 1e35 A): ideal maths, no burn-out warning. Add rated-current warnings (diode, LED, lamp, resistor power).
+- All LED colours use CircuitJS1's single LED model (≈1.8 V); real blue and white LEDs need about 3 V. Add per-colour models with sources.
+- Newton–Raphson has no gmin or source stepping fallback; transistor junction capacitances and the Early effect are not modelled (ADR-017).
+- The RGB LED palette icon is cluttered (R/G/B letters at icon size).
 - Wires connect pin to pin only; no mid-wire junction → D6.
 - No logic family settings in the file → D5. Time step is fixed (no adaptive stepping); trapezoidal can ring after an abrupt switch on an inductor (as in CircuitJS1).
 - A deleted capacitor's stored charge is reused if a new part later gets the same id during the same run (state is keyed by id). Restart clears it.
@@ -64,6 +68,7 @@ Owner tries D3 (`pnpm web`: AC source, capacitor, transformer + lamp, potentiome
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | D4 non-linear: Newton–Raphson with device interface, diode/Zener/LED/RGB/BJT/MOSFET (CJS models), format v3; 9 ngspice goldens; ADR-017. 283 core + 74 web + 13 e2e | Owner tries D4; then D5 |
 | 2026-11-07 | Claude (Opus) | D3b parts: controlled sources, transformer (ngspice K), potentiometer, lamp, SPDT, polarized capacitor; palette categories; ADR-016. 248 core + 71 web + 12 e2e | Owner tries D3; then D4 or D5 |
 | 2026-11-07 | Claude (Opus) | D3a time simulation: trapezoidal companions (BE first step), AC/square sources, format v2 settings, worker + clock, MCP over-time tools; 4 ngspice goldens; ADR-015 | D3b parts |
 | 2026-11-07 | Claude (Opus) | Obstacle routing (A*) | – |

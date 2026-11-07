@@ -54,14 +54,14 @@ Diode-family params follow SPICE §7.2: saturationCurrent (IS, default 1e-14 A),
 
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `diode` | anode, cathode | diode-family params | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | in format (no electrical params yet) |
-| `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | planned |
-| `led` | anode, cathode | color, diode-family params, maxBrightnessCurrent (CJS 10 mA) | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | in format (no electrical params yet) |
-| `rgb-led` | red, green, blue, common | commonCathode, diode-family params per colour | three LEDs sharing one pin; colours mix | EC | D4 | planned |
-| `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13) | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | planned |
-| `pnp-transistor` | collector, base, emitter | as NPN | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | planned |
-| `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²) | square-law (SPICE level 1). Defaults not yet checked | EC, CJS, SPICE `M` | D4 | planned |
-| `p-mosfet` | drain, gate, source | as N-MOSFET | square-law | EC, CJS, SPICE `M` | D4 | planned |
+| `diode` | anode, cathode | diode-family params | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | simulated |
+| `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | simulated |
+| `led` | anode, cathode | color, diode-family params, maxBrightnessCurrent (CJS 10 mA); every colour uses CJS's one LED model for now | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | simulated |
+| `rgb-led` | red, green, blue, common | commonCathode, diode-family params per colour | three LEDs sharing one pin; colours mix | EC | D4 | simulated |
+| `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13) | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | simulated |
+| `pnp-transistor` | collector, base, emitter | as NPN | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | simulated |
+| `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²) | square-law (SPICE level 1, λ = 0); defaults 1.5 V, 0.02 A/V² (CJS MosfetElm) | EC, CJS, SPICE `M` | D4 | simulated |
+| `p-mosfet` | drain, gate, source | as N-MOSFET | square-law | EC, CJS, SPICE `M` | D4 | simulated |
 
 ## Digital logic
 Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chaining. Logic level comes from the logic-family setting (see "Not a component").

@@ -1,4 +1,8 @@
 import type { Component, ComponentType } from "@engineering-circuit/format"
+import { bipolarDevice } from "../nonlinear/bipolar"
+import type { Device } from "../nonlinear/device"
+import { diodeDevice } from "../nonlinear/diode"
+import { mosfetDevice } from "../nonlinear/mosfet"
 import { acVoltage, squareVoltage } from "../transient/waveforms"
 
 export type Pins = [first: string, second: string]
@@ -15,6 +19,8 @@ export type Branch = { componentId: string; pins: Pins; port?: string } & (
 	| { kind: "vccs"; transconductance: number; control: Pins }
 	| { kind: "ccvs"; transresistance: number }
 	| { kind: "cccs"; gain: number }
+	/** A non-linear part, solved by Newton–Raphson; `pins` are its first two terminals. */
+	| { kind: "device"; device: Device }
 )
 
 /** Branches that fix a voltage (and carry an unknown current in the equations). */
@@ -31,7 +37,8 @@ export type StoredState = { voltage: number; current: number }
 /** Present only when solving one time step: the time at the end of the step, its length, and stored states. */
 export type TransientContext = { time: number; timeStep: number; memory: Readonly<Record<string, StoredState>> }
 
-export type SolveInputs = DcInputs & { transient?: TransientContext }
+/** `guess`: pin voltages (keyed "R1:a") to start Newton–Raphson from, e.g. the previous time step's. */
+export type SolveInputs = DcInputs & { transient?: TransientContext; guess?: Readonly<Record<string, number>> }
 
 /** Parts whose behaviour depends on time; a circuit without any is the same at every instant. */
 export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set([
@@ -82,6 +89,15 @@ function capacitorModel(id: string, capacitance: number, pins: Pins, transient: 
 /** A resistance that may be zero (a potentiometer at its end stop) is a plain wire there. */
 const segment = (componentId: string, pins: Pins, resistance: number): Branch =>
 	resistance === 0 ? { kind: "voltage", componentId, pins, voltage: 0 } : { kind: "resistor", componentId, pins, resistance }
+
+const deviceBranch = (componentId: string, device: Device, port?: string): Branch => {
+	const [first = "", second = ""] = device.terminals
+	return port === undefined
+		? { kind: "device", componentId, pins: [first, second], device }
+		: { kind: "device", componentId, pins: [first, second], device, port }
+}
+
+const RGB_COLOURS = ["red", "green", "blue"] as const
 
 const PRIMARY: Pins = ["primaryA", "primaryB"]
 const SECONDARY: Pins = ["secondaryA", "secondaryB"]
@@ -198,8 +214,21 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	switch: ({ id, params }) => (params.closed ? [wire(id)] : []),
 	"switch-spdt": ({ id, params }) => [wire(id, ["common", params.position])],
 	"push-button": ({ id, params }, { pressed }) => (params.normallyOpen === (pressed?.has(id) ?? false) ? [wire(id)] : []),
-	diode: "not-simulated",
-	led: "not-simulated",
+	diode: ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
+	"zener-diode": ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
+	led: ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
+	"rgb-led": ({ id, params }) =>
+		RGB_COLOURS.map((colour) =>
+			deviceBranch(
+				id,
+				params.commonCathode ? diodeDevice(params, colour, "common") : diodeDevice(params, "common", colour),
+				colour,
+			),
+		),
+	"npn-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, 1))],
+	"pnp-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, -1))],
+	"n-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, 1))],
+	"p-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, -1))],
 	voltmeter: () => [],
 	ammeter: ({ id }) => [wire(id, ["positive", "negative"])],
 	ohmmeter: ({ id }) => [{ kind: "current", componentId: id, pins: ["a", "b"], current: OHMMETER_TEST_CURRENT, test: true }],

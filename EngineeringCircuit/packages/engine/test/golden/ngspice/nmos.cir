@@ -1,0 +1,15 @@
+* N-MOSFET level 1 (VTO 1.5, KP 0.02, W = L): 10 V through 1 kOhm to the drain; gate at 2 V (saturation) then 5 V (linear)
+VDD vdd 0 DC 10
+VG g 0 DC 2
+RD vdd d 1k
+M1 d g 0 0 MN W=1u L=1u
+.model MN NMOS(LEVEL=1 VTO=1.5 KP=0.02)
+.op
+.control
+run
+print v(d)
+alter VG dc=5
+op
+print v(d)
+.endc
+.end

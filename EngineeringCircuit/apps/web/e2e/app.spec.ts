@@ -227,3 +227,45 @@ test("a potentiometer's slider moves the wiper voltage; a two-way switch moves t
 	await page.locator('[data-part="R1"]').click()
 	await expect(page.locator("[data-readings]")).toContainText("0 A")
 })
+
+test("a transistor switch: pressing the button lights the LED", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-source", 120, 320],
+		["resistor", 420, 140],
+		["led", 620, 140],
+		["npn-transistor", 640, 320],
+		["push-button", 260, 320],
+		["resistor", 440, 320],
+		["ground", 640, 500],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "R1:a"],
+		["R1:b", "LED1:anode"],
+		["LED1:cathode", "Q1:collector"],
+		["Q1:emitter", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+		["V1:positive", "PB1:a"],
+		["PB1:b", "R2:a"],
+		["R2:b", "Q1:base"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const glow = page.locator('[data-part="LED1"] .glow')
+	const strength = async () => Number(await glow.getAttribute("opacity"))
+	await expect.poll(strength).toBeLessThan(0.01)
+
+	await page.locator('[data-part="PB1"]').hover()
+	await page.mouse.down()
+	// (5 V − about 1.8 V LED − 0.1 V saturated transistor) / 1 kΩ ≈ 3.2 mA: a third of full brightness (10 mA).
+	await expect.poll(strength).toBeGreaterThan(0.28)
+	expect(await strength()).toBeLessThan(0.36)
+	await page.mouse.up()
+	await expect.poll(strength).toBeLessThan(0.01)
+})

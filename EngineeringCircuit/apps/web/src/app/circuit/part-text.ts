@@ -18,6 +18,20 @@ export function valueText(component: Component): string {
 			const shifted = offset === 0 ? "" : ` ${offset > 0 ? "+" : ""}${formatSi(offset, "V")}`
 			return `${formatSi(amplitude, "V")} ${formatSi(frequency, "Hz")}${shifted}`
 		}
+		case "diode":
+			return ""
+		case "zener-diode":
+			return formatSi(component.params.breakdownVoltage, "V")
+		case "led":
+			return component.params.color
+		case "rgb-led":
+			return component.params.commonCathode ? "common −" : "common +"
+		case "npn-transistor":
+		case "pnp-transistor":
+			return `β ${formatSi(component.params.beta, "")}`
+		case "n-mosfet":
+		case "p-mosfet":
+			return `Vt ${formatSi(component.params.thresholdVoltage, "V")}`
 		case "transformer": {
 			const { primaryInductance, turnsRatio } = component.params
 			return `${formatSi(primaryInductance, "H")} 1:${formatSi(turnsRatio, "")}`

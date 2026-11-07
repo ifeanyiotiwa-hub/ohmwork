@@ -2,7 +2,7 @@ import { type Circuit, type ComponentType, type Net, buildNets, pinKey, pinsOf }
 import type { DisjointSets } from "../graph/disjoint-sets"
 import { type DcInputs, OHMMETER_TEST_CURRENT, type SolveInputs, dcModelOf } from "./branches"
 import type { SimIssue } from "./issues"
-import { type MnaSolution, solveMna } from "./mna"
+import { type MnaSolution, solveMna, terminalCurrents } from "./mna"
 import { type NetBranch, chooseReferences, conductiveSets, findCurrentWithoutPath, findShortCircuits } from "./topology"
 
 export type { DcInputs } from "./branches"
@@ -60,6 +60,9 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		})
 		.map((branch): NetBranch => {
 			const nets: NetBranch["nets"] = [netOf(branch.componentId, branch.pins[0]), netOf(branch.componentId, branch.pins[1])]
+			if (branch.kind === "device") {
+				return { ...branch, nets, terminalNets: branch.device.terminals.map((pin) => netOf(branch.componentId, pin)) }
+			}
 			if (!("control" in branch)) return { ...branch, nets }
 			return { ...branch, nets, controlNets: [netOf(branch.componentId, branch.control[0]), netOf(branch.componentId, branch.control[1])] }
 		})
@@ -78,18 +81,77 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 	const references = chooseReferences(circuit, nets, branches, conductive, (componentIds) =>
 		isUnpoweredMeasurement(circuit, componentIds),
 	)
-	const mna = solveMna(nets.length, references.referenceNets, branches)
-	if (!mna) {
+	const start = nets.map((net) => {
+		const pin = net.pins.find((candidate) => inputs.guess?.[pinKey(candidate)] !== undefined)
+		return pin ? (inputs.guess?.[pinKey(pin)] ?? 0) : 0
+	})
+	const solved = solveIterating(nets.length, references.referenceNets, branches, start)
+	if (solved.outcome === "singular") {
 		return { ok: false, errors: [{ componentIds: [], message: "The circuit's equations have no single solution." }] }
 	}
+	if (solved.outcome === "unsettled") {
+		const componentIds = [...new Set(branches.filter((branch) => branch.kind === "device").map((branch) => branch.componentId))]
+		return {
+			ok: false,
+			errors: [
+				{
+					componentIds,
+					message: `The circuit didn't settle: its diodes and transistors were still changing after ${MAX_ITERATIONS} tries. Look for diodes or transistors with nothing limiting their current.`,
+				},
+			],
+		}
+	}
+	const { mna } = solved
 
-	const readings = readingsOf(circuit, nets, branches, mna, netOf, openMeters)
+	const readings = readingsOf(circuit, nets, solved.branches, mna, netOf, openMeters)
 	const warnings = [
 		...references.warnings,
 		...poweredOhmmeterWarnings(circuit, branches, conductive),
 		...reversedCapacitorWarnings(circuit, readings.readings),
 	]
 	return { ok: true, solution: { ...readings, warnings } }
+}
+
+/** Newton–Raphson gives up after this many iterations (SPICE's ITL1 is 100; diode-heavy circuits need more). */
+const MAX_ITERATIONS = 200
+/** SPICE's VNTOL and RELTOL: node voltages have settled when they move less than 1 µV + 0.1%. */
+const VOLTAGE_TOLERANCE = 1e-6
+const RELATIVE_TOLERANCE = 1e-3
+
+type Solved =
+	| { outcome: "solved"; mna: MnaSolution; branches: NetBranch[] }
+	| { outcome: "singular" }
+	| { outcome: "unsettled" }
+
+/** One linear solve, or Newton–Raphson when there are non-linear devices: linearize, solve, repeat until settled. */
+function solveIterating(netCount: number, referenceNets: ReadonlySet<number>, branches: NetBranch[], start: number[]): Solved {
+	if (!branches.some((branch) => branch.kind === "device")) {
+		const mna = solveMna(netCount, referenceNets, branches)
+		return mna ? { outcome: "solved", mna, branches } : { outcome: "singular" }
+	}
+
+	const terminalVoltages = (branch: NetBranch, voltages: readonly number[]) =>
+		(branch.terminalNets ?? []).map((net) => voltages[net] ?? 0)
+	let voltages: readonly number[] = start
+	let states = branches.map((branch) => (branch.kind === "device" ? branch.device.initialState(terminalVoltages(branch, voltages)) : []))
+
+	for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+		const linearized = branches.map((branch, index): NetBranch => {
+			if (branch.kind !== "device") return branch
+			return { ...branch, linearization: branch.device.linearize(terminalVoltages(branch, voltages), states[index] ?? []) }
+		})
+		const mna = solveMna(netCount, referenceNets, linearized)
+		if (!mna) return { outcome: "singular" }
+
+		const devicesSettled = linearized.every((branch) => branch.linearization?.settled !== false)
+		const voltagesSettled = mna.netVoltages.every(
+			(voltage, net) => Math.abs(voltage - (voltages[net] ?? 0)) <= VOLTAGE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(voltage),
+		)
+		voltages = mna.netVoltages
+		states = linearized.map((branch) => branch.linearization?.state ?? [])
+		if (devicesSettled && voltagesSettled) return { outcome: "solved", mna, branches: linearized }
+	}
+	return { outcome: "unsettled" }
 }
 
 const volts = (value: number) => `${Number(value.toPrecision(3))} V`
@@ -170,6 +232,13 @@ function readingsOf(
 	)
 
 	const ports: Record<string, ComponentReading> = {}
+	branches.forEach((branch) => {
+		if (branch.kind !== "device" || !branch.device.ports) return
+		const voltages = (branch.terminalNets ?? []).map((net) => mna.netVoltages[net] ?? 0)
+		for (const port of branch.device.ports(voltages, terminalCurrents(branch, mna.netVoltages))) {
+			ports[`${branch.componentId}/${port.name}`] = { voltage: port.voltage, current: port.current }
+		}
+	})
 	branches.forEach((branch, index) => {
 		if (!branch.port) return
 		const key = `${branch.componentId}/${branch.port}`

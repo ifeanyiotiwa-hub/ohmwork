@@ -54,8 +54,8 @@
 				[attr.height]="item.body.bottom - item.body.top + 4"
 				[attr.transform]="item.rotation"
 			/>
-			@if (item.glow !== undefined) {
-				<circle class="lamp-glow" r="13" [attr.opacity]="item.glow" />
+			@if (item.glow; as glow) {
+				<circle class="glow" r="12" [attr.opacity]="glow.strength" [style.fill]="glow.colour" [style.--glow-colour]="glow.colour" />
 			}
 			<g [attr.transform]="item.rotation">
 				@for (d of item.paths; track $index) {

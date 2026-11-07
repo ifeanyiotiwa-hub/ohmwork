@@ -1,0 +1,16 @@
+* NPN common emitter: 10 V collector supply through 1 kOhm; base fed from 2 V through Rb
+VCC vcc 0 DC 10
+VBB vbb 0 DC 2
+RC vcc c 1k
+RB_ACTIVE vbb b 100k
+Q1 c b 0 QN
+.model QN NPN(IS=1e-13 BF=100 BR=1)
+.op
+.control
+run
+print v(c) v(b) i(VCC)
+alter RB_ACTIVE 10k
+op
+print v(c) v(b) i(VCC)
+.endc
+.end

@@ -1,0 +1,11 @@
+* Diode + resistor: 5 V, 1 kOhm, CircuitJS1 default diode (IS 1.7143528e-7, N 2)
+V1 in 0 DC 5
+R1 in a 1k
+D1 a 0 DCJS
+.model DCJS D(IS=1.7143528192808883e-7 N=2)
+.op
+.control
+run
+print v(a) i(V1)
+.endc
+.end

@@ -1,0 +1,13 @@
+* PNP mirror of the NPN active case: emitter at 10 V, base pulled down to 8 V through 100 kOhm, collector to ground through 1 kOhm
+VCC vcc 0 DC 10
+VBB vbb 0 DC 8
+RC c 0 1k
+RB vbb b 100k
+Q1 c b vcc QP
+.model QP PNP(IS=1e-13 BF=100 BR=1)
+.op
+.control
+run
+print v(c) v(b)
+.endc
+.end

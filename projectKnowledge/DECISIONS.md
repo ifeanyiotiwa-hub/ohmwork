@@ -62,3 +62,11 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - Lamp: fixed resistance V²/P, defaults 6 V / 1 W (CircuitJS1's lamp is a 120 V / 100 W filament with thermal lag; ours is chosen to light from the default 5 V source).
 - Polarized capacitor past its reverse limit is a warning (CircuitJS1 stops the simulation).
 - The palette groups parts by the catalog's category files (`COMPONENT_CATEGORIES`); unitless numbers show without SI prefixes (0.999, not 999 m).
+
+## ADR-017: Non-linear parts: one Device interface, Newton–Raphson in solveCircuit, CircuitJS1 models
+- A non-linear part is a `device` branch: it lists its terminals, which terminal pairs conduct (for topology checks), and `linearize(voltages, state)` returning I = G·V + offset at the present guess plus its limited junction voltages. Diodes, Zeners, LEDs, the three junctions of an RGB LED (with `port`s), BJTs and MOSFETs all use it; the MNA stamps any device the same way.
+- `solveCircuit` iterates: linearize every device, solve, until node voltages move less than SPICE's VNTOL + RELTOL (1 µV + 0.1%) and no junction was limited; 200 iterations at most, then a plain-language "didn't settle" error. A time step starts from the previous step's pin voltages (`TransientState.pinVoltages`).
+- Models and defaults follow CircuitJS1 (which follows SPICE): Shockley diode with `limitStep` (SPICE pnjlim) and a junction conductance of 1% of IS; Zener breakdown as CircuitJS1's mirrored exponential set to 5 mA at the breakdown voltage; Ebers–Moll BJT (Gummel–Poon level 1 without Early effect or resistances); square-law MOSFET (level 1, λ = 0) with 0.5 V steps per iteration and a 1e-12 S drain–source conductance. Thermal voltage 0.025865 V (27 °C).
+- Series resistance (LED RS) is solved inside the diode (junction voltage by an inner Newton loop), since circuits have no internal nodes.
+- Format v3 adds the electrical parameters; the 2→3 migration fills diodes and LEDs with values frozen in the migration (not read from the catalog), so a later default change never changes old files.
+- Not modelled yet: junction capacitances (switching is instantaneous over time), Early effect, temperature; no gmin or source stepping when Newton fails.

@@ -3,12 +3,19 @@ import { type DcInputs, STATEFUL_TYPES, type StoredState, TIME_DEPENDENT_TYPES }
 import type { SimIssue } from "../dc/issues"
 import { type DcSolution, solveCircuit } from "../dc/solve-dc"
 
-/** Simulated time and each capacitor's / inductor's state, keyed by component id. Starts empty: all at rest. */
-export type TransientState = { time: number; memory: Readonly<Record<string, StoredState>> }
+/**
+ * Simulated time, each capacitor's / inductor's state (keyed by component id), and the last pin voltages, which
+ * start the next step's Newton–Raphson. Starts empty: all at rest.
+ */
+export type TransientState = {
+	time: number
+	memory: Readonly<Record<string, StoredState>>
+	pinVoltages: Readonly<Record<string, number>>
+}
 export type TransientOptions = DcInputs & { timeStep: number }
 export type TransientResult = { ok: true; state: TransientState; solution: DcSolution } | { ok: false; errors: SimIssue[] }
 
-export const initialTransientState = (): TransientState => ({ time: 0, memory: {} })
+export const initialTransientState = (): TransientState => ({ time: 0, memory: {}, pinVoltages: {} })
 
 export const isTimeDependent = (circuit: Circuit): boolean =>
 	circuit.components.some((component) => TIME_DEPENDENT_TYPES.has(component.type))
@@ -22,6 +29,7 @@ export function stepTransient(circuit: Circuit, previous: TransientState, { time
 	const result = solveCircuit(circuit, {
 		...(pressed ? { pressed } : {}),
 		transient: { time, timeStep, memory: previous.memory },
+		guess: previous.pinVoltages,
 	})
 	if (!result.ok) return result
 
@@ -31,5 +39,5 @@ export function stepTransient(circuit: Circuit, previous: TransientState, { time
 			.filter(([key]) => stateful.has(key.split("/")[0] ?? ""))
 			.map(([key, reading]): [string, StoredState] => [key, { voltage: reading.voltage, current: reading.current }]),
 	)
-	return { ok: true, state: { time, memory }, solution: result.solution }
+	return { ok: true, state: { time, memory, pinVoltages: result.solution.pinVoltages }, solution: result.solution }
 }

@@ -95,7 +95,7 @@ test("list_component_types describes pins, parameter units and simulation suppor
 					properties: { resistance: expect.objectContaining({ description: "ohms" }) },
 				}),
 			}),
-			expect.objectContaining({ type: "diode", simulated: false }),
+			expect.objectContaining({ type: "diode", simulated: true, defaults: expect.objectContaining({ emissionCoefficient: 2 }) }),
 		]),
 	)
 })
@@ -369,5 +369,29 @@ describe("multi-port parts", () => {
 		expect((await call("simulate")).data).toMatchObject({
 			components: expect.arrayContaining([expect.objectContaining({ id: "E1", ports: { output: expect.objectContaining({ voltage: 6 }) } })]),
 		})
+	})
+})
+
+test("probing a transistor reports base-emitter and collector-emitter", async () => {
+	await call("add_component", { type: "voltage-source", params: { voltage: 10 } })
+	await call("add_component", { type: "voltage-source", params: { voltage: 2 } })
+	await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+	await call("add_component", { type: "resistor", params: { resistance: 100000 } })
+	await call("add_component", { type: "npn-transistor" })
+	await call("add_component", { type: "ground" })
+	await call("connect", { from: "V1.positive", to: "R1.a" })
+	await call("connect", { from: "R1.b", to: "Q1.collector" })
+	await call("connect", { from: "V2.positive", to: "R2.a" })
+	await call("connect", { from: "R2.b", to: "Q1.base" })
+	await call("connect", { from: "Q1.emitter", to: "GND1.terminal" })
+	await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+	await call("connect", { from: "V2.negative", to: "GND1.terminal" })
+
+	expect((await call("probe", { target: "Q1" })).data).toMatchObject({
+		target: "Q1",
+		ports: {
+			"base-emitter": { voltage: expect.closeTo(0.604, 2) },
+			"collector-emitter": { voltage: expect.closeTo(8.604, 2), current: expect.closeTo(0.0013958, 5) },
+		},
 	})
 })

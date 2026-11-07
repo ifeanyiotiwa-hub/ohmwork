@@ -1,0 +1,12 @@
+* P-MOSFET level 1 (VTO -1.5, KP 0.02): source at 10 V, gate at 8 V, drain to ground through 1 kOhm
+VDD vdd 0 DC 10
+VG g 0 DC 8
+RD d 0 1k
+M1 d g vdd vdd MP W=1u L=1u
+.model MP PMOS(LEVEL=1 VTO=-1.5 KP=0.02)
+.op
+.control
+run
+print v(d)
+.endc
+.end

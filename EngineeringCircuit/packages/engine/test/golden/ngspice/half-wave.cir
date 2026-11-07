@@ -1,0 +1,13 @@
+* Half-wave rectifier: 10 V peak 50 Hz through the CircuitJS1 default diode into 100 uF || 1 kOhm
+V1 in 0 SIN(0 10 50)
+D1 in out DCJS
+C1 out 0 100u IC=0
+R1 out 0 1k
+.model DCJS D(IS=1.7143528192808883e-7 N=2)
+.tran 10u 100m uic
+.control
+run
+meas tran top MAX v(out) FROM=80m TO=100m
+meas tran bottom MIN v(out) FROM=80m TO=100m
+.endc
+.end

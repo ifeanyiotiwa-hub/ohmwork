@@ -18,9 +18,12 @@ test("a switch has an on/off field", () => {
 })
 
 test("an LED colour is a choice", () => {
-	expect(paramFieldsOf("led")).toEqual([
-		{ name: "color", kind: "choice", description: "", options: ["red", "green", "blue", "yellow", "white"] },
-	])
+	expect(paramFieldsOf("led")[0]).toEqual({
+		name: "color",
+		kind: "choice",
+		description: "",
+		options: ["red", "green", "blue", "yellow", "white"],
+	})
 })
 
 test("ground has no fields", () => {

@@ -1,10 +1,19 @@
 import type { Circuit, Net, PinRef } from "@engineering-circuit/format"
 import { DisjointSets } from "../graph/disjoint-sets"
+import type { Linearization } from "../nonlinear/device"
 import { type Branch, CURRENT_KINDS, VOLTAGE_KINDS } from "./branches"
 import type { SimIssue } from "./issues"
 
-/** A branch with its pins resolved to nets (and its control pins, for a VCVS / VCCS). */
-export type NetBranch = Branch & { nets: [first: number, second: number]; controlNets?: [first: number, second: number] }
+/**
+ * A branch with its pins resolved to nets, plus a VCVS / VCCS's control nets, or a device's terminal nets and its
+ * linearization for the current Newton–Raphson iteration.
+ */
+export type NetBranch = Branch & {
+	nets: [first: number, second: number]
+	controlNets?: [first: number, second: number]
+	terminalNets?: readonly number[]
+	linearization?: Linearization
+}
 
 const quoted = (ids: readonly string[]) => ids.map((id) => `"${id}"`).join(", ")
 
@@ -30,7 +39,18 @@ export function findShortCircuits(nets: readonly Net[], branches: readonly NetBr
 
 export function conductiveSets(nets: readonly Net[], branches: readonly NetBranch[]): DisjointSets {
 	const sets = groundedSets(nets)
-	branches.filter((branch) => !CURRENT_KINDS.has(branch.kind)).forEach((branch) => sets.union(...branch.nets))
+	for (const branch of branches) {
+		if (CURRENT_KINDS.has(branch.kind)) continue
+		if (branch.kind !== "device") {
+			sets.union(...branch.nets)
+			continue
+		}
+		for (const [first, second] of branch.device.conducting) {
+			const a = branch.terminalNets?.[first]
+			const b = branch.terminalNets?.[second]
+			if (a !== undefined && b !== undefined) sets.union(a, b)
+		}
+	}
 	return sets
 }
 

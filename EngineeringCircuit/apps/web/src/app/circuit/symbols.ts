@@ -32,6 +32,12 @@ const CONTROL_MARKS = [
 ]
 const CONTROLLED_BODY: Box = { left: -40, top: -20, right: 40, bottom: 20 }
 const CONTROLLED_LABEL = { x: 0, y: -30 }
+
+/** Transistors: base or gate lead from the left, collector or drain up, emitter or source down. */
+const TRANSISTOR_BODY: Box = { left: -40, top: -40, right: 30, bottom: 40 }
+const TRANSISTOR_LABEL = { x: 34, y: 4 }
+const BIPOLAR_PATHS = ["M-40 0 H-6 M-6 -14 V14", "M-6 -7 L20 -24 V-40 M-6 7 L20 24 V40", "M-16 0 a24 24 0 1 0 48 0 a24 24 0 1 0 -48 0"]
+const MOSFET_PATHS = ["M-40 0 H-12 M-12 -14 V14", "M-4 -16 V16", "M-4 -10 H20 V-40 M-4 10 H20 V40"]
 /** Room above the dial for the name and, under it, the big reading. */
 const METER_LABEL = { x: 0, y: -42 }
 
@@ -160,6 +166,47 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: LABEL_ABOVE,
 		labelAnchor: "middle",
 	},
+	"zener-diode": {
+		body: TWO_PIN_BODY,
+		paths: ["M-40 0 H-10 M10 0 H40", "M-10 -10 V10 L10 0 Z", "M6 -13 L10 -10 V10 L14 13"],
+		label: LABEL_ABOVE,
+		labelAnchor: "middle",
+	},
+	"rgb-led": {
+		body: { left: -40, top: -20, right: 40, bottom: 20 },
+		paths: ["M-40 -20 H-12 M-40 0 H-16 M-40 20 H-12 M16 0 H40", "M-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0"],
+		marks: [
+			{ text: "R", at: { x: -26, y: -28 } },
+			{ text: "G", at: { x: -26, y: -8 } },
+			{ text: "B", at: { x: -26, y: 12 } },
+		],
+		label: { x: 0, y: -30 },
+		labelAnchor: "middle",
+	},
+	"npn-transistor": {
+		body: TRANSISTOR_BODY,
+		paths: [...BIPOLAR_PATHS, "M9 23 L18 25 L15 16 Z"],
+		label: TRANSISTOR_LABEL,
+		labelAnchor: "start",
+	},
+	"pnp-transistor": {
+		body: TRANSISTOR_BODY,
+		paths: [...BIPOLAR_PATHS, "M-3 9 L6 9 L2 17 Z"],
+		label: TRANSISTOR_LABEL,
+		labelAnchor: "start",
+	},
+	"n-mosfet": {
+		body: TRANSISTOR_BODY,
+		paths: [...MOSFET_PATHS, "M12 10 H-2 M3 6 L-2 10 L3 14"],
+		label: TRANSISTOR_LABEL,
+		labelAnchor: "start",
+	},
+	"p-mosfet": {
+		body: TRANSISTOR_BODY,
+		paths: [...MOSFET_PATHS, "M-2 10 H12 M7 6 L12 10 L7 14"],
+		label: TRANSISTOR_LABEL,
+		labelAnchor: "start",
+	},
 	led: {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-10 M10 0 H40", "M-10 -10 V10 L10 0 Z", "M10 -10 V10", "M0 -12 L6 -20 M3 -20 H6 V-17 M6 -10 L12 -18 M9 -18 H12 V-15"],
@@ -233,7 +280,13 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	switch: "Switch",
 	"push-button": "Push button",
 	diode: "Diode",
+	"zener-diode": "Zener diode",
 	led: "LED",
+	"rgb-led": "RGB LED",
+	"npn-transistor": "NPN transistor",
+	"pnp-transistor": "PNP transistor",
+	"n-mosfet": "N-MOSFET",
+	"p-mosfet": "P-MOSFET",
 	voltmeter: "Voltmeter",
 	ammeter: "Ammeter",
 	ohmmeter: "Ohmmeter",

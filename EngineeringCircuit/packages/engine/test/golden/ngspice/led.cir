@@ -1,0 +1,11 @@
+* LED + resistor: 5 V, 220 Ohm, CircuitJS1 default LED (IS 93.2p, RS 0.042, N 3.73)
+V1 in 0 DC 5
+R1 in a 220
+D1 a 0 DLED
+.model DLED D(IS=93.2e-12 RS=0.042 N=3.73)
+.op
+.control
+run
+print v(a) i(V1)
+.endc
+.end

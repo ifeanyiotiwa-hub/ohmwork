@@ -1,15 +1,12 @@
 import type { z } from "zod"
 import { type Circuit, CURRENT_VERSION, FORMAT_ID, circuitSchema } from "../schema/circuit"
 import { isComponentType, pinsOf } from "../schema/components/catalog"
-import { type JsonObject, migrate } from "./migrations"
+import { type JsonObject, isObject, migrate } from "./migrations"
 
 export type CircuitError = { path: string; message: string }
 export type ParseResult = { ok: true; circuit: Circuit } | { ok: false; errors: CircuitError[] }
 
 const failure = (path: string, message: string): ParseResult => ({ ok: false, errors: [{ path, message }] })
-
-const isObject = (value: unknown): value is JsonObject =>
-	typeof value === "object" && value !== null && !Array.isArray(value)
 
 export function parseCircuitJson(text: string): ParseResult {
 	try {
