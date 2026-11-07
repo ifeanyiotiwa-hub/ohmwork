@@ -24,6 +24,10 @@ test("every type has its own id prefix, e.g. R for resistor", () => {
 	expect(idPrefixOf("resistor")).toBe("R")
 })
 
+test.each(COMPONENT_DEFINITIONS)("$type default params are valid", (definition) => {
+	expect(definition.schema.shape.params.safeParse(definition.defaults).success).toBe(true)
+})
+
 test("isComponentType recognises catalog types only", () => {
 	expect(types.every(isComponentType)).toBe(true)
 	expect(isComponentType("flux-capacitor")).toBe(false)

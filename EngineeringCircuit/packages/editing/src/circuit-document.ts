@@ -11,43 +11,43 @@ const DEFAULT_HISTORY_LIMIT = 200
 type Entry = HistoryItem & { before: Circuit }
 
 export class CircuitDocument {
-	#circuit: Circuit
-	readonly #entries: Entry[] = []
-	readonly #historyLimit: number
+	private current: Circuit
+	private readonly entries: Entry[] = []
+	private readonly historyLimit: number
 
 	constructor(circuit: Circuit, { historyLimit = DEFAULT_HISTORY_LIMIT }: DocumentOptions = {}) {
-		this.#circuit = circuit
-		this.#historyLimit = historyLimit
+		this.current = circuit
+		this.historyLimit = historyLimit
 	}
 
 	get circuit(): Circuit {
-		return this.#circuit
+		return this.current
 	}
 
 	get history(): HistoryItem[] {
-		return this.#entries.map(({ author, summary }) => ({ author, summary }))
+		return this.entries.map(({ author, summary }) => ({ author, summary }))
 	}
 
 	apply(command: EditCommand, author: Author): EditResult {
-		const result = applyCommand(this.#circuit, command)
-		if (result.ok) this.#record(result.circuit, author, result.summary)
+		const result = applyCommand(this.current, command)
+		if (result.ok) this.record(result.circuit, author, result.summary)
 		return result
 	}
 
 	replace(circuit: Circuit, author: Author, summary: string): void {
-		this.#record(circuit, author, summary)
+		this.record(circuit, author, summary)
 	}
 
 	undo(): UndoResult {
-		const last = this.#entries.pop()
+		const last = this.entries.pop()
 		if (!last) return { ok: false, message: "Nothing to undo" }
-		this.#circuit = last.before
+		this.current = last.before
 		return { ok: true, summary: `Undid: ${last.summary} (by ${last.author})` }
 	}
 
-	#record(circuit: Circuit, author: Author, summary: string): void {
-		this.#entries.push({ author, summary, before: this.#circuit })
-		if (this.#entries.length > this.#historyLimit) this.#entries.shift()
-		this.#circuit = circuit
+	private record(circuit: Circuit, author: Author, summary: string): void {
+		this.entries.push({ author, summary, before: this.current })
+		if (this.entries.length > this.historyLimit) this.entries.shift()
+		this.current = circuit
 	}
 }

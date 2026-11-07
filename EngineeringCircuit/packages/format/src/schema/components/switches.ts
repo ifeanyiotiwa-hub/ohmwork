@@ -6,5 +6,6 @@ export const SWITCHES = [
 		idPrefix: "S",
 		pins: ["a", "b"],
 		params: { closed: z.boolean().describe("true = conducting") },
+		defaults: { closed: true },
 	}),
 ] as const

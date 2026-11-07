@@ -5,8 +5,9 @@
 	"type": "module",
 	"scripts": {
 		"prepare": "git config core.hooksPath .githooks",
-		"test": "vitest run --passWithNoTests",
-		"typecheck": "tsc -p tsconfig.base.json --noEmit"
+		"test": "vitest run && pnpm --filter @engineering-circuit/web test",
+		"typecheck": "tsc -p tsconfig.base.json --noEmit && pnpm --filter @engineering-circuit/web build",
+		"test:core": "vitest run"
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",

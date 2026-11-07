@@ -24,6 +24,15 @@ describe("add-component", () => {
 		expect(circuit.components.map((component) => component.id)).toEqual(["V1", "R1", "R2"])
 	})
 
+	test("fills missing params from the catalog defaults", () => {
+		const circuit = run(
+			createCircuit("t"),
+			{ type: "add-component", component: { type: "resistor" } },
+			{ type: "add-component", component: { type: "voltage-source", params: { voltage: 12 } } },
+		)
+		expect(circuit.components.map((component) => component.params)).toEqual([{ resistance: 1000 }, { voltage: 12 }])
+	})
+
 	test("keeps a given id", () => {
 		const circuit = run(createCircuit("t"), {
 			type: "add-component",
@@ -152,6 +161,23 @@ describe("move and rotate", () => {
 			position: { x: 240, y: 60 },
 		})
 		expect(circuit.components[0]?.position).toEqual({ x: 240, y: 60 })
+	})
+
+	test("moving a part re-routes its wires (bends are cleared), other wires keep theirs", () => {
+		const bend = { x: 50, y: 50 }
+		const circuit = run(createCircuit("t"), battery, resistor, resistor)
+		const withBends = {
+			...circuit,
+			wires: [
+				{ id: "w1", from: { componentId: "V1", pin: "positive" }, to: { componentId: "R1", pin: "a" }, bends: [bend] },
+				{ id: "w2", from: { componentId: "R1", pin: "b" }, to: { componentId: "R2", pin: "a" }, bends: [bend] },
+			],
+		}
+		const moved = run(withBends, { type: "move-component", componentId: "V1", position: { x: 0, y: 200 } })
+		expect(moved.wires.map((wire) => wire.bends)).toEqual([[], [bend]])
+
+		const rotated = run(withBends, { type: "rotate-component", componentId: "R2" })
+		expect(rotated.wires.map((wire) => wire.bends)).toEqual([[bend], []])
 	})
 
 	test("rotates a quarter turn clockwise, wrapping after 270", () => {

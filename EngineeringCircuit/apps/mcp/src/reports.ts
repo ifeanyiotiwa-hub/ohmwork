@@ -31,6 +31,7 @@ export function componentTypesReport() {
 		idPrefix: definition.idPrefix,
 		pins: definition.pins,
 		simulated: isDcSimulated(definition.type),
+		defaults: definition.defaults,
 		params: paramsSchemaOf(definition.type),
 	}))
 }

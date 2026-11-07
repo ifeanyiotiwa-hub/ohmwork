@@ -81,7 +81,10 @@ export function createServer(options: ServerOptions = { ...DEFAULT_OPTIONS, work
 			description: "Add a part. Ids are numbered automatically per type (R1, R2, V1, GND1) unless you give one.",
 			inputSchema: z.object({
 				type: z.enum(COMPONENT_TYPES),
-				params: z.record(z.string(), z.unknown()).describe("Parameter values in SI units; see list_component_types"),
+				params: z
+					.record(z.string(), z.unknown())
+					.optional()
+					.describe("Parameter values in SI units; omitted ones use the part's defaults (see list_component_types)"),
 				id: z.string().min(1).optional(),
 				x: z.number().optional(),
 				y: z.number().optional(),

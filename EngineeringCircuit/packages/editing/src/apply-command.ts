@@ -5,6 +5,7 @@ import {
 	type ComponentType,
 	type PinRef,
 	type Point,
+	definitionOf,
 	idPrefixOf,
 	parseCircuit,
 } from "@engineering-circuit/format"
@@ -17,7 +18,7 @@ const FULL_TURN = 360
 export type NewComponent = {
 	id?: string | undefined
 	type: ComponentType
-	params: Record<string, unknown>
+	params?: Record<string, unknown> | undefined
 	position?: Point | undefined
 	rotation?: Component["rotation"] | undefined
 }
@@ -46,7 +47,8 @@ export function applyCommand(circuit: Circuit, command: EditCommand): EditResult
 function propose(draft: Circuit, command: EditCommand): Proposal {
 	switch (command.type) {
 		case "add-component": {
-			const { type, params } = command.component
+			const { type } = command.component
+			const params = { ...definitionOf(type).defaults, ...command.component.params }
 			const id = command.component.id ?? nextId(draft.components, idPrefixOf(type))
 			const component = {
 				id,
@@ -105,16 +107,26 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 			}))
 
 		case "move-component":
-			return updateComponent(draft, command.componentId, (target) => ({
-				component: { ...target, position: command.position },
-				summary: `Moved ${target.id} to (${command.position.x}, ${command.position.y})`,
-			}))
+			return updateComponent(
+				draft,
+				command.componentId,
+				(target) => ({
+					component: { ...target, position: command.position },
+					summary: `Moved ${target.id} to (${command.position.x}, ${command.position.y})`,
+				}),
+				{ rerouteWires: true },
+			)
 
 		case "rotate-component":
-			return updateComponent(draft, command.componentId, (target) => {
-				const rotation = (target.rotation + QUARTER_TURN) % FULL_TURN
-				return { component: { ...target, rotation }, summary: `Rotated ${target.id} to ${rotation}°` }
-			})
+			return updateComponent(
+				draft,
+				command.componentId,
+				(target) => {
+					const rotation = (target.rotation + QUARTER_TURN) % FULL_TURN
+					return { component: { ...target, rotation }, summary: `Rotated ${target.id} to ${rotation}°` }
+				},
+				{ rerouteWires: true },
+			)
 	}
 }
 
@@ -122,12 +134,21 @@ function updateComponent(
 	draft: Circuit,
 	componentId: string,
 	change: (target: Component) => { component: unknown; summary: string },
+	{ rerouteWires = false } = {},
 ): Proposal {
 	const target = draft.components.find((component) => component.id === componentId)
 	if (!target) return notFound("components", "component", componentId)
 	const { component, summary } = change(target)
+	const attached = (end: PinRef) => end.componentId === componentId
+	const wires = rerouteWires
+		? draft.wires.map((wire) => (attached(wire.from) || attached(wire.to) ? { ...wire, bends: [] } : wire))
+		: draft.wires
 	return {
-		candidate: { ...draft, components: draft.components.map((existing) => (existing === target ? component : existing)) },
+		candidate: {
+			...draft,
+			components: draft.components.map((existing) => (existing === target ? component : existing)),
+			wires,
+		},
 		summary,
 	}
 }
