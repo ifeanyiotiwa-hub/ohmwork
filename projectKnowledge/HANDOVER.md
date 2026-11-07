@@ -49,7 +49,8 @@ Owner tries the live link (restart Claude Code or `/mcp` reconnect so the server
 - Diode/LED have no electrical params yet → D4 adds them with a version bump + migration.
 - Wires connect pin to pin only; no mid-wire junction → D6.
 - No simulation settings (time step, duration, logic family) in the file → D3/D5.
-- No meters/probes, AC sources, potentiometer, push button, SPDT → see `COMPONENTS.md`.
+- Missed in D6 (COMPONENTS.md assigned them to D6, but D6 was closed without them): `push-button`, `voltmeter`, `ammeter`, `ohmmeter`. All work at DC; do next, before D3.
+- Planned for later deliverables (by design, see `COMPONENTS.md`): AC/square sources, polarized capacitor, potentiometer, SPDT, transformer, lamp (D3); diodes/transistors (D4); logic (D5); ICs (D9).
 - No canvas text notes → D12.
 - Horizontal voltage source: its value label and current reading overlap (label placement in `apps/web` canvas).
 
