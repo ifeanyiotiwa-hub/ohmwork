@@ -7,7 +7,7 @@ A deliverable is `done` only when every acceptance criterion passes and is verif
 |---|---|---|---|---|
 | D0 | Foundation | Folders, knowledge docs, git repo, pnpm workspace, strict TS, Vitest runs | – | done |
 | D1 | Circuit format v1 (`packages/format`) | Types for components, nodes, wires, params; validation with clear errors; version field + migration hook; tests | D0 | done |
-| D2 | DC engine (`packages/engine`) | MNA solver: resistor, voltage/current source, ground, wire. Golden tests: Ohm's law, voltage divider, series/parallel | D1 | todo |
+| D2 | DC engine (`packages/engine`) | MNA solver: resistor, voltage/current source, ground, wire, switch; capacitor (open) and inductor (short) at DC. Plain-language errors (short circuit, no current path, not-yet-simulated part) and floating-part warnings. Golden tests: Ohm's law, voltage divider, KVL, series/parallel, current divider, Wheatstone bridge vs ngspice | D1 | done |
 | D3 | Transient analysis | Capacitor, inductor, switch, time stepping. Golden test: RC charging curve within 1% | D2 | todo |
 | D4 | Non-linear parts | Diode, LED, BJT, MOSFET (Newton–Raphson). Golden tests: diode drop, transistor switch | D3 | todo |
 | D5 | Digital + mixed signal | Logic gates, flip-flops, clock, analog↔digital thresholds. Golden tests: half/full adder, counter | D2 | todo |

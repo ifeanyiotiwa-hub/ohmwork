@@ -1,0 +1,14 @@
+Unbalanced Wheatstone bridge (reference values for bridge.test.ts)
+V1 top 0 DC 10
+R1 top a 1k
+R2 a 0 2k
+R3 top b 3k
+R4 b 0 1k
+R5 a b 5k
+.control
+op
+print v(top) v(a) v(b)
+print (v(a)-v(b))/5k
+print i(V1)
+.endc
+.end

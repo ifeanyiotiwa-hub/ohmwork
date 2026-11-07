@@ -10,13 +10,22 @@
   - `src/io/migrations.ts`: `migrate()` plus an empty `MIGRATIONS` registry (keyed by from-version).
   - `src/topology/nets.ts`: `buildNets(circuit)` gives nets (connected pin groups) with `isGround`; `pinKey`.
   - `test/fixtures/voltage-divider.ts`: `voltageDivider()`. Tests mirror `src/` under `test/`.
-- Conventions: tabs (width 4); SI units; pin names are per type (`positive/negative`, `a/b`, `anode/cathode`, `terminal`). Current-source current flows out of `positive`.
+- D2 done: `EngineeringCircuit/packages/engine` (`@engineering-circuit/engine`). Public API: `solveDc(circuit)` → `{ ok: true, solution: { pinVoltages, readings, warnings } } | { ok: false, errors }`; issues are `{ componentIds, message }`.
+  - `src/linear/`: `DenseMatrix`, `factorLu` / `solveLinear` (partial pivoting; factor once, solve many, ready for D3).
+  - `src/graph/disjoint-sets.ts`: union-find.
+  - `src/dc/branches.ts`: `DC_MODELS`, one entry per catalog type (compile error if a type is missing). Parts become `resistor` / `voltage` / `current` branches; closed switch and inductor are 0 V branches, capacitor and open switch add nothing, diode/LED are `not-simulated`.
+  - `src/dc/topology.ts`: short-circuit check, current-source path check, floating islands → reference pin + warning.
+  - `src/dc/mna.ts`: builds and solves the MNA system. `src/dc/solve-dc.ts`: orchestration and readings.
+  - Tests: `test/golden/` (textbook + ngspice bridge, netlists in `test/golden/ngspice/`), `test/dc/`, `test/linear/`; helper `test/support/circuit-of.ts` builds circuits as `circuitOf(parts, [["V1.positive", "R1.a"], ...])`.
+- Conventions: tabs (width 4); SI units; pin names are per type (`positive/negative`, `a/b`, `anode/cathode`, `terminal`). Current-source current flows out of `positive`. Readings use the passive sign convention (ARCHITECTURE "Engine conventions").
+- Tooling: ngspice 47 installed via Homebrew on the owner's Mac (ADR-010).
 
 ## Next step
-D2: DC engine in `EngineeringCircuit/packages/engine`. MNA solver for resistor, voltage/current source, ground, closed/open switch. Consume `buildNets`. Golden tests: Ohm's law, voltage divider (expect 5 V mid-node), series/parallel. Port the algorithm approach from CircuitJS1 (credit in a header line, per ADR-003).
+Recommended: D7 MCP server (`apps/mcp`), the project's core feature. With D2 done, an agent can already build a circuit, solve it, and explain real readings and warnings, before any UI exists. Design its edits as the shared command layer from ARCHITECTURE rule 7, so D6 (UI) and D8 (live link) reuse it. D3 (transient) and D6 (web UI) can run in parallel worktrees.
 
 ## Blockers / open questions
-- CircuitJS1 upstream is now TypeScript (`ts/` folder; the Java `CirSim.java` is gone, 2026-11-07). ADR-003 assumed a Java/GWT port. Before D2: read their MNA code in `ts/` and decide whether to port from it (likely simpler), then add an ADR superseding ADR-003's "port from Java".
+- None.
+
 ## Known gaps (do not hide; fix in the listed deliverable)
 - Diode/LED have no electrical params yet → D4 adds them with a version bump + migration.
 - Wires connect pin to pin only; no mid-wire junction → D6.
@@ -27,6 +36,7 @@ D2: DC engine in `EngineeringCircuit/packages/engine`. MNA solver for resistor, 
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-07 | Claude (Opus) | D2 DC engine: MNA + LU, plain-language diagnostics, 26 engine tests (67 total), ngspice bridge check; ADR-010/011 | D7 MCP (recommended) |
 | 2026-11-07 | Claude (Opus) | COMPONENTS.md inventory; per-category component catalog; unknown-type error; 41 tests | Start D2 |
 | 2026-11-07 | Claude (Opus) | Restructured format pkg (src/schema, io, topology; test/ mirror), tabs width 4 | Start D2 |
 | 2026-11-07 | Claude (Opus) | D1 circuit format v1, 21 tests | Start D2 |

@@ -22,3 +22,7 @@
 | Netlist | A circuit described as data: parts plus what connects to what. |
 | Oscilloscope | Graph of a voltage over time. |
 | MCP | Model Context Protocol: lets AI agents use the app's tools. |
+| Net | Same as a node: all pins joined by wires. |
+| Short circuit | Two points joined with (almost) no resistance, e.g. a wire straight across a battery. Real batteries overheat; the simulator reports it. |
+| Floating | A part of the circuit with no connection to ground, so its voltages have no fixed reference. |
+| Passive sign convention | How we sign current: positive when it flows into a part's first pin. A battery delivering power shows negative current. |
