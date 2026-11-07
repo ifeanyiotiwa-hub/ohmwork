@@ -32,7 +32,7 @@ test("a wire across a battery is reported as a short circuit", () => {
 		{
 			componentIds: ["V1"],
 			message:
-				'Short circuit: "V1" is connected in a loop of voltage sources, closed switches, inductors and wires with no resistance.',
+				'Short circuit: "V1" is connected in a loop of voltage sources, closed switches, inductors, ammeters and wires with no resistance.',
 		},
 	])
 })

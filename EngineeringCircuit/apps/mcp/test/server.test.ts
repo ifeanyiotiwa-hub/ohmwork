@@ -276,3 +276,31 @@ describe("layout", () => {
 		expect(moved.text).toContain('No component with id "R7"')
 	})
 })
+
+describe("meters and push buttons", () => {
+	test("an ohmmeter reports ohms, or open when nothing is between its leads", async () => {
+		await call("add_component", { type: "ohmmeter" })
+		await call("add_component", { type: "resistor", params: { resistance: 470 } })
+		await call("connect", { from: "OM1.a", to: "R1.a" })
+		expect((await call("probe", { target: "OM1" })).data).toMatchObject({ resistance: "open (nothing connects its leads)" })
+
+		await call("connect", { from: "R1.b", to: "OM1.b" })
+		expect((await call("probe", { target: "OM1" })).data).toMatchObject({ resistance: 470 })
+	})
+
+	test("simulate and probe can hold push buttons down", async () => {
+		await call("add_component", { type: "voltage-source", params: { voltage: 5 } })
+		await call("add_component", { type: "push-button" })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "V1.positive", to: "PB1.a" })
+		await call("connect", { from: "PB1.b", to: "R1.a" })
+		await call("connect", { from: "R1.b", to: "GND1.terminal" })
+		await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+
+		expect((await call("probe", { target: "R1" })).data).toMatchObject({ current: 0 })
+		expect((await call("probe", { target: "R1", pressed: ["PB1"] })).data).toMatchObject({ current: 0.005 })
+		const simulated = (await call("simulate", { pressed: ["PB1"] })).data
+		expect(simulated).toMatchObject({ components: expect.arrayContaining([expect.objectContaining({ id: "R1", current: 0.005 })]) })
+	})
+})

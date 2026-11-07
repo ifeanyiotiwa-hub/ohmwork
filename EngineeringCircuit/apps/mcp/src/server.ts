@@ -33,6 +33,8 @@ Layout (the learner sees it, so make it read like a textbook diagram): x grows r
 pinOffsets (list_component_types) are at rotation 0; rotation turns parts clockwise in 90° steps, so 90 makes a two-pin part vertical with its first pin on top.
 A wire is drawn from its first pin horizontally, then vertically; put connected pins on the same x or y for straight wires.
 get_circuit lists every pin's position; use move_component / rotate_component to tidy up.
+Meters are ideal: a voltmeter goes across a part, an ammeter in series (across a battery it is a short circuit), an ohmmeter across an unpowered part.
+Push buttons are released unless you list them in simulate/probe "pressed"; in the app the learner holds them with the mouse.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 
 const COMPONENT_TYPES = COMPONENT_DEFINITIONS.map((definition) => definition.type) as [ComponentType, ...ComponentType[]]
@@ -58,6 +60,11 @@ function pinRef(label: string): PinRef | undefined {
 }
 
 const pinLabelSchema = z.string().describe('A pin as "<componentId>.<pin>", e.g. "R1.a"')
+const pressedSchema = z
+	.array(z.string().min(1))
+	.optional()
+	.describe("Push buttons to hold down for this reading, e.g. [\"PB1\"]; all others are released")
+const inputsOf = (pressed: readonly string[] | undefined) => ({ pressed: new Set(pressed) })
 
 export type ServerContext = {
 	/** The circuit to edit; shared with the live link when there is one. */
@@ -211,11 +218,13 @@ export function createServer(
 	server.registerTool(
 		"simulate",
 		{
-			description: "Solve the circuit (DC): voltage at every node, voltage/current/power of every part, and warnings.",
+			description:
+				"Solve the circuit (DC): voltage at every node, voltage/current/power of every part (resistance for ohmmeters), and warnings.",
+			inputSchema: z.object({ pressed: pressedSchema }),
 			annotations: READ_ONLY,
 		},
-		() => {
-			const outcome = solveDc(document.circuit)
+		({ pressed }) => {
+			const outcome = solveDc(document.circuit, inputsOf(pressed))
 			return outcome.ok ? text(simulationReport(document.circuit, outcome.solution)) : failure(outcome.errors)
 		},
 	)
@@ -223,14 +232,15 @@ export function createServer(
 	server.registerTool(
 		"probe",
 		{
-			description: 'Measure one part ("R1": voltage, current, power) or one pin ("R1.a": voltage).',
-			inputSchema: z.object({ target: z.string().min(1) }),
+			description:
+				'Measure one part ("R1": voltage, current, power; an ohmmeter also gives resistance) or one pin ("R1.a": voltage).',
+			inputSchema: z.object({ target: z.string().min(1), pressed: pressedSchema }),
 			annotations: READ_ONLY,
 		},
-		({ target }) => {
+		({ target, pressed }) => {
 			const found = findProbeTarget(document.circuit, target)
 			if ("error" in found) return failure(found.error)
-			const outcome = solveDc(document.circuit)
+			const outcome = solveDc(document.circuit, inputsOf(pressed))
 			return outcome.ok ? text(probeReport(outcome.solution, found)) : failure(outcome.errors)
 		},
 	)

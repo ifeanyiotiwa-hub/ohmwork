@@ -1,10 +1,11 @@
 import { z } from "zod"
+import { MEASUREMENT } from "./measurement"
 import { PASSIVES } from "./passives"
 import { SEMICONDUCTORS } from "./semiconductors"
 import { SOURCES } from "./sources"
 import { SWITCHES } from "./switches"
 
-export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS] as const
+export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS, ...MEASUREMENT] as const
 
 type SchemasOf<Definitions extends readonly { schema: unknown }[]> = {
 	[Index in keyof Definitions]: Definitions[Index]["schema"]

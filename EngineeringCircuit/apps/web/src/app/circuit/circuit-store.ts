@@ -38,7 +38,10 @@ export class CircuitStore {
 	/** What the agent just changed, highlighted briefly so the learner notices. */
 	readonly agentChanges = signal<ChangedIds>(NO_CHANGES)
 
-	readonly result = computed(() => solveDc(this.circuit()))
+	/** Push buttons held down right now. Momentary, so never saved or shared over the live link. */
+	readonly pressed = signal<ReadonlySet<string>>(new Set())
+
+	readonly result = computed(() => solveDc(this.circuit(), { pressed: this.pressed() }))
 	readonly solution = computed(() => {
 		const result = this.result()
 		return result.ok ? result.solution : undefined
@@ -131,6 +134,14 @@ export class CircuitStore {
 	rotateSelected(): void {
 		const component = this.selectedComponent()
 		if (component) this.apply({ type: "rotate-component", componentId: component.id })
+	}
+
+	press(componentId: string): void {
+		this.pressed.set(new Set([componentId]))
+	}
+
+	releaseButtons(): void {
+		if (this.pressed().size > 0) this.pressed.set(new Set())
 	}
 
 	/** Joins the MCP server's circuit. If the link closes, the app keeps the last shared circuit and works alone. */

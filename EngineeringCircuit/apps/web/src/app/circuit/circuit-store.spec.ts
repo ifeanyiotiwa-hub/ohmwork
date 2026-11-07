@@ -47,6 +47,33 @@ test("wire currents follow the loop", () => {
 	expect(store.wireCurrents()["w1"]).toBeCloseTo(2, 9)
 })
 
+test("holding a push button re-solves the circuit until it is released", () => {
+	store.replace(
+		{
+			...createCircuit("Button"),
+			components: [
+				{ id: "V1", type: "voltage-source", position: { x: 0, y: 0 }, rotation: 0, params: { voltage: 5 } },
+				{ id: "PB1", type: "push-button", position: { x: 100, y: 0 }, rotation: 0, params: { normallyOpen: true } },
+				{ id: "R1", type: "resistor", position: { x: 200, y: 0 }, rotation: 0, params: { resistance: 1000 } },
+				{ id: "GND1", type: "ground", position: { x: 0, y: 100 }, rotation: 0, params: {} },
+			],
+			wires: [
+				{ id: "w1", from: { componentId: "V1", pin: "positive" }, to: { componentId: "PB1", pin: "a" }, bends: [] },
+				{ id: "w2", from: { componentId: "PB1", pin: "b" }, to: { componentId: "R1", pin: "a" }, bends: [] },
+				{ id: "w3", from: { componentId: "R1", pin: "b" }, to: { componentId: "GND1", pin: "terminal" }, bends: [] },
+				{ id: "w4", from: { componentId: "V1", pin: "negative" }, to: { componentId: "GND1", pin: "terminal" }, bends: [] },
+			],
+		},
+		"Button test",
+	)
+	expect(store.solution()?.readings["R1"]?.current).toBeCloseTo(0, 12)
+	store.press("PB1")
+	expect(store.solution()?.readings["R1"]?.current).toBeCloseTo(0.005, 12)
+	store.releaseButtons()
+	expect(store.solution()?.readings["R1"]?.current).toBeCloseTo(0, 12)
+	expect(store.history().at(-1)?.summary).toBe("Button test")
+})
+
 test("a short circuit becomes a plain-language error", () => {
 	store.apply({ type: "connect", from: { componentId: "V1", pin: "positive" }, to: { componentId: "V1", pin: "negative" } })
 	expect(store.errors()[0]?.message).toContain("Short circuit")

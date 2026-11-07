@@ -12,9 +12,9 @@ import {
 } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
 import { snap, wirePath } from "../circuit/geometry"
-import { valueText } from "../circuit/part-text"
+import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
-import { SYMBOLS, type SymbolShape, switchLeverPath } from "../circuit/symbols"
+import { SYMBOLS, type SymbolShape, pushButtonPath, switchLeverPath } from "../circuit/symbols"
 import { UI_CONFIG } from "../circuit/ui-config"
 import { flowOf, voltageColour } from "../circuit/visuals"
 
@@ -66,6 +66,7 @@ export class CircuitCanvas {
 		const selection = this.store.selection()
 		const wiringFrom = this.store.wiringFrom()
 		const agentChanged = this.store.agentChanges().components
+		const pressed = this.store.pressed()
 		return this.store.circuit().components.map((part) => {
 			const at = this.positionOf(part)
 			const symbol = SYMBOLS[part.type]
@@ -75,14 +76,16 @@ export class CircuitCanvas {
 				transform: `translate(${at.x} ${at.y})`,
 				rotation: `rotate(${part.rotation})`,
 				paths: symbol.paths,
-				lever: part.type === "switch" ? switchLeverPath(part.params.closed) : undefined,
+				lever: this.leverOf(part, pressed),
 				label: labelPlacement(symbol, part.rotation, at),
 				marks: (symbol.marks ?? []).map((mark) => {
 					const offset = rotate(mark.at, part.rotation)
 					return { text: mark.text, x: at.x + offset.x, y: at.y + offset.y }
 				}),
 				value: valueText(part),
-				reading: current === 0 ? undefined : formatSi(Math.abs(current), "A"),
+				reading:
+					meterText(part, solution?.readings[part.id]) ?? (current === 0 ? undefined : formatSi(Math.abs(current), "A")),
+				meter: isMeter(part),
 				selected: selection?.kind === "component" && selection.id === part.id,
 				agentChanged: agentChanged.has(part.id),
 				pins: pinsOf(part.type).map((pin) => {
@@ -174,6 +177,7 @@ export class CircuitCanvas {
 			return
 		}
 		this.store.selection.set({ kind: "component", id: part.id })
+		if (part.type === "push-button") this.store.press(part.id)
 		this.interaction = {
 			kind: "drag",
 			componentId: part.id,
@@ -223,6 +227,7 @@ export class CircuitCanvas {
 			const dy = point.y - interaction.startPoint.y
 			if (!interaction.moved && Math.hypot(dx, dy) < this.config.dragThreshold) return
 			interaction.moved = true
+			this.store.releaseButtons()
 			const grid = this.config.gridSize
 			this.dragPreview.set({
 				componentId: interaction.componentId,
@@ -232,6 +237,7 @@ export class CircuitCanvas {
 	}
 
 	protected onPointerUp(): void {
+		this.store.releaseButtons()
 		const interaction = this.interaction
 		this.interaction = { kind: "idle" }
 		if (interaction.kind !== "drag") return
@@ -262,6 +268,12 @@ export class CircuitCanvas {
 			width,
 			height: view.height * scale,
 		})
+	}
+
+	private leverOf(part: Part, pressed: ReadonlySet<string>): string | undefined {
+		if (part.type === "switch") return switchLeverPath(part.params.closed)
+		if (part.type === "push-button") return pushButtonPath(part.params.normallyOpen === pressed.has(part.id))
+		return undefined
 	}
 
 	private place(type: ComponentType, point: Point): void {

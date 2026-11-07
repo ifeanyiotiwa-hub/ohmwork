@@ -59,10 +59,13 @@ function nodesOf(circuit: Circuit, solution?: DcSolution) {
 	})
 }
 
-const readingReport = ({ voltage, current }: ComponentReading) => ({
+const OPEN_READING = "open (nothing connects its leads)"
+
+const readingReport = ({ voltage, current, resistance }: ComponentReading) => ({
 	voltage: rounded(voltage),
 	current: rounded(current),
 	power: rounded(voltage * current),
+	...(resistance === undefined ? {} : { resistance: Number.isFinite(resistance) ? rounded(resistance) : OPEN_READING }),
 })
 
 export function simulationReport(circuit: Circuit, solution: DcSolution) {

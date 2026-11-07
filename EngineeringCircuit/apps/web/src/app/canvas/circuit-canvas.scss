@@ -168,3 +168,9 @@
 	dominant-baseline: central;
 	pointer-events: none;
 }
+
+.part-reading.meter-reading {
+	fill: var(--text);
+	font-size: 13px;
+	font-weight: 700;
+}

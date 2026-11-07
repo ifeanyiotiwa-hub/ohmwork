@@ -13,6 +13,9 @@
 				@for (d of item.paths; track $index) {
 					<path [attr.d]="d" />
 				}
+				@for (mark of item.marks; track $index) {
+					<text class="mark" [attr.x]="mark.at.x" [attr.y]="mark.at.y">{{ mark.text }}</text>
+				}
 			</svg>
 			<span class="name">{{ item.name }}</span>
 			@if (!item.simulated) {

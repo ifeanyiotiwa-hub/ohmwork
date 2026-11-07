@@ -63,7 +63,7 @@
 			<tspan class="part-name">{{ item.part.id }}</tspan> {{ item.value }}
 		</text>
 		@if (item.reading; as reading) {
-			<text class="part-reading" [attr.x]="item.label.x" [attr.y]="item.label.y + readingOffset" [attr.text-anchor]="item.label.anchor">{{ reading }}</text>
+			<text class="part-reading" [class.meter-reading]="item.meter" [attr.x]="item.label.x" [attr.y]="item.label.y + readingOffset" [attr.text-anchor]="item.label.anchor">{{ reading }}</text>
 		}
 	}
 

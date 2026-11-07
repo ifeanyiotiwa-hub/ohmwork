@@ -16,6 +16,7 @@ export class PartPalette {
 		type: definition.type,
 		name: PART_NAMES[definition.type],
 		paths: SYMBOLS[definition.type].paths,
+		marks: SYMBOLS[definition.type].marks ?? [],
 		simulated: isDcSimulated(definition.type),
 	}))
 }

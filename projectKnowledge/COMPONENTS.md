@@ -46,7 +46,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 |---|---|---|---|---|---|---|
 | `switch` (SPST) | a, b | closed | tiny / huge resistance | EC, CJS | D2 | in format |
 | `switch-spdt` | common, a, b | position (a/b) | two switches | EC, CJS | D3 | planned |
-| `push-button` | a, b | normallyOpen (true = NO, false = NC) | switch, toggles while pressed | EC (NO and NC), CJS | D6 | planned |
+| `push-button` | a, b | normallyOpen (true = NO, false = NC) | switch, toggles while pressed (held state is an engine input, never saved) | EC (NO and NC), CJS | D6 | simulated |
 | `relay` | coilA, coilB, common, normallyOpen, normallyClosed | coilVoltage (V), coilResistance (Ω) | coil current drives switch | EC, CJS | D9 | planned |
 
 ## Semiconductors
@@ -94,9 +94,9 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 ## Measurement
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `voltmeter` | positive, negative | – | open circuit, reads voltage | EC, CJS | D6 | planned |
-| `ammeter` | positive, negative | – | 0 V source, reads current | EC, CJS | D6 | planned |
-| `ohmmeter` | a, b | – | injects a small test current, reads V/I | EC, CJS | D6 | planned |
+| `voltmeter` | positive, negative | – | open circuit, reads voltage (CJS `ProbeElm`, infinite resistance) | EC, CJS | D6 | simulated |
+| `ammeter` | positive, negative | – | 0 V source, reads current (CJS `AmmeterElm`); across a battery it is a short circuit | EC, CJS | D6 | simulated |
+| `ohmmeter` | a, b | – | 1 mA test current out of `a`, reads V/I (CJS `OhmMeterElm`); "OL (open)" with nothing between its leads; warns on a powered circuit; needs no ground | EC, CJS | D6 | simulated |
 | `scope-probe` | positive, negative | channel, label | records voltage over time | CJS (Voltmeter/Scope Probe) | D9 | planned |
 
 ## Not a component, but needed

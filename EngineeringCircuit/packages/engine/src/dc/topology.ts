@@ -21,7 +21,7 @@ export function findShortCircuits(nets: readonly Net[], branches: readonly NetBr
 		if (branch.kind !== "voltage" || sourceLoops.union(...branch.nets)) continue
 		issues.push({
 			componentIds: [branch.componentId],
-			message: `Short circuit: "${branch.componentId}" is connected in a loop of voltage sources, closed switches, inductors and wires with no resistance.`,
+			message: `Short circuit: "${branch.componentId}" is connected in a loop of voltage sources, closed switches, inductors, ammeters and wires with no resistance.`,
 		})
 	}
 	return issues
@@ -49,6 +49,8 @@ export function chooseReferences(
 	nets: readonly Net[],
 	branches: readonly NetBranch[],
 	conductive: DisjointSets,
+	/** Islands that need no ground (e.g. an ohmmeter on an unpowered network) are solved without a warning. */
+	needsNoGround: (componentIds: readonly string[]) => boolean = () => false,
 ): References {
 	const groundRoots = new Set(nets.filter((net) => net.isGround).map((net) => conductive.find(net.index)))
 	const floatingRoots = new Set(
@@ -65,6 +67,7 @@ export function chooseReferences(
 
 		const islandPins = new Set(islandNets.flatMap((net) => net.pins.map((pin) => pin.componentId)))
 		const componentIds = circuit.components.map((component) => component.id).filter((id) => islandPins.has(id))
+		if (needsNoGround(componentIds)) continue
 		const subject = componentIds.length === 1 ? "Its voltages are" : "Their voltages are"
 		warnings.push({
 			componentIds,

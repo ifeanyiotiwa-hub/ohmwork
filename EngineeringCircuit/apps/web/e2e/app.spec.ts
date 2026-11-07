@@ -76,3 +76,49 @@ test("a switch flips when clicked and stops the current", async ({ page }) => {
 	await page.locator('[data-part="R1"]').click()
 	await expect(page.locator("[data-readings]")).toContainText("0 A")
 })
+
+test("a voltmeter across R2 shows 4 V; an ohmmeter touching nothing reads open", async ({ page }) => {
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	await page.locator('[data-palette="voltmeter"]').click()
+	await canvas.click({ position: { x: 800, y: 200 } })
+	await page.locator('[data-pin="VM1:positive"]').click()
+	await page.locator('[data-pin="R2:a"]').click()
+	await page.locator('[data-pin="VM1:negative"]').click()
+	await page.locator('[data-pin="R2:b"]').click()
+	await expect(canvas.locator(".meter-reading", { hasText: "4 V" })).toBeVisible()
+
+	await page.locator('[data-palette="ohmmeter"]').click()
+	await canvas.click({ position: { x: 800, y: 500 } })
+	await expect(canvas.locator(".meter-reading", { hasText: "OL (open)" })).toBeVisible()
+})
+
+test("a push button conducts only while held down", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-source", 200, 300],
+		["push-button", 400, 200],
+		["resistor", 600, 300],
+		["ground", 400, 450],
+	] as const) {
+		await page.locator(`[data-palette="${type}"]`).click()
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "PB1:a"],
+		["PB1:b", "R1:a"],
+		["R1:b", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	const current = canvas.locator(".part-reading", { hasText: "5 mA" })
+	await expect(current).toHaveCount(0)
+
+	await page.locator('[data-part="PB1"]').hover()
+	await page.mouse.down()
+	await expect(current.first()).toBeVisible()
+	await page.mouse.up()
+	await expect(current).toHaveCount(0)
+})

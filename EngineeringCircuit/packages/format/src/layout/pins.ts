@@ -6,17 +6,22 @@ import type { Point } from "../schema/geometry"
  * Shared by the app (drawing) and the MCP server (so an agent can lay parts out neatly).
  */
 const LEADS = { a: { x: -40, y: 0 }, b: { x: 40, y: 0 } }
+const POLARISED_LEADS = { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } }
 
 export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	ground: { terminal: { x: 0, y: -20 } },
-	"voltage-source": { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } },
-	"current-source": { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } },
+	"voltage-source": POLARISED_LEADS,
+	"current-source": POLARISED_LEADS,
 	resistor: LEADS,
 	capacitor: LEADS,
 	inductor: LEADS,
 	switch: LEADS,
+	"push-button": LEADS,
 	diode: { anode: { x: -40, y: 0 }, cathode: { x: 40, y: 0 } },
 	led: { anode: { x: -40, y: 0 }, cathode: { x: 40, y: 0 } },
+	voltmeter: POLARISED_LEADS,
+	ammeter: POLARISED_LEADS,
+	ohmmeter: LEADS,
 }
 
 /** Turns a point clockwise on screen by the part's rotation. */
