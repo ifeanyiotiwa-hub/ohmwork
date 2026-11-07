@@ -66,6 +66,28 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"p-mosfet": MOSFET_LEADS,
 	"voltage-rail": { terminal: { x: 0, y: 40 } },
 	"scope-probe": POLARISED_LEADS,
+	"seven-segment": Object.fromEntries(["a", "b", "c", "d", "e", "f", "g", "dp"].map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
+	"bcd-to-seven-segment": {
+		...Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: -40, y: -30 + index * 20 }])),
+		...Object.fromEntries(["a", "b", "c", "d", "e", "f", "g"].map((pin, index) => [pin, { x: 40, y: -60 + index * 20 }])),
+	},
+	"adc-4bit": {
+		in: { x: -40, y: -20 },
+		vref: { x: -40, y: 20 },
+		...Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: 40, y: -30 + index * 20 }])),
+	},
+	"dac-4bit": {
+		...Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: -40, y: -30 + index * 20 }])),
+		vref: { x: 0, y: -40 },
+		out: { x: 40, y: 0 },
+	},
+	relay: {
+		coilA: { x: -40, y: -20 },
+		coilB: { x: -40, y: 20 },
+		common: { x: 40, y: 0 },
+		normallyOpen: { x: 40, y: -20 },
+		normallyClosed: { x: 40, y: 20 },
+	},
 	"op-amp": { nonInverting: { x: -40, y: 20 }, inverting: { x: -40, y: -20 }, output: { x: 40, y: 0 } },
 	// 555 laid out as usually drawn: vcc on top, ground below, inputs left, output and reset right.
 	"timer-555": {

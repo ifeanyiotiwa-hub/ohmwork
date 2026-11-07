@@ -344,3 +344,39 @@ test("a 555 astable shows a square wave on the oscilloscope", async ({ page }) =
 		})
 		.toBeGreaterThan(1)
 })
+
+test("a BCD decoder drives a 7-segment display: input 1 lights segments b and c", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["logic-input", 120, 160],
+		["logic-input", 120, 240],
+		["logic-input", 120, 320],
+		["logic-input", 120, 400],
+		["bcd-to-seven-segment", 380, 280],
+		["seven-segment", 620, 280],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	const wires: [string, string][] = [
+		["IN1:out", "DEC1:d0"],
+		["IN2:out", "DEC1:d1"],
+		["IN3:out", "DEC1:d2"],
+		["IN4:out", "DEC1:d3"],
+		...["a", "b", "c", "d", "e", "f", "g"].map((segment): [string, string] => [`DEC1:${segment}`, `DISP1:${segment}`]),
+	]
+	for (const [from, to] of wires) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const lit = page.locator('[data-part="DISP1"] .segment.lit')
+	// All inputs at 0 shows "0": every segment except g.
+	await expect(lit).toHaveCount(6)
+
+	await page.locator('[data-part="IN1"]').click()
+	await expect(lit).toHaveCount(2)
+	await expect(page.locator('[data-part="DISP1"] [data-segment="b"]')).toHaveClass(/lit/)
+	await expect(page.locator('[data-part="DISP1"] [data-segment="c"]')).toHaveClass(/lit/)
+})

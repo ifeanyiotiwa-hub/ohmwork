@@ -20,4 +20,31 @@ export const ICS = [
 		params: {},
 		defaults: {},
 	}),
+	// Logic display, CircuitJS1 SevenSegElm's default mode: a segment lights while its pin is at logic 1.
+	defineComponent("seven-segment", {
+		idPrefix: "DISP",
+		pins: ["a", "b", "c", "d", "e", "f", "g", "dp"],
+		params: {},
+		defaults: {},
+	}),
+	// CircuitJS1 SevenSegDecoderElm table, including A–F for 10–15.
+	defineComponent("bcd-to-seven-segment", {
+		idPrefix: "DEC",
+		pins: ["d0", "d1", "d2", "d3", "a", "b", "c", "d", "e", "f", "g"],
+		params: {},
+		defaults: {},
+	}),
+	// Fixed at 4 bits: a part type's pins never change (ADR-009). CircuitJS1 ADCElm / DACElm behaviour.
+	defineComponent("adc-4bit", {
+		idPrefix: "ADC",
+		pins: ["in", "vref", "d0", "d1", "d2", "d3"],
+		params: {},
+		defaults: {},
+	}),
+	defineComponent("dac-4bit", {
+		idPrefix: "DAC",
+		pins: ["d0", "d1", "d2", "d3", "vref", "out"],
+		params: {},
+		defaults: {},
+	}),
 ] as const

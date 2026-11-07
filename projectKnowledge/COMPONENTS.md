@@ -47,7 +47,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `switch` (SPST) | a, b | closed | tiny / huge resistance | EC, CJS | D2 | in format |
 | `switch-spdt` | common, a, b | position (a/b) | common wired to the selected pin; click flips it | EC, CJS | D3 | simulated |
 | `push-button` | a, b | normallyOpen (true = NO, false = NC) | switch, toggles while pressed (held state is an engine input, never saved) | EC (NO and NC), CJS | D6 | simulated |
-| `relay` | coilA, coilB, common, normallyOpen, normallyClosed | coilVoltage (V), coilResistance (Ω) | coil current drives switch | EC, CJS | D9 | planned |
+| `relay` | coilA, coilB, common, normallyOpen, normallyClosed | coilInductance (H), coilResistance (Ω), onCurrent (A), offCurrent (A); CJS defaults 0.2 H, 20 Ω, 20 mA, 15 mA | series RL coil; contacts flip with hysteresis | EC, CJS | D9 | simulated |
 
 ## Semiconductors
 Diode-family params follow SPICE §7.2: saturationCurrent (IS, default 1e-14 A), emissionCoefficient (N, default 1), seriesResistance (RS, default 0 Ω), breakdownVoltage (BV, default none). The UI may also offer "forward voltage at a current" and convert, as CJS does.
@@ -86,10 +86,10 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 |---|---|---|---|---|---|---|
 | `op-amp` (ideal) | nonInverting, inverting, output | gain, supplyHigh (V), supplyLow (V) | high-gain source with a smooth tanh limit to the rails (ADR-019) | EC, CJS | D9 | simulated |
 | `timer-555` | ground, trigger, output, reset, control, threshold, discharge, vcc | – | comparators + SR latch + discharge transistor | EC, CJS | D9 | simulated |
-| `seven-segment` | a, b, c, d, e, f, g, dp, common | commonCathode | 8 LEDs | EC, CJS | D9 | planned |
-| `bcd-to-seven-segment` | d0, d1, d2, d3, a, b, c, d, e, f, g | – | logic decoder | EC, CJS | D9 | planned |
-| `adc` | in, vref, clk?, d0…dN | bits, referenceVoltage | sample + quantise | EC, CJS | D9 | planned |
-| `dac` | d0…dN, vref, out | bits, referenceVoltage | weighted sum | EC, CJS | D9 | planned |
+| `seven-segment` | a, b, c, d, e, f, g, dp | – | logic display (CJS default): a segment lights at logic 1. LED-accurate version with a common pin: later | EC, CJS | D9 | simulated |
+| `bcd-to-seven-segment` | d0, d1, d2, d3, a, b, c, d, e, f, g | – | logic decoder, CJS table incl. A–F | EC, CJS | D9 | simulated |
+| `adc-4bit` | in, vref, d0…d3 | – (fixed 4 bits, ADR-020) | trunc(15·Vin/Vref), as CJS | EC, CJS | D9 | simulated |
+| `dac-4bit` | d0…d3, vref, out | – (fixed 4 bits) | code·Vref/15 | EC, CJS | D9 | simulated |
 
 ## Measurement
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |

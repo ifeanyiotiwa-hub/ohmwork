@@ -10,6 +10,12 @@ export type LogicPart = { inputs: readonly string[]; outputs: readonly string[];
 
 const COUNTER_MODULUS = 16
 
+/** Segments a–g lit for each code 0–F (CircuitJS1 SevenSegDecoderElm.symbols). */
+const SEVEN_SEGMENT_CODES = [
+	"1111110", "0110000", "1101101", "1111001", "0110011", "1011011", "1011111", "1110000",
+	"1111111", "1111011", "1110111", "0011111", "1001110", "0111101", "1001111", "1000111",
+]
+
 const gate =
 	(truth: (a: boolean, b: boolean) => boolean): LogicPart => ({
 		inputs: ["a", "b"],
@@ -46,6 +52,7 @@ export type LogicType = Extract<
 	| "t-flip-flop"
 	| "jk-flip-flop"
 	| "counter-4bit"
+	| "bcd-to-seven-segment"
 >
 
 export const LOGIC_PARTS: Readonly<Record<LogicType, LogicPart>> = {
@@ -82,6 +89,16 @@ export const LOGIC_PARTS: Readonly<Record<LogicType, LogicPart>> = {
 		if (k) return 0
 		return value
 	}),
+	// CircuitJS1 SevenSegDecoderElm: segments a–g for 0–9 and A–F.
+	"bcd-to-seven-segment": {
+		inputs: ["d0", "d1", "d2", "d3"],
+		outputs: ["a", "b", "c", "d", "e", "f", "g"],
+		step: (bits, state) => {
+			const code = bits.reduce((sum, bit, index) => sum + (bit ? 1 << index : 0), 0)
+			const pattern = SEVEN_SEGMENT_CODES[code] ?? "0000000"
+			return { outputs: [...pattern].map((segment) => segment === "1"), state }
+		},
+	},
 	// Counts rising clock edges; reset (active high) clears it at once.
 	"counter-4bit": {
 		inputs: ["clk", "reset"],

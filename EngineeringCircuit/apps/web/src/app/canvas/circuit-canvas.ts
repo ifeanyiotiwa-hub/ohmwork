@@ -17,7 +17,15 @@ import { pathThrough, snap } from "../circuit/geometry"
 import { placeBox, routeAround } from "../circuit/routing"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
-import { SYMBOLS, type SymbolShape, pushButtonPath, spdtLeverPath, switchLeverPath } from "../circuit/symbols"
+import {
+	SEVEN_SEGMENT_PATHS,
+	SYMBOLS,
+	type SymbolShape,
+	pushButtonPath,
+	relayLeverPath,
+	spdtLeverPath,
+	switchLeverPath,
+} from "../circuit/symbols"
 import { UI_CONFIG } from "../circuit/ui-config"
 import { flowOf, voltageColour } from "../circuit/visuals"
 
@@ -80,7 +88,15 @@ export class CircuitCanvas {
 				transform: `translate(${at.x} ${at.y})`,
 				rotation: `rotate(${part.rotation})`,
 				paths: symbol.paths,
-				lever: this.leverOf(part, pressed),
+				lever: this.leverOf(part, pressed, solution?.states?.[part.id]),
+				segments:
+					part.type === "seven-segment"
+						? Object.entries(SEVEN_SEGMENT_PATHS).map(([pin, d]) => ({
+								pin,
+								d,
+								lit: (solution?.pinVoltages[`${part.id}:${pin}`] ?? 0) > logicHigh / 2,
+							}))
+						: [],
 				label: labelPlacement(symbol, part.rotation, at),
 				marks: (symbol.marks ?? []).map((mark) => {
 					const offset = rotate(mark.at, part.rotation)
@@ -295,7 +311,8 @@ export class CircuitCanvas {
 		})
 	}
 
-	private leverOf(part: Part, pressed: ReadonlySet<string>): string | undefined {
+	private leverOf(part: Part, pressed: ReadonlySet<string>, state: readonly boolean[] | undefined): string | undefined {
+		if (part.type === "relay") return relayLeverPath(state?.[0] ?? false)
 		if (part.type === "switch") return switchLeverPath(part.params.closed)
 		if (part.type === "push-button") return pushButtonPath(part.params.normallyOpen === pressed.has(part.id))
 		if (part.type === "switch-spdt") return spdtLeverPath(part.params.position)

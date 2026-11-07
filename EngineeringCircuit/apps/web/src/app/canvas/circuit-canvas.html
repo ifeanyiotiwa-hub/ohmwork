@@ -64,6 +64,9 @@
 				@if (item.lever; as lever) {
 					<path class="symbol" [attr.d]="lever" />
 				}
+				@for (segment of item.segments; track segment.pin) {
+					<path class="segment" [class.lit]="segment.lit" [attr.d]="segment.d" [attr.data-segment]="segment.pin" />
+				}
 			</g>
 		</g>
 		@for (mark of item.marks; track $index) {

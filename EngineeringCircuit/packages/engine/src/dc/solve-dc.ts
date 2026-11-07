@@ -36,6 +36,8 @@ const POWERING_TYPES: ReadonlySet<ComponentType> = new Set([
 	"clock",
 	"op-amp",
 	"timer-555",
+	"adc-4bit",
+	"dac-4bit",
 	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 ])
 
@@ -47,6 +49,8 @@ export type DcSolution = {
 	pinVoltages: Record<string, number>
 	readings: Record<string, ComponentReading>
 	ports: Record<string, ComponentReading>
+	/** Outputs of logic and switching parts during this solve (a flip-flop's Q, a relay pulled in), by id. */
+	states?: Record<string, readonly boolean[]>
 	warnings: SimIssue[]
 }
 
@@ -67,7 +71,7 @@ export function solveDc(circuit: Circuit, inputs: DcInputs = {}): DcResult {
 	for (let pass = 0; pass < MAX_LOGIC_PASSES; pass++) {
 		const result = solveCircuit(circuit, { ...base, logic })
 		if (!result.ok) return result
-		const next = advanceLogic(circuit, result.solution.pinVoltages, logic, circuit.simulation.logicHigh)
+		const next = advanceLogic(circuit, result.solution, logic, circuit.simulation.logicHigh)
 		if (sameOutputs(next, logic)) return result
 		logic = next
 	}
@@ -129,7 +133,7 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		nets,
 		branches,
 		conductive,
-		(componentIds, pins) => isUnpoweredMeasurement(circuit, componentIds) || areOpenLogicInputs(circuit, pins),
+		(componentIds, pins) => isUnpoweredMeasurement(circuit, componentIds) || areOpenInputs(circuit, pins),
 	)
 	const start = nets.map((net) => {
 		const pin = net.pins.find((candidate) => inputs.guess?.[pinKey(candidate)] !== undefined)
@@ -159,7 +163,8 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		...poweredOhmmeterWarnings(circuit, branches, conductive),
 		...reversedCapacitorWarnings(circuit, readings.readings),
 	]
-	return { ok: true, solution: { ...readings, warnings } }
+	const states = Object.fromEntries(Object.entries(inputs.logic ?? {}).map(([id, memory]) => [id, memory.outputs]))
+	return { ok: true, solution: { ...readings, ...(Object.keys(states).length > 0 ? { states } : {}), warnings } }
 }
 
 /** Newton–Raphson gives up after this many iterations (SPICE's ITL1 is 100; diode-heavy circuits need more). */
@@ -221,14 +226,29 @@ function reversedCapacitorWarnings(circuit: Circuit, readings: Record<string, Co
 	})
 }
 
-/** Pins that are all inputs of logic parts, connected to nothing that drives them: they read 0. */
-function areOpenLogicInputs(circuit: Circuit, pins: readonly PinRef[]): boolean {
+/**
+ * Pins that only read a voltage and draw no current, besides logic inputs. Left unconnected they read 0, which is
+ * harmless. Op-amp and 555 inputs are left out on purpose: a floating one is a classic mistake worth a warning.
+ */
+const READ_ONLY_PINS: Partial<Record<ComponentType, readonly string[]>> = {
+	"seven-segment": ["a", "b", "c", "d", "e", "f", "g", "dp"],
+	"adc-4bit": ["in", "vref"],
+	"dac-4bit": ["d0", "d1", "d2", "d3", "vref"],
+	"scope-probe": ["positive", "negative"],
+	voltmeter: ["positive", "negative"],
+}
+
+const readsOnly = (type: ComponentType, pin: string) =>
+	(logicPartOf(type)?.inputs.includes(pin) ?? false) || (READ_ONLY_PINS[type]?.includes(pin) ?? false)
+
+/** Pins that are all read-only inputs, connected to nothing that drives them: they read 0. */
+function areOpenInputs(circuit: Circuit, pins: readonly PinRef[]): boolean {
 	const typeOf = new Map(circuit.components.map((component) => [component.id, component.type]))
 	return (
 		pins.length > 0 &&
 		pins.every((pin) => {
 			const type = typeOf.get(pin.componentId)
-			return type !== undefined && (logicPartOf(type)?.inputs.includes(pin.pin) ?? false)
+			return type !== undefined && readsOnly(type, pin.pin)
 		})
 	)
 }

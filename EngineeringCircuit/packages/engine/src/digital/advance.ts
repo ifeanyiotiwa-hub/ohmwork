@@ -22,7 +22,7 @@ export function initialMemories(circuit: Circuit): LogicMemories {
  */
 export function advanceLogic(
 	circuit: Circuit,
-	pinVoltages: Readonly<Record<string, number>>,
+	solution: { pinVoltages: Readonly<Record<string, number>>; ports: Readonly<Record<string, { current: number }>> },
 	previous: LogicMemories,
 	logicHigh: number,
 ): LogicMemories {
@@ -30,8 +30,12 @@ export function advanceLogic(
 		circuit.components.flatMap((component) => {
 			const part = sequentialOf(component.type)
 			if (!part) return []
-			const voltageOf = (pin: string) => pinVoltages[pinKey({ componentId: component.id, pin })] ?? 0
-			return [[component.id, part.next(previous[component.id] ?? part.initial(), voltageOf, logicHigh)]]
+			const readings = {
+				voltage: (pin: string) => solution.pinVoltages[pinKey({ componentId: component.id, pin })] ?? 0,
+				current: (port: string) => solution.ports[`${component.id}/${port}`]?.current ?? 0,
+			}
+			const params: Record<string, unknown> = component.params
+			return [[component.id, part.next(previous[component.id] ?? part.initial(), readings, logicHigh, params)]]
 		}),
 	)
 }

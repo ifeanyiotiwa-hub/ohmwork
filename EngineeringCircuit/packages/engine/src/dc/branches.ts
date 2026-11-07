@@ -6,6 +6,7 @@ import type { Device } from "../nonlinear/device"
 import { diodeDevice } from "../nonlinear/diode"
 import { mosfetDevice } from "../nonlinear/mosfet"
 import { opAmpDevice } from "../nonlinear/op-amp"
+import { ADC_4BIT, DAC_4BIT, DAC_MAX_CODE, RELAY } from "../digital/mixed-parts"
 import { TIMER_555 } from "../digital/timer-555"
 import { acVoltage, squareVoltage } from "../transient/waveforms"
 
@@ -62,6 +63,9 @@ export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<Componen
 	"clock",
 	"timer-555",
 	"scope-probe",
+	"adc-4bit",
+	"dac-4bit",
+	"relay",
 	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 	"capacitor",
 	"polarized-capacitor",
@@ -72,7 +76,13 @@ export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<Componen
 ])
 
 /** Parts that carry state from one time step to the next (multi-port ones per port, keyed "T1/primary"). */
-export const STATEFUL_TYPES: ReadonlySet<ComponentType> = new Set(["capacitor", "polarized-capacitor", "inductor", "transformer"])
+export const STATEFUL_TYPES: ReadonlySet<ComponentType> = new Set([
+	"capacitor",
+	"polarized-capacitor",
+	"inductor",
+	"transformer",
+	"relay",
+])
 
 /** A typical multimeter test current; the ohmmeter reads voltage ÷ this (CircuitJS1's OhmMeterElm works the same way). */
 export const OHMMETER_TEST_CURRENT = 1e-3
@@ -134,6 +144,26 @@ const logicModel =
 		const outputs = logic?.[id]?.outputs ?? initialMemory(part).outputs
 		return part.outputs.map((pin, index) => toGround(id, pin, outputs[index] ? logicHigh : 0))
 	}
+
+const COIL: Pins = ["coilA", "coilB"]
+
+/**
+ * A coil's resistance and inductance in series, as one branch pair (circuits have no internal nodes):
+ * v = R·i + L·di/dt, stepped trapezoidally (backward Euler on the first step); at DC just R.
+ */
+function seriesCoil(id: string, resistance: number, inductance: number, transient: TransientContext | undefined): Branch[] {
+	if (!transient) return [{ kind: "resistor", componentId: id, pins: COIL, resistance, port: "coil" }]
+	const previous = transient.memory[`${id}/coil`]
+	const reactance = (previous ? 2 : 1) * (inductance / transient.timeStep)
+	const conductance = 1 / (resistance + reactance)
+	const history = previous
+		? conductance * (previous.voltage - (resistance - reactance) * previous.current)
+		: conductance * reactance * AT_REST.current
+	return [
+		{ kind: "resistor", componentId: id, pins: COIL, resistance: 1 / conductance, port: "coil" },
+		{ kind: "current", componentId: id, pins: COIL, current: -history, port: "coil" },
+	]
+}
 
 const PRIMARY: Pins = ["primaryA", "primaryB"]
 const SECONDARY: Pins = ["secondaryA", "secondaryB"]
@@ -298,6 +328,26 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 		]
 	},
 	"scope-probe": () => [],
+	"seven-segment": () => [],
+	"bcd-to-seven-segment": logicModel(LOGIC_PARTS["bcd-to-seven-segment"]),
+	"adc-4bit": ({ id }, { logic, logicHigh }) => {
+		const outputs = (logic?.[id] ?? ADC_4BIT.initial()).outputs
+		return ["d0", "d1", "d2", "d3"].map((pin, index) => toGround(id, pin, outputs[index] ? logicHigh : 0))
+	},
+	// out = code × V(vref) / 15, a VCVS from vref so the output follows the reference within the solve.
+	"dac-4bit": ({ id }, { logic }) => [
+		{
+			kind: "vcvs",
+			componentId: id,
+			pins: ["out", GROUND_PIN],
+			control: ["vref", GROUND_PIN],
+			gain: (logic?.[id] ?? DAC_4BIT.initial()).state.value / DAC_MAX_CODE,
+		},
+	],
+	relay: ({ id, params }, { logic, transient }) => {
+		const pulledIn = (logic?.[id] ?? RELAY.initial()).outputs[0] ?? false
+		return [...seriesCoil(id, params.coilResistance, params.coilInductance, transient), wire(id, ["common", pulledIn ? "normallyOpen" : "normallyClosed"])]
+	},
 	voltmeter: () => [],
 	ammeter: ({ id }) => [wire(id, ["positive", "negative"])],
 	ohmmeter: ({ id }) => [{ kind: "current", componentId: id, pins: ["a", "b"], current: OHMMETER_TEST_CURRENT, test: true }],

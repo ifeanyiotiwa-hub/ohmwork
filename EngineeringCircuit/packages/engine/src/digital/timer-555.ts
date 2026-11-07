@@ -10,7 +10,7 @@ const RESET_THRESHOLD = 0.7
 export const TIMER_555: Sequential = {
 	// CircuitJS1 starts a 555 with its output high.
 	initial: (): LogicMemory => ({ outputs: [true], state: { value: 0, clock: false } }),
-	next: (memory, voltageOf) => {
+	next: (memory, { voltage: voltageOf }) => {
 		const ground = voltageOf("ground")
 		const control = voltageOf("control")
 		let high = memory.outputs[0] ?? true

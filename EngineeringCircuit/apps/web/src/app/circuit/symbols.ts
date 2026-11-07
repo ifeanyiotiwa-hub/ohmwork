@@ -63,6 +63,21 @@ const boxSymbol = (paths: string[], marks: { text: string; at: Point }[]): Symbo
 	labelAnchor: "middle",
 })
 const SOURCE_BOX = "M-20 -14 H20 V14 H-20 Z M20 0 H40"
+
+/** The 7-segment digit's segments a–g and the decimal point, drawn inside the display box. */
+export const SEVEN_SEGMENT_PATHS: Readonly<Record<string, string>> = {
+	a: "M-4 -30 H16",
+	b: "M18 -28 V-2",
+	c: "M18 2 V28",
+	d: "M-4 30 H16",
+	e: "M-6 2 V28",
+	f: "M-6 -28 V-2",
+	g: "M-4 0 H16",
+	dp: "M24 30 h0.1",
+}
+const chipBox = (top: number, bottom: number) => `M-24 ${top} H24 V${bottom} H-24 Z`
+const leadsLeft = (ys: number[]) => ys.map((y) => `M-40 ${y} H-24`).join(" ")
+const leadsRight = (ys: number[]) => ys.map((y) => `M24 ${y} H40`).join(" ")
 const SOURCE_BOX_BODY: Box = { left: -20, top: -16, right: 40, bottom: 16 }
 
 const MOSFET_PATHS = ["M-40 0 H-12 M-12 -14 V14", "M-4 -16 V16", "M-4 -10 H20 V-40 M-4 10 H20 V40"]
@@ -329,6 +344,57 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 40, y: -46 },
 		labelAnchor: "start",
 	},
+	"seven-segment": {
+		body: { left: -40, top: -80, right: 40, bottom: 80 },
+		paths: [leadsLeft([-70, -50, -30, -10, 10, 30, 50, 70]), "M-24 -80 H34 V80 H-24 Z"],
+		marks: ["a", "b", "c", "d", "e", "f", "g", "·"].map((text, index) => ({ text, at: { x: -18, y: -70 + index * 20 } })),
+		label: { x: 0, y: -88 },
+		labelAnchor: "middle",
+	},
+	"bcd-to-seven-segment": {
+		body: { left: -40, top: -70, right: 40, bottom: 70 },
+		paths: [chipBox(-70, 70), leadsLeft([-30, -10, 10, 30]), leadsRight([-60, -40, -20, 0, 20, 40, 60])],
+		marks: [
+			...["1", "2", "4", "8"].map((text, index) => ({ text, at: { x: -16, y: -30 + index * 20 } })),
+			...["a", "b", "c", "d", "e", "f", "g"].map((text, index) => ({ text, at: { x: 16, y: -60 + index * 20 } })),
+		],
+		label: { x: 0, y: -78 },
+		labelAnchor: "middle",
+	},
+	"adc-4bit": {
+		body: { left: -40, top: -40, right: 40, bottom: 40 },
+		paths: [chipBox(-40, 40), leadsLeft([-20, 20]), leadsRight([-30, -10, 10, 30])],
+		marks: [
+			{ text: "in", at: { x: -13, y: -20 } },
+			{ text: "ref", at: { x: -11, y: 20 } },
+			...["1", "2", "4", "8"].map((text, index) => ({ text, at: { x: 16, y: -30 + index * 20 } })),
+		],
+		label: { x: 0, y: -48 },
+		labelAnchor: "middle",
+	},
+	"dac-4bit": {
+		body: { left: -40, top: -40, right: 40, bottom: 40 },
+		paths: [chipBox(-40, 40), leadsLeft([-30, -10, 10, 30]), "M24 0 H40"],
+		marks: [
+			...["1", "2", "4", "8"].map((text, index) => ({ text, at: { x: -16, y: -30 + index * 20 } })),
+			{ text: "ref", at: { x: 0, y: -30 } },
+			{ text: "out", at: { x: 12, y: 0 } },
+		],
+		label: { x: 0, y: -48 },
+		labelAnchor: "middle",
+	},
+	relay: {
+		body: { left: -40, top: -30, right: 40, bottom: 30 },
+		paths: [
+			"M-40 -20 H-24 V-12 M-40 20 H-24 V12",
+			"M-32 -12 H-16 V12 H-32 Z",
+			"M-16 0 H8",
+			"M40 0 H14 M40 -20 H18 M40 20 H18",
+			"M14 0 a2.5 2.5 0 1 0 0.1 0 M18 -20 a2.5 2.5 0 1 0 0.1 0 M18 20 a2.5 2.5 0 1 0 0.1 0",
+		],
+		label: { x: 0, y: -36 },
+		labelAnchor: "middle",
+	},
 	voltmeter: {
 		body: TWO_PIN_BODY,
 		paths: METER_PATHS,
@@ -356,6 +422,9 @@ export const switchLeverPath = (closed: boolean) => (closed ? "M-16 0 L16 0" : "
 
 /** The two-way switch's lever, from the common contact to the selected one. */
 export const spdtLeverPath = (position: "a" | "b") => (position === "a" ? "M-16 -1 L16 -18" : "M-16 1 L16 18")
+
+/** A relay's contact arm: from common to normally open when pulled in, else to normally closed. */
+export const relayLeverPath = (pulledIn: boolean) => (pulledIn ? "M14 0 L18 -18" : "M14 0 L18 18")
 
 /** A plunger bar that touches both contacts while the button conducts. */
 export const pushButtonPath = (conducting: boolean) => (conducting ? "M-18 -3 H18 M0 -3 V-16" : "M-18 -11 H18 M0 -11 V-24")
@@ -408,6 +477,11 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"op-amp": "Op-amp",
 	"timer-555": "555 timer",
 	"scope-probe": "Scope probe",
+	"seven-segment": "7-segment display",
+	"bcd-to-seven-segment": "BCD to 7-segment",
+	"adc-4bit": "4-bit ADC",
+	"dac-4bit": "4-bit DAC",
+	relay: "Relay",
 	voltmeter: "Voltmeter",
 	ammeter: "Ammeter",
 	ohmmeter: "Ohmmeter",

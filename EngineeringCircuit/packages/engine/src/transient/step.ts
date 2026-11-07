@@ -43,6 +43,6 @@ export function stepTransient(circuit: Circuit, previous: TransientState, { time
 			.filter(([key]) => stateful.has(key.split("/")[0] ?? ""))
 			.map(([key, reading]): [string, StoredState] => [key, { voltage: reading.voltage, current: reading.current }]),
 	)
-	const logic = advanceLogic(circuit, result.solution.pinVoltages, previous.logic ?? initialMemories(circuit), circuit.simulation.logicHigh)
+	const logic = advanceLogic(circuit, result.solution, previous.logic ?? initialMemories(circuit), circuit.simulation.logicHigh)
 	return { ok: true, state: { time, memory, pinVoltages: result.solution.pinVoltages, logic }, solution: result.solution }
 }
