@@ -532,3 +532,19 @@ test("the lesson travels with the circuit, so a learner's saved attempt can be c
 	document.replace(saved.circuit as ReturnType<typeof createCircuit>, "learner", "Opened my attempt")
 	expect((await call("check_solution")).data).toMatchObject({ lesson: "light-an-led", passed: false })
 })
+
+test("disconnect removes one wire, and remove_component removes a part with its wires", async () => {
+	await buildVoltageDivider()
+	const wiresOf = () => document.circuit.wires.map((wire) => `${wire.from.componentId}.${wire.from.pin}-${wire.to.componentId}.${wire.to.pin}`)
+	expect(wiresOf()).toContain("R1.b-R2.a")
+
+	const middle = document.circuit.wires.find((wire) => wire.from.componentId === "R1" && wire.to.componentId === "R2")
+	expect((await call("disconnect", { wireId: middle?.id ?? "" })).isError).toBe(false)
+	expect(wiresOf()).not.toContain("R1.b-R2.a")
+	expect((await call("disconnect", { wireId: "w99" })).isError).toBe(true)
+
+	expect((await call("remove_component", { componentId: "R2" })).isError).toBe(false)
+	expect(document.circuit.components.map((component) => component.id)).toEqual(["V1", "R1", "GND1"])
+	expect(document.circuit.wires.some((wire) => wire.from.componentId === "R2" || wire.to.componentId === "R2")).toBe(false)
+	expect((await call("remove_component", { componentId: "R2" })).isError).toBe(true)
+})

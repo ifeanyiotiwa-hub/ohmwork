@@ -48,7 +48,7 @@ whatever the app is at that point.
 | ~~MCP file paths~~ (done) | `open_circuit` / `save_circuit` refuse paths outside the workspace folder |
 | ~~Claims not enforced~~ (done) | RC golden at the claimed 0.003%, RLC within 1% at every point; op-amp at 0.03%; a typical-mistake test for every lesson; a square source simulated in a circuit |
 | ~~RGB LED~~ (done, format v7) | One model and rating per colour (red, green, blue from the LED_MODELS); burn-out warnings per colour |
-| Missing tests | Logic hold/reset cases, relay drop-out, settling triggers, MCP `remove_component`/`disconnect`, oversized live messages, library delete, rotate, pause, Ctrl/⌘+A, Escape |
+| ~~Missing tests~~ (done; the status bar now says "Paused" while paused) | Logic hold/reset cases, relay drop-out, settling triggers, MCP `remove_component`/`disconnect`, oversized live messages, library delete, rotate, pause, Ctrl/⌘+A, Escape |
 | Keyboard and screen readers | Parts and wires focusable and operable from the keyboard; status bar announces only problems and changes, not the time |
 | Touch | Larger invisible pin hit areas; drag/long-press threshold in screen pixels, sized for fingers |
 | Android template leftovers | Remove the TV launcher entry, template layout/colours/robot icon; dark icon background and splash |

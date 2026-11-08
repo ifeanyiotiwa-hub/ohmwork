@@ -3,6 +3,7 @@ import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import { expect, test } from "@playwright/test"
 import { withoutFileDialogs } from "../support/file-dialogs"
+import { choosePart } from "../support/parts"
 
 const PORT = Number(process.env["CSP_PORT"] ?? 4321)
 const ORIGIN = `http://127.0.0.1:${PORT}`
@@ -23,6 +24,9 @@ async function desktopPolicy(html: string): Promise<string> {
 		.map(([name, value]) => `${name} ${value}`)
 		.join("; ")
 }
+
+// The desktop app has no service worker (ADR-025); here it would also serve cached pages past the policy header.
+test.use({ serviceWorkers: "block" })
 
 async function startServer(): Promise<ChildProcess> {
 	const server = spawn("node", ["e2e/support/static-server.mjs", "dist/web/browser", String(PORT)], { stdio: "ignore" })
@@ -63,6 +67,30 @@ test("under the desktop app's security policy, the app is styled, simulates and 
 		const download = page.waitForEvent("download")
 		await page.locator("[data-picture-png]").click()
 		expect((await download).suggestedFilename()).toBe("kvl-and-voltage-divider.png")
+
+		// Time simulation runs in a Web Worker (worker-src), and the live link opens a WebSocket to 127.0.0.1
+		// (connect-src). Nothing listens on this port: the attempt must be allowed, then fail as a closed link.
+		await page.goto(`${ORIGIN}/?live=${encodeURIComponent("ws://127.0.0.1:4398/")}&token=csp-check-0123456789`)
+		await page.getByRole("button", { name: "New" }).click()
+		const canvas = page.getByRole("application", { name: "Circuit canvas" })
+		for (const [type, x, y] of [
+			["ac-source", 200, 300],
+			["resistor", 500, 300],
+			["ground", 350, 450],
+		] as const) {
+			await choosePart(page, type)
+			await canvas.click({ position: { x, y } })
+		}
+		for (const [from, to] of [
+			["AC1:positive", "R1:a"],
+			["R1:b", "GND1:terminal"],
+			["AC1:negative", "GND1:terminal"],
+		]) {
+			await page.locator(`[data-pin="${from}"]`).click()
+			await page.locator(`[data-pin="${to}"]`).click()
+		}
+		await expect(page.locator("[data-sim-time]")).toContainText("t =")
+		await expect(page.locator("[data-live]")).toContainText(/Connecting|Reconnecting/)
 
 		expect(blocked).toEqual([])
 	} finally {

@@ -162,6 +162,22 @@ test("between 15 and 20 mA the relay keeps whatever side it was on (hysteresis)"
 	expect(held.ok && held.solution.readings.RNO?.current).toBeCloseTo(0.09, 6)
 })
 
+test("below 15 mA a pulled-in relay drops out again, once its coil current has fallen", () => {
+	let state = initialTransientState()
+	const run = (circuit: ReturnType<typeof relayCircuit>, steps: number) => {
+		let last: ReturnType<typeof stepTransient> | undefined
+		for (let step = 0; step < steps; step++) {
+			last = stepTransient(circuit, state, { timeStep: 1e-3 })
+			if (!last.ok) throw new Error(JSON.stringify(last.errors))
+			state = last.state
+		}
+		return last?.ok ? last.solution : undefined
+	}
+	expect(run(relayCircuit(5), 200)?.readings.RNO?.current).toBeCloseTo(0.09, 6)
+	// 0.2 V on the 20 Ω coil: 10 mA, below the 15 mA drop-out current, after a few τ = 10 ms.
+	expect(run(relayCircuit(0.2), 200)?.readings.RNC?.current).toBeCloseTo(0.09, 6)
+})
+
 test("unconnected inputs that only read (display segments, ADC and DAC pins, probes) raise no ground warning", () => {
 	const result = solveDc(
 		circuitOf(

@@ -10,7 +10,7 @@
 	}
 	@if (healthy()) {
 		<p class="issue ok" data-sim-time>
-			Simulating · {{ store.circuit().components.length }} parts ·
+			{{ store.paused() ? "Paused" : "Simulating" }} · {{ store.circuit().components.length }} parts ·
 			@if (time(); as now) {
 				t = {{ now }}
 			} @else {

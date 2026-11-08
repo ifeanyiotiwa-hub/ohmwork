@@ -63,8 +63,8 @@ test("a transistor with its base left unconnected stays off", () => {
 	expect(result.ok && Math.abs(result.solution.readings.R1?.current ?? 1)).toBeLessThan(1e-6)
 })
 
-test("a MOSFET with its gate left unconnected is reported, not crashed", () => {
-	expectSane(
+test("a MOSFET with its gate left unconnected stays off, and the floating gate is reported", () => {
+	const result = solveDc(
 		circuitOf(
 			[
 				{ id: "V1", type: "voltage-source", params: { voltage: 9 } },
@@ -75,6 +75,9 @@ test("a MOSFET with its gate left unconnected is reported, not crashed", () => {
 			[["V1.positive", "R1.a"], ["R1.b", "M1.drain"], ["M1.source", "GND.terminal"], ["V1.negative", "GND.terminal"]],
 		),
 	)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	expect(Math.abs(result.solution.readings.R1?.current ?? 1)).toBeLessThan(1e-9)
+	expect(result.solution.warnings).toContainEqual(expect.objectContaining({ componentIds: ["M1"], message: expect.stringContaining('pin "gate"') }))
 })
 
 test("a full-wave bridge rectifier runs over time and outputs the positive halves", () => {

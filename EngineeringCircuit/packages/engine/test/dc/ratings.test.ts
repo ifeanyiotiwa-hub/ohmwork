@@ -122,3 +122,21 @@ test("parts within their ratings raise nothing", () => {
 		),
 	).toEqual([])
 })
+
+test("a common-anode RGB LED lights a colour when that pin is pulled low (current flows from the common pin into it)", () => {
+	const result = solveDc(
+		circuitOf(
+			[
+				{ id: "V1", type: "voltage-source", params: { voltage: 5 } },
+				{ id: "R1", type: "resistor", params: { resistance: 220 } },
+				{ id: "RGB1", type: "rgb-led", params: { commonCathode: false } },
+				{ id: "GND", type: "ground", params: {} },
+			],
+			[["V1.positive", "RGB1.common"], ["RGB1.red", "R1.a"], ["R1.b", "GND.terminal"], ["V1.negative", "GND.terminal"]],
+		),
+	)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	// (5 − 1.85 V) / 220 Ω ≈ 14 mA through red; nothing through the others.
+	expect(Math.abs(result.solution.ports["RGB1/red"]?.current ?? 0)).toBeCloseTo(0.0143, 3)
+	expect(Math.abs(result.solution.ports["RGB1/green"]?.current ?? 1)).toBeLessThan(1e-9)
+})

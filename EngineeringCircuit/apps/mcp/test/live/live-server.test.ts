@@ -163,3 +163,22 @@ test("a fixed token (EC_LIVE_TOKEN) lets a restarted server be found at the same
 		await fixed.close()
 	}
 })
+
+test("a connection with no Origin header (not from a browser page) is refused", async () => {
+	const url = new URL(linkParts().address)
+	url.searchParams.set(LIVE_TOKEN_PARAM, linkParts().token)
+	const socket = new WebSocket(url)
+	socket.on("error", () => undefined)
+	peers.push(socket)
+	expect(await refusal(socket)).toBe(403)
+})
+
+test("a message larger than the limit closes the connection and changes nothing", async () => {
+	const peer = await join()
+	await peer.next()
+	const closed = new Promise<number>((resolve) => peer.socket.on("close", (code) => resolve(code)))
+	peer.socket.send(JSON.stringify({ ...addResistor, padding: "x".repeat(MAX_MESSAGE_BYTES) }))
+	// 1009: message too big (RFC 6455).
+	expect(await closed).toBe(1009)
+	expect(document.revision).toBe(0)
+})

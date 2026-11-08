@@ -256,3 +256,66 @@ test("an unconnected logic input reads 0 without a ground warning", () => {
 	)
 	expect(result.ok && result.solution.warnings).toEqual([])
 })
+
+test("a JK flip-flop sets with J, resets with K, and holds with neither, on rising edges; a T flip-flop holds when T is 0", () => {
+	const flipFlops = (j: boolean, k: boolean, t: boolean) =>
+		circuitOf(
+			[
+				{ id: "CLK1", type: "clock", params: { frequency: 1000, dutyCycle: 0.5 } },
+				input("J", j),
+				input("K", k),
+				input("T", t),
+				{ id: "JK1", type: "jk-flip-flop", params: {} },
+				{ id: "TFF1", type: "t-flip-flop", params: {} },
+			],
+			[["CLK1.out", "JK1.clk"], ["J.out", "JK1.j"], ["K.out", "JK1.k"], ["CLK1.out", "TFF1.clk"], ["T.out", "TFF1.t"]],
+		)
+	// Rising edges at 0, 1, 2 ms.
+	const set = run(flipFlops(true, false, false), 0.5e-3)
+	expect([bit(set.voltages, "JK1:q"), bit(set.voltages, "TFF1:q")]).toEqual([true, false])
+	const held = run(flipFlops(false, false, false), 1e-3, set.state)
+	expect([bit(held.voltages, "JK1:q"), bit(held.voltages, "TFF1:q")]).toEqual([true, false])
+	const reset = run(flipFlops(false, true, false), 1e-3, held.state)
+	expect([bit(reset.voltages, "JK1:q"), bit(reset.voltages, "JK1:qNot")]).toEqual([false, true])
+})
+
+test("the SR latch parts set, hold and reset", () => {
+	const nor = (s: boolean, r: boolean) =>
+		circuitOf([input("S", s), input("R", r), { id: "SR1", type: "sr-latch", params: {} }], [["S.out", "SR1.s"], ["R.out", "SR1.r"]])
+	const set = run(nor(true, false), 0.1e-3)
+	const held = run(nor(false, false), 0.1e-3, set.state)
+	const reset = run(nor(false, true), 0.1e-3, held.state)
+	expect([set, held, reset].map((step) => bit(step.voltages, "SR1:q"))).toEqual([true, true, false])
+	expect(bit(reset.voltages, "SR1:qNot")).toBe(true)
+
+	// The inverted latch acts on low inputs: S̄ = 0 sets, R̄ = 0 resets, both 1 holds.
+	const nand = (sNot: boolean, rNot: boolean) =>
+		circuitOf(
+			[input("S", sNot), input("R", rNot), { id: "SRN1", type: "sr-latch-inverted", params: {} }],
+			[["S.out", "SRN1.sNot"], ["R.out", "SRN1.rNot"]],
+		)
+	const setLow = run(nand(false, true), 0.1e-3)
+	const heldHigh = run(nand(true, true), 0.1e-3, setLow.state)
+	const resetLow = run(nand(true, false), 0.1e-3, heldHigh.state)
+	expect([setLow, heldHigh, resetLow].map((step) => bit(step.voltages, "SRN1:q"))).toEqual([true, true, false])
+})
+
+test("with a 3.3 V logic level, outputs are 3.3 V and the threshold is 1.65 V: 2 V reads as 1 (it would read as 0 at 5 V)", () => {
+	const notOfTwoVolts = (logicHigh: number) => {
+		const circuit = circuitOf(
+			[
+				{ id: "V1", type: "voltage-source", params: { voltage: 2 } },
+				{ id: "GND", type: "ground", params: {} },
+				{ id: "N1", type: "not-gate", params: {} },
+				{ id: "IN1", type: "logic-input", params: { high: true } },
+				{ id: "OUT1", type: "logic-output", params: {} },
+			],
+			[["V1.positive", "N1.in"], ["V1.negative", "GND.terminal"], ["IN1.out", "OUT1.in"]],
+		)
+		const result = solveDc({ ...circuit, simulation: { ...circuit.simulation, logicHigh } })
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		return { not: result.solution.pinVoltages["N1:out"], input: result.solution.pinVoltages["IN1:out"] }
+	}
+	expect(notOfTwoVolts(3.3)).toEqual({ not: 0, input: 3.3 })
+	expect(notOfTwoVolts(5)).toEqual({ not: 5, input: 5 })
+})

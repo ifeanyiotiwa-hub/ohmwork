@@ -74,3 +74,13 @@ test("an unsubscribed listener hears nothing more", () => {
 	document.apply(addResistor, "agent")
 	expect(changes).toEqual([])
 })
+
+test("history keeps only the last `historyLimit` changes; undo stops there", () => {
+	const document = new CircuitDocument(createCircuit("t"), { historyLimit: 2 })
+	for (let count = 0; count < 3; count++) document.apply({ type: "add-component", component: { type: "resistor" } }, "learner")
+	expect(document.history).toHaveLength(2)
+	expect(document.undo("learner").ok).toBe(true)
+	expect(document.undo("learner").ok).toBe(true)
+	expect(document.undo("learner")).toEqual({ ok: false, message: "Nothing to undo" })
+	expect(document.circuit.components.map((component) => component.id)).toEqual(["R1"])
+})
