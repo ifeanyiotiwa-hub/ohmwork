@@ -18,6 +18,7 @@ Device (works offline)                     Server (optional, later)
 | `packages/engine` | Simulation: analog (MNA, Newton–Raphson), digital logic stepped with the analog solve (mixed signal, ADR-018) | `format` |
 | `apps/web` | Angular 22 UI (signals, standalone, zoneless), SVG canvas; plain circuits solved in-thread, time-dependent ones in a Web Worker | `format`, `engine`, `editing` |
 | `packages/editing` | Shared edit commands (`applyCommand`, validated `editCommandSchema`), `CircuitDocument` (author-tagged history, undo, change subscription) and the live-link protocol (`live-protocol.ts`). Used by the MCP server and the UI | `format` |
+| `packages/lessons` | Lesson format, behaviour checks (`checkSolution`), starter lessons | `format`, `engine` |
 | `apps/mcp` | MCP server (TypeScript SDK v2, stdio): build/simulate/explain tools; hosts the live link (WebSocket on 127.0.0.1) that shares its `CircuitDocument` with the app | `format`, `engine`, `editing` |
 | `apps/desktop` | Tauri 2 shell around `apps/web` (desktop + mobile) | `apps/web` build |
 

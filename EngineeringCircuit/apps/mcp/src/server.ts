@@ -11,7 +11,8 @@ import {
 	rotationSchema,
 	serializeCircuit,
 } from "@engineering-circuit/format"
-import { type CallToolResult, McpServer } from "@modelcontextprotocol/server"
+import { LESSONS, type Lesson, checkSolution, lessonById } from "@engineering-circuit/lessons"
+import { type CallToolResult, McpServer, completable } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import type { LiveServer } from "./live/live-server"
 import { DEFAULT_OPTIONS, type ServerOptions } from "./options"
@@ -36,6 +37,7 @@ A wire leaves each pin in the direction the pin points (away from its part) and 
 get_circuit lists every pin's position; use move_component / rotate_component to tidy up.
 Meters are ideal: a voltmeter goes across a part, an ammeter in series (across a battery it is a short circuit), an ohmmeter across an unpowered part.
 Push buttons are released unless you list them in simulate/probe "pressed"; in the app the learner holds them with the mouse.
+Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style.
 Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 
@@ -351,6 +353,95 @@ export function createServer(
 				return text(`Saved to ${fullPath}`)
 			} catch (error) {
 				return failure(`Could not save ${fullPath}: ${error instanceof Error ? error.message : String(error)}`)
+			}
+		},
+	)
+
+	server.registerTool(
+		"rename_circuit",
+		{ description: "Give the circuit a new name.", inputSchema: z.object({ name: z.string().min(1) }) },
+		({ name }) => edit({ type: "rename-circuit", name }),
+	)
+
+	let activeLesson: Lesson | undefined
+	const lessonIds = LESSONS.map((lesson) => lesson.id).join(", ")
+	const unknownLesson = (id: string) => failure(`No lesson "${id}". Lessons: ${lessonIds}.`)
+
+	server.registerTool(
+		"list_lessons",
+		{ description: "The starter lessons, in teaching order.", annotations: READ_ONLY },
+		() => text(LESSONS.map(({ id, title, level, summary }) => ({ id, title, level, summary }))),
+	)
+
+	server.registerTool(
+		"load_lesson",
+		{
+			description:
+				"Start a lesson: replaces the circuit with a fresh one named after it (undo brings the old one back). Returns the goal, steps and checks to share, and hints for you to give one at a time.",
+			inputSchema: z.object({ id: z.string().min(1) }),
+		},
+		({ id }) => {
+			const lesson = lessonById(id)
+			if (!lesson) return unknownLesson(id)
+			activeLesson = lesson
+			document.replace({ ...createCircuit(lesson.title), description: lesson.goal }, "agent", `Started lesson "${lesson.title}"`)
+			return text({
+				id: lesson.id,
+				title: lesson.title,
+				goal: lesson.goal,
+				steps: lesson.steps.map((step) => step.text),
+				checks: lesson.checks.map((check) => check.description),
+				hintsForTutor: lesson.steps.flatMap((step) => (step.hint ? [step.hint] : [])),
+			})
+		},
+	)
+
+	server.registerTool(
+		"check_solution",
+		{
+			description:
+				"Check the current circuit against the lesson (the one loaded, or `id`): each check passes or says what the circuit actually does.",
+			inputSchema: z.object({ id: z.string().min(1).optional() }),
+			annotations: READ_ONLY,
+		},
+		({ id }) => {
+			const lesson = id ? lessonById(id) : activeLesson
+			if (id && !lesson) return unknownLesson(id)
+			if (!lesson) return failure("No lesson is loaded. Start one with load_lesson (see list_lessons).")
+			return text({ lesson: lesson.id, ...checkSolution(document.circuit, lesson) })
+		},
+	)
+
+	server.registerPrompt(
+		"tutor",
+		{
+			title: "Tutor a lesson",
+			description: "Coach the learner through a lesson in the app: hints and questions, not ready-made answers.",
+			argsSchema: z.object({
+				lesson: completable(z.string().describe("Lesson id, e.g. light-an-led"), (value) =>
+					LESSONS.map((lesson) => lesson.id).filter((candidate) => candidate.startsWith(value)),
+				),
+			}),
+		},
+		({ lesson: id }) => {
+			const lesson = lessonById(id)
+			const title = lesson ? `"${lesson.title}" (${lesson.id})` : `"${id}" (unknown: call list_lessons)`
+			return {
+				messages: [
+					{
+						role: "user" as const,
+						content: {
+							type: "text" as const,
+							text: `Tutor me through the lesson ${title} in EngineeringCircuit.
+- Call load_lesson, explain the goal in plain words, and offer open_in_app so I can build it myself while you watch.
+- Let me build. Don't build it for me unless I ask; then build one step and explain it.
+- Give one hint at a time, only when I'm stuck, and ask a question that leads me to the next idea.
+- Use recent_changes to see what I did, and simulate / probe to explain with real numbers from my circuit.
+- When I think I'm done, call check_solution. Praise what passes; for what fails, explain what my circuit actually does and why, and hint at the fix.
+- Keep it short and friendly, for a beginner.`,
+						},
+					},
+				],
 			}
 		},
 	)

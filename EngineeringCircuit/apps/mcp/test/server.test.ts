@@ -60,18 +60,22 @@ test("offers the build, inspect and file tools", async () => {
 	const { tools } = await client.listTools()
 	expect(tools.map((tool) => tool.name).sort()).toEqual([
 		"add_component",
+		"check_solution",
 		"connect",
 		"create_circuit",
 		"disconnect",
 		"explain_circuit",
 		"get_circuit",
 		"list_component_types",
+		"list_lessons",
+		"load_lesson",
 		"move_component",
 		"open_circuit",
 		"open_in_app",
 		"probe",
 		"recent_changes",
 		"remove_component",
+		"rename_circuit",
 		"rotate_component",
 		"save_circuit",
 		"set_parameter",
@@ -406,4 +410,76 @@ test("the agent can watch a counter count with simulate_over_time", async () => 
 	const more = await call("simulate_over_time", { duration: 0.0025, probes: ["CNT1.q0", "CNT1.q1"], samples: 1 })
 	// Edges at 0, 1, 2 ms: a count of 3.
 	expect(more.data).toMatchObject({ samples: [{ values: { "CNT1.q0": { voltage: 5 }, "CNT1.q1": { voltage: 5 } } }] })
+})
+
+describe("lessons and tutoring", () => {
+	test("list_lessons shows the starter lessons in teaching order", async () => {
+		const { data } = await call("list_lessons")
+		expect(data).toEqual([
+			expect.objectContaining({ id: "light-an-led", title: "Light an LED safely", level: "beginner" }),
+			expect.objectContaining({ id: "voltage-divider" }),
+			expect.objectContaining({ id: "rc-charging" }),
+			expect.objectContaining({ id: "transistor-switch" }),
+			expect.objectContaining({ id: "half-adder" }),
+		])
+	})
+
+	test("load_lesson starts a fresh circuit and gives the goal, steps, checks and the hints for the tutor", async () => {
+		await call("add_component", { type: "resistor" })
+		const { data } = await call("load_lesson", { id: "voltage-divider" })
+		expect(data).toMatchObject({
+			title: "Make 2.5 V from 5 V",
+			goal: expect.stringContaining("2.5 V"),
+			steps: expect.arrayContaining(["Place a 5 V voltage source, two resistors and a ground."]),
+			checks: expect.arrayContaining(["Some point sits at 2.4–2.6 V"]),
+			hintsForTutor: expect.arrayContaining([expect.stringContaining("R2 ÷ (R1 + R2)")]),
+		})
+		expect((await call("get_circuit")).data).toMatchObject({ circuit: { name: "Make 2.5 V from 5 V", components: [] } })
+	})
+
+	test("check_solution reports each check on the current circuit", async () => {
+		await call("load_lesson", { id: "voltage-divider" })
+		const before = await call("check_solution")
+		expect(before.data).toMatchObject({ lesson: "voltage-divider", passed: false })
+
+		await call("add_component", { type: "voltage-source", params: { voltage: 5 } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "V1.positive", to: "R1.a" })
+		await call("connect", { from: "R1.b", to: "R2.a" })
+		await call("connect", { from: "R2.b", to: "GND1.terminal" })
+		await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+		const after = await call("check_solution")
+		expect(after.data).toMatchObject({
+			passed: true,
+			results: expect.arrayContaining([expect.objectContaining({ description: "Some point sits at 2.4–2.6 V", passed: true })]),
+		})
+	})
+
+	test("check_solution without a lesson says how to start one", async () => {
+		const result = await call("check_solution")
+		expect(result.isError).toBe(true)
+		expect(result.text).toContain("load_lesson")
+	})
+
+	test("an unknown lesson lists the real ones", async () => {
+		const result = await call("load_lesson", { id: "quantum-computer" })
+		expect(result.isError).toBe(true)
+		expect(result.text).toContain("light-an-led")
+	})
+
+	test("the tutor prompt sets up coaching for a lesson", async () => {
+		const prompt = await client.getPrompt({ name: "tutor", arguments: { lesson: "light-an-led" } })
+		const [message] = prompt.messages
+		const text = message?.content.type === "text" ? message.content.text : ""
+		expect(text).toContain("Light an LED safely")
+		expect(text).toContain("check_solution")
+		expect(text).toMatch(/one hint at a time/i)
+	})
+})
+
+test("rename_circuit renames the circuit", async () => {
+	expect((await call("rename_circuit", { name: "Night light" })).text).toBe('Renamed the circuit "Night light"')
+	expect((await call("get_circuit")).data).toMatchObject({ circuit: { name: "Night light" } })
 })
