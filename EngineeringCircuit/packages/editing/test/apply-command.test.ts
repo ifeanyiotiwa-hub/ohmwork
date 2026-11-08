@@ -274,3 +274,28 @@ describe("rename-circuit", () => {
 		])
 	})
 })
+
+describe("notes", () => {
+	const addNote: EditCommand = { type: "add-note", note: { text: "Current flows clockwise", position: { x: 40, y: 60 } } }
+
+	test("adds a numbered note, edits its text, moves and removes it", () => {
+		const added = run(createCircuit("t"), addNote, addNote)
+		expect(added.notes.map((note) => note.id)).toEqual(["note1", "note2"])
+		const edited = run(added, { type: "edit-note", noteId: "note1", text: "Electrons go the other way" })
+		expect(edited.notes[0]?.text).toBe("Electrons go the other way")
+		const moved = run(edited, { type: "move-note", noteId: "note1", position: { x: 0, y: 0 } })
+		expect(moved.notes[0]?.position).toEqual({ x: 0, y: 0 })
+		expect(run(moved, { type: "remove-note", noteId: "note1" }).notes.map((note) => note.id)).toEqual(["note2"])
+	})
+
+	test("summaries quote the note", () => {
+		expect(applyCommand(createCircuit("t"), addNote)).toMatchObject({ summary: 'Added note "Current flows clockwise"' })
+	})
+
+	test("a note needs text, and a missing note is named", () => {
+		expect(errorsOf(createCircuit("t"), { type: "add-note", note: { text: "" } })[0]?.path).toBe("notes[0].text")
+		expect(errorsOf(createCircuit("t"), { type: "remove-note", noteId: "note9" })).toEqual([
+			{ path: "notes", message: 'No note with id "note9"' },
+		])
+	})
+})

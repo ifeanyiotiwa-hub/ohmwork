@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- D12b done (ADR-022): format v5 (`noteSchema`, `circuit.notes`, optional `circuit.lesson`, migration 4→5, duplicate note ids rejected); editing `add-note` / `edit-note` / `move-note` / `remove-note`; MCP `add_note`, `remove_note`, `load_lesson` writes `circuit.lesson`, `check_solution` reads it (29 tools + `tutor` prompt). App: `lessons/` (`lessons-panel.*`, `lesson-card.*`, `lesson-progress.ts`), notes on the canvas (`drag-note` interaction), note editor and "Add a note" in the inspector, store `selectedNote` / `addNote`. E2E `e2e/lessons.spec.ts`.
 - D12a done: `packages/lessons` (`schema.ts` checkSchema/lessonSchema, `check.ts` checkSolution, `lessons/` five lessons; tests with reference solutions in `test/solutions.ts`). `formatSi` / `parseSi` / `unitSymbolOf` moved to `packages/format/src/units/si.ts` (the app re-exports them). MCP: `list_lessons`, `load_lesson` (active lesson per server), `check_solution`, `tutor` prompt (`registerPrompt` + `completable`), `rename_circuit` (27 tools).
 - D10 done (ADR-021): `apps/web/src/app/library/` (`circuit-files.ts` fileNameFor / readCircuitFile / downloadCircuit, `circuit-library.ts` IndexedDB service with `problem` signal, `library-panel.*` dialog), App autosave/restore + Library button + Ctrl/⌘+S, `rename-circuit` edit command, `UI_CONFIG.library`. PWA: `ngsw-config.json`, `public/manifest.webmanifest`, `public/icons/` (from `icon.svg`), `provideServiceWorker` in `app.config.ts`. Offline test: `playwright.offline.config.ts` + `e2e/offline/` (global setup builds; test runs `e2e/support/static-server.mjs` and stops it). `pnpm test:e2e` runs both configs.
 - D9b done (ADR-020): `ics.ts` + seven-segment, bcd-to-seven-segment, adc-4bit, dac-4bit; `relay` in switches.ts. Engine `digital/mixed-parts.ts` (ADC_4BIT, DAC_4BIT, RELAY), `Sequential.next(memory, readings{voltage,current}, logicHigh, params)`, `advanceLogic(circuit, solution, …)`, `seriesCoil` in branches, `DcSolution.states`, `READ_ONLY_PINS` warning exemption. App: chip/display/relay symbols, `SEVEN_SEGMENT_PATHS` segments lit from pin levels, relay lever from `states`.
@@ -51,7 +52,7 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries D10 (`pnpm web`: Library button / Ctrl+S; reload keeps the circuit; to install, build (`pnpm --filter @engineering-circuit/web build`) and serve `apps/web/dist/web/browser` over http(s), then "Install app" in the browser). Next deliverable: D12 (lessons + AI tutor), then D11 (Tauri desktop/mobile). Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
+Owner tries D12: in the app, Lessons → Start → build → Check my circuit; with Claude Code, use the MCP prompt "tutor" (or ask "tutor me through light-an-led") and open the live link. Next deliverable: D11 (Tauri 2 desktop/mobile builds). Optional after: D13 microcontrollers, D14 backend. Owed small items: mid-wire junction (D6), see known gaps. Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
 
 ## Blockers / open questions
 - None.
@@ -67,12 +68,12 @@ Owner tries D10 (`pnpm web`: Library button / Ctrl+S; reload keeps the circuit; 
 - Wire routing avoids part bodies but not labels or other wires: a wire may pass close to a part's name, and wires of different nodes can overlap along a grid line.
 - A transformer's isolated secondary gets the "Not connected to ground" warning: true (it is isolated) but noisy for a normal transformer circuit; consider wording it as information.
 - Not done, by scope: adaptive time step, AC (frequency) analysis, scope triggering / per-trace scale, op-amp slew and bandwidth, ADC/DAC wider than 4 bits, LED-accurate 7-segment, gates wider than 2 inputs, tri-state/buses, live-link reconnect and multiple learners, save-in-place to disk, cross-device sync (D14), copy/paste and multi-select, net labels, subcircuits, parts browser.
-- No canvas text notes → D12.
 - Horizontal voltage source: its value label and current reading overlap (label placement in `apps/web` canvas).
 
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-08 | Claude (Opus) | D12b: lessons in the app, text notes (format v5), lesson stored in the circuit; ADR-022. 430 core + 87 web + 23 e2e | Owner tries D12; then D11 |
 | 2026-11-08 | Claude (Opus) | D12a: lessons package, 5 lessons, check_solution / load_lesson / tutor prompt, rename_circuit | D12b |
 | 2026-11-07 | Claude (Opus) | D10: library, files, autosave, offline PWA; ADR-021. 397 core + 84 web + 20 e2e (incl. offline) | Owner tries D10; then D12 |
 | 2026-11-07 | Claude (Opus) | D9b: 7-segment, decoder, ADC/DAC, relay; ADR-020. 395 core + 81 web + 16 e2e | Owner tries D9; then D10 |

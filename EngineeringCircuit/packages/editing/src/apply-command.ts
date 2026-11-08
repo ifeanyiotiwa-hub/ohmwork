@@ -3,6 +3,7 @@ import {
 	type CircuitError,
 	type Component,
 	type ComponentType,
+	type Note,
 	type PinRef,
 	type Point,
 	definitionOf,
@@ -98,6 +99,33 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 			return { candidate: { ...draft, name }, summary: `Renamed the circuit "${name}"` }
 		}
 
+		case "add-note": {
+			const id = command.note.id ?? nextId(draft.notes, NOTE_PREFIX)
+			const note = { id, text: command.note.text, position: command.note.position ?? gridPosition(draft.notes.length) }
+			return { candidate: { ...draft, notes: [...draft.notes, note] }, summary: `Added note "${shorten(note.text)}"` }
+		}
+
+		case "edit-note":
+			return updateNote(draft, command.noteId, (note) => ({
+				note: { ...note, text: command.text },
+				summary: `Edited note "${shorten(command.text)}"`,
+			}))
+
+		case "move-note":
+			return updateNote(draft, command.noteId, (note) => ({
+				note: { ...note, position: command.position },
+				summary: `Moved note "${shorten(note.text)}"`,
+			}))
+
+		case "remove-note": {
+			const target = draft.notes.find((note) => note.id === command.noteId)
+			if (!target) return notFound("notes", "note", command.noteId)
+			return {
+				candidate: { ...draft, notes: draft.notes.filter((note) => note !== target) },
+				summary: `Removed note "${shorten(target.text)}"`,
+			}
+		}
+
 		case "set-simulation": {
 			const simulation = {
 				...draft.simulation,
@@ -173,6 +201,22 @@ const gridPosition = (index: number): Point => ({
 const samePin = (first: PinRef, second: PinRef) => first.componentId === second.componentId && first.pin === second.pin
 
 const pinName = (ref: PinRef) => `${ref.componentId}.${ref.pin}`
+
+const NOTE_PREFIX = "note"
+/** Notes are quoted in summaries up to this many characters. */
+const SUMMARY_TEXT = 40
+const shorten = (text: string) => (text.length > SUMMARY_TEXT ? `${text.slice(0, SUMMARY_TEXT - 1)}…` : text)
+
+function updateNote(
+	draft: Circuit,
+	noteId: string,
+	change: (note: Note) => { note: Note; summary: string },
+): Proposal {
+	const target = draft.notes.find((note) => note.id === noteId)
+	if (!target) return notFound("notes", "note", noteId)
+	const { note, summary } = change(target)
+	return { candidate: { ...draft, notes: draft.notes.map((existing) => (existing === target ? note : existing)) }, summary }
+}
 
 const notFound = (path: string, kind: string, id: string): Proposal => ({
 	errors: [{ path, message: `No ${kind} with id "${id}"` }],

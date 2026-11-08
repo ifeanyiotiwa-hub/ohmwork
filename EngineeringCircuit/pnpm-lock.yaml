@@ -84,6 +84,9 @@ importers:
       '@engineering-circuit/format':
         specifier: workspace:*
         version: link:../../packages/format
+      '@engineering-circuit/lessons':
+        specifier: workspace:*
+        version: link:../../packages/lessons
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2

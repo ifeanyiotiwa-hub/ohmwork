@@ -1,0 +1,42 @@
+@if (progress.lesson(); as lesson) {
+	<section class="lesson" data-lesson [attr.data-lesson-id]="lesson.id">
+		<h3>Lesson</h3>
+		<p class="goal">{{ lesson.goal }}</p>
+		<ol class="steps">
+			@for (step of lesson.steps; track $index) {
+				<li>
+					{{ step.text }}
+					@if (step.hint) {
+						@if (progress.shownHints().has($index)) {
+							<p class="hint">{{ step.hint }}</p>
+						} @else {
+							<button type="button" class="link" (click)="progress.showHint($index)">Hint</button>
+						}
+					}
+				</li>
+			}
+		</ol>
+		<button type="button" class="check" data-lesson-check (click)="progress.check()">Check my circuit</button>
+		@if (progress.result(); as result) {
+			@if (result.passed) {
+				<p class="verdict passed" data-lesson-verdict>All checks pass. Well done!</p>
+			}
+			@if (progress.stale()) {
+				<p class="stale">You changed the circuit since this check.</p>
+			}
+			<ul class="results">
+				@for (item of result.results; track item.description) {
+					<li [class.passed]="item.passed" [attr.data-check-passed]="item.passed">
+						<span class="mark">{{ item.passed ? "✓" : "✗" }}</span>
+						<span>
+							{{ item.description }}
+							@if (!item.passed) {
+								<span class="found">{{ item.found }}</span>
+							}
+						</span>
+					</li>
+				}
+			</ul>
+		}
+	</section>
+}

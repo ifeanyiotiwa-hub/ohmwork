@@ -104,7 +104,7 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 |---|---|---|---|
 | Junction | Wires connect pin to pin only today; joining mid-wire needs a junction | CJS (wires join anywhere) | D6 |
 | Labeled node (net label, e.g. "VCC") | Connect distant points by name | CJS | later |
-| Text notes | Lessons and AI explanations (separate `annotations` list) | CJS | D12 |
+| Text notes | Lessons and AI explanations (separate `notes` list, format v5) | CJS | done (D12) |
 | Simulation settings | Time step, speed (D3), logic high voltage (D5); saved with the circuit | SPICE (TSTEP/TSTOP), CJS | done |
 | Subcircuits ("custom chips") | Learner builds a half adder, saves it as a reusable part | CJS, SPICE `X`, EC `+` | later |
 | Parts browser + "request a new part" | Browse all parts; request a missing one with an explanation and sources, which the AI drafts into a `COMPONENTS.md` row + `defineComponent` entry for review | EC `+` | after D7 |

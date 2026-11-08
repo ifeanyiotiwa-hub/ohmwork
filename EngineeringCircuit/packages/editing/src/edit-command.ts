@@ -21,6 +21,13 @@ export const editCommandSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("move-component"), componentId: idSchema, position: pointSchema }),
 	z.strictObject({ type: z.literal("rename-circuit"), name: z.string() }),
 	z.strictObject({
+		type: z.literal("add-note"),
+		note: z.strictObject({ id: idSchema.optional(), text: z.string(), position: pointSchema.optional() }),
+	}),
+	z.strictObject({ type: z.literal("edit-note"), noteId: idSchema, text: z.string() }),
+	z.strictObject({ type: z.literal("move-note"), noteId: idSchema, position: pointSchema }),
+	z.strictObject({ type: z.literal("remove-note"), noteId: idSchema }),
+	z.strictObject({
 		type: z.literal("set-simulation"),
 		timeStep: z.number().optional(),
 		speed: z.number().optional(),

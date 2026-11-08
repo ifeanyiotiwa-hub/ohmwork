@@ -9,6 +9,9 @@ The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers
 
 Try: "Build a 9 V battery with two resistors in series, simulate it, and explain where the voltage goes."
 
+### Learn with a tutor
+Ask the agent "tutor me through light-an-led" (or use the MCP prompt **tutor**). It starts the lesson, lets you build in the app (open the live link below), gives one hint at a time, and checks your circuit with `check_solution`. In the app alone: **Lessons** → Start → build → **Check my circuit**.
+
 ### Watch and edit together (live link)
 1. Start the app: `pnpm web`.
 2. Ask the agent: "Give me the link to open this circuit in the app" (it calls `open_in_app`). Open the link.

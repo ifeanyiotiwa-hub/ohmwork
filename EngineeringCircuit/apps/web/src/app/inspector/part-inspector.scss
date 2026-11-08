@@ -46,6 +46,7 @@ h3 {
 }
 
 input[type="text"],
+textarea,
 select {
 	padding: 6px 8px;
 	border: 1px solid var(--border);
@@ -111,4 +112,12 @@ input[type="checkbox"] {
 	display: inline-block;
 	min-width: 56px;
 	color: var(--accent);
+}
+
+textarea {
+	resize: vertical;
+}
+
+.add-note {
+	justify-self: start;
 }

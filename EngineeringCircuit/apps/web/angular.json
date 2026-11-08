@@ -73,7 +73,8 @@
 							"exclude": [
 								"@engineering-circuit/editing",
 								"@engineering-circuit/engine",
-								"@engineering-circuit/format"
+								"@engineering-circuit/format",
+								"@engineering-circuit/lessons"
 							]
 						}
 					}

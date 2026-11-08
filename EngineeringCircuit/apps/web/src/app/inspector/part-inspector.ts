@@ -3,6 +3,7 @@ import { type ComponentType, paramFieldsOf } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
 import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
 import { PART_NAMES } from "../circuit/symbols"
+import { LessonCard } from "../lessons/lesson-card"
 
 type FieldView =
 	| {
@@ -27,6 +28,7 @@ function equivalentHint(type: ComponentType, name: string, value: number): strin
 
 @Component({
 	selector: "app-part-inspector",
+	imports: [LessonCard],
 	templateUrl: "./part-inspector.html",
 	styleUrl: "./part-inspector.scss",
 })
@@ -117,6 +119,11 @@ export class PartInspector {
 			return
 		}
 		this.store.apply({ type: "set-simulation", [name]: value })
+	}
+
+	protected setNoteText(noteId: string, event: Event): void {
+		const text = (event.target as HTMLTextAreaElement).value
+		this.store.apply({ type: "edit-note", noteId, text })
 	}
 
 	protected slide(componentId: string, name: string, event: Event): void {

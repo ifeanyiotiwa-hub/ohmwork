@@ -190,3 +190,24 @@
 		filter: drop-shadow(0 0 4px var(--danger));
 	}
 }
+
+.note {
+	cursor: move;
+}
+
+.note-box {
+	fill: var(--note);
+	stroke: var(--note-border);
+	stroke-width: 1;
+}
+
+.note.selected .note-box {
+	stroke: var(--accent);
+	stroke-width: 2;
+}
+
+.note-text {
+	fill: var(--text);
+	font-size: 12px;
+	pointer-events: none;
+}

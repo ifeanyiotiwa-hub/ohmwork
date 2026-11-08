@@ -80,6 +80,17 @@
 		}
 	}
 
+	@for (note of notes(); track note.id) {
+		<g class="note" [class.selected]="note.selected" [attr.data-note]="note.id" [attr.transform]="note.transform" (pointerdown)="onNoteDown($event, note.id)">
+			<rect class="note-box" [attr.width]="note.width" [attr.height]="note.height" rx="4" />
+			<text class="note-text">
+				@for (line of note.lines; track $index) {
+					<tspan [attr.x]="notePadding" [attr.y]="notePadding + noteLineHeight * ($index + 1) - 4">{{ line }}</tspan>
+				}
+			</text>
+		</g>
+	}
+
 	@for (label of nodeLabels(); track label.key) {
 		<text class="node-label" [attr.x]="label.x" [attr.y]="label.y">{{ label.text }}</text>
 	}

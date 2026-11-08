@@ -43,6 +43,14 @@ test("removing the selected part removes its wires and clears the selection", ()
 	expect(store.selection()).toBeUndefined()
 })
 
+test("a note can be added, selected and removed", () => {
+	store.addNote("Try 4 Ω here")
+	expect(store.selectedNote()?.text).toBe("Try 4 Ω here")
+	store.removeSelected()
+	expect(store.circuit().notes).toEqual([])
+	expect(store.selection()).toBeUndefined()
+})
+
 test("wire currents follow the loop", () => {
 	expect(store.wireCurrents()["w1"]).toBeCloseTo(2, 9)
 })

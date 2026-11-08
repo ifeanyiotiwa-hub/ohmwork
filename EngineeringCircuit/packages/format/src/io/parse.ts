@@ -79,6 +79,9 @@ function findReferenceErrors(circuit: Circuit): CircuitError[] {
 	duplicates(circuit.wires.map((wire) => wire.id)).forEach((id) =>
 		errors.push({ path: "wires", message: `Duplicate wire id "${id}"` }),
 	)
+	duplicates(circuit.notes.map((note) => note.id)).forEach((id) =>
+		errors.push({ path: "notes", message: `Duplicate note id "${id}"` }),
+	)
 
 	circuit.wires.forEach((wire, index) => {
 		for (const end of ["from", "to"] as const) {

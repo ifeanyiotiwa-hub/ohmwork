@@ -1,0 +1,88 @@
+.lesson {
+	display: grid;
+	gap: 8px;
+	padding: 10px;
+	border: 1px solid var(--accent);
+	border-radius: 8px;
+	background: var(--accent-soft);
+}
+
+h3 {
+	margin: 0;
+	font-size: 12px;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.goal {
+	margin: 0;
+	font-weight: 600;
+}
+
+.steps {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding-left: 18px;
+	font-size: 13px;
+}
+
+.hint {
+	margin: 4px 0 0;
+	color: var(--warning);
+}
+
+.link {
+	margin-left: 6px;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--accent);
+	font: inherit;
+	font-size: 12px;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.check {
+	justify-self: start;
+}
+
+.verdict.passed {
+	margin: 0;
+	color: var(--voltage-label);
+	font-weight: 600;
+}
+
+.stale {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.results {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 13px;
+
+	li {
+		display: grid;
+		grid-template-columns: 16px 1fr;
+		gap: 6px;
+		color: var(--danger);
+	}
+
+	li.passed {
+		color: var(--text);
+	}
+}
+
+.found {
+	display: block;
+	color: var(--text-muted);
+	font-size: 12px;
+}

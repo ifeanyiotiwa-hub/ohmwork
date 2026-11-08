@@ -1,0 +1,17 @@
+<dialog #dialog class="library" aria-labelledby="lessons-title" (cancel)="close()">
+	<header>
+		<h2 id="lessons-title">Lessons</h2>
+		<button type="button" class="close" aria-label="Close" (click)="close()">×</button>
+	</header>
+	<p class="hint">Build each one yourself. Ask the AI for help any time: it can see your circuit.</p>
+	<ul class="entries">
+		@for (lesson of lessons; track lesson.id) {
+			<li [attr.data-lesson-entry]="lesson.id">
+				<span class="entry-name" [title]="lesson.summary">{{ lesson.title }}</span>
+				<span class="entry-date">{{ lesson.level }}</span>
+				<span></span>
+				<button type="button" (click)="start(lesson)">Start</button>
+			</li>
+		}
+	</ul>
+</dialog>

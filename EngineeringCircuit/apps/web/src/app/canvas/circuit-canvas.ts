@@ -35,6 +35,12 @@ type Interaction =
 	| { kind: "idle" }
 	| { kind: "pan"; startScreen: Point; startView: View }
 	| { kind: "drag"; componentId: string; startPoint: Point; startPosition: Point; moved: boolean }
+	| { kind: "drag-note"; noteId: string; startPoint: Point; startPosition: Point; moved: boolean }
+
+/** Note boxes: text size and padding, in canvas units (a monospace-like estimate of the text width). */
+const NOTE_LINE_HEIGHT = 16
+const NOTE_CHARACTER_WIDTH = 7
+const NOTE_PADDING = 8
 
 const READING_OFFSET = 14
 const NODE_LABEL_OFFSET = { x: 6, y: -8 }
@@ -64,6 +70,26 @@ export class CircuitCanvas {
 	})
 
 	private readonly dragPreview = signal<{ componentId: string; position: Point } | undefined>(undefined)
+	private readonly notePreview = signal<{ noteId: string; position: Point } | undefined>(undefined)
+
+	protected readonly notes = computed(() => {
+		const preview = this.notePreview()
+		const selection = this.store.selection()
+		return this.store.circuit().notes.map((note) => {
+			const lines = note.text.split("\n")
+			const at = preview?.noteId === note.id ? preview.position : note.position
+			return {
+				id: note.id,
+				transform: `translate(${at.x} ${at.y})`,
+				lines,
+				width: Math.max(...lines.map((line) => line.length)) * NOTE_CHARACTER_WIDTH + 2 * NOTE_PADDING,
+				height: lines.length * NOTE_LINE_HEIGHT + NOTE_PADDING,
+				selected: selection?.kind === "note" && selection.id === note.id,
+			}
+		})
+	})
+	protected readonly noteLineHeight = NOTE_LINE_HEIGHT
+	protected readonly notePadding = NOTE_PADDING
 	private readonly pointer = signal<Point>({ x: 0, y: 0 })
 	private interaction: Interaction = { kind: "idle" }
 
@@ -222,6 +248,15 @@ export class CircuitCanvas {
 		this.capture(event)
 	}
 
+	protected onNoteDown(event: PointerEvent, noteId: string): void {
+		event.stopPropagation()
+		const note = this.store.circuit().notes.find((candidate) => candidate.id === noteId)
+		if (!note) return
+		this.store.selection.set({ kind: "note", id: noteId })
+		this.interaction = { kind: "drag-note", noteId, startPoint: this.toCircuitPoint(event), startPosition: note.position, moved: false }
+		this.capture(event)
+	}
+
 	protected onPinDown(event: PointerEvent, ref: PinRef): void {
 		event.stopPropagation()
 		const from = this.store.wiringFrom()
@@ -256,6 +291,19 @@ export class CircuitCanvas {
 			return
 		}
 
+		if (interaction.kind === "drag-note") {
+			const dx = point.x - interaction.startPoint.x
+			const dy = point.y - interaction.startPoint.y
+			if (!interaction.moved && Math.hypot(dx, dy) < this.config.dragThreshold) return
+			interaction.moved = true
+			const grid = this.config.gridSize
+			this.notePreview.set({
+				noteId: interaction.noteId,
+				position: { x: snap(interaction.startPosition.x + dx, grid), y: snap(interaction.startPosition.y + dy, grid) },
+			})
+			return
+		}
+
 		if (interaction.kind === "drag") {
 			const dx = point.x - interaction.startPoint.x
 			const dy = point.y - interaction.startPoint.y
@@ -274,6 +322,12 @@ export class CircuitCanvas {
 		this.store.releaseButtons()
 		const interaction = this.interaction
 		this.interaction = { kind: "idle" }
+		if (interaction.kind === "drag-note") {
+			const preview = this.notePreview()
+			this.notePreview.set(undefined)
+			if (interaction.moved && preview) this.store.apply({ type: "move-note", noteId: preview.noteId, position: preview.position })
+			return
+		}
 		if (interaction.kind !== "drag") return
 
 		const preview = this.dragPreview()

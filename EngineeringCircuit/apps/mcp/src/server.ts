@@ -11,7 +11,7 @@ import {
 	rotationSchema,
 	serializeCircuit,
 } from "@engineering-circuit/format"
-import { LESSONS, type Lesson, checkSolution, lessonById } from "@engineering-circuit/lessons"
+import { LESSONS, checkSolution, lessonById } from "@engineering-circuit/lessons"
 import { type CallToolResult, McpServer, completable } from "@modelcontextprotocol/server"
 import { z } from "zod"
 import type { LiveServer } from "./live/live-server"
@@ -358,12 +358,28 @@ export function createServer(
 	)
 
 	server.registerTool(
+		"add_note",
+		{
+			description:
+				"Leave a text note on the canvas for the learner (an explanation next to a part). x, y place it (canvas units; see get_circuit pin positions).",
+			inputSchema: z.object({ text: z.string().min(1), x: z.number().optional(), y: z.number().optional() }),
+		},
+		({ text: note, x, y }) =>
+			edit({ type: "add-note", note: { text: note, position: x === undefined || y === undefined ? undefined : { x, y } } }),
+	)
+
+	server.registerTool(
+		"remove_note",
+		{ description: "Remove a note by its id (see get_circuit).", inputSchema: z.object({ noteId: z.string().min(1) }) },
+		({ noteId }) => edit({ type: "remove-note", noteId }),
+	)
+
+	server.registerTool(
 		"rename_circuit",
 		{ description: "Give the circuit a new name.", inputSchema: z.object({ name: z.string().min(1) }) },
 		({ name }) => edit({ type: "rename-circuit", name }),
 	)
 
-	let activeLesson: Lesson | undefined
 	const lessonIds = LESSONS.map((lesson) => lesson.id).join(", ")
 	const unknownLesson = (id: string) => failure(`No lesson "${id}". Lessons: ${lessonIds}.`)
 
@@ -383,8 +399,11 @@ export function createServer(
 		({ id }) => {
 			const lesson = lessonById(id)
 			if (!lesson) return unknownLesson(id)
-			activeLesson = lesson
-			document.replace({ ...createCircuit(lesson.title), description: lesson.goal }, "agent", `Started lesson "${lesson.title}"`)
+			document.replace(
+				{ ...createCircuit(lesson.title), description: lesson.goal, lesson: lesson.id },
+				"agent",
+				`Started lesson "${lesson.title}"`,
+			)
 			return text({
 				id: lesson.id,
 				title: lesson.title,
@@ -400,12 +419,13 @@ export function createServer(
 		"check_solution",
 		{
 			description:
-				"Check the current circuit against the lesson (the one loaded, or `id`): each check passes or says what the circuit actually does.",
+				"Check the current circuit against its lesson (the one it was started for, or `id`): each check passes or says what the circuit actually does.",
 			inputSchema: z.object({ id: z.string().min(1).optional() }),
 			annotations: READ_ONLY,
 		},
 		({ id }) => {
-			const lesson = id ? lessonById(id) : activeLesson
+			const current = document.circuit.lesson
+			const lesson = id ? lessonById(id) : current ? lessonById(current) : undefined
 			if (id && !lesson) return unknownLesson(id)
 			if (!lesson) return failure("No lesson is loaded. Start one with load_lesson (see list_lessons).")
 			return text({ lesson: lesson.id, ...checkSolution(document.circuit, lesson) })

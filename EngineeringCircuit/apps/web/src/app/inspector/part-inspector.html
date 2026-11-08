@@ -79,11 +79,24 @@
 		<div class="actions">
 			<button type="button" class="danger" (click)="store.removeSelected()">Delete</button>
 		</div>
+	} @else if (store.selectedNote(); as note) {
+		<header>
+			<h2>{{ note.id }}</h2>
+			<span class="kind">Note</span>
+		</header>
+		<label class="field">
+			<span class="field-name">text</span>
+			<textarea rows="4" data-note-text [value]="note.text" (change)="setNoteText(note.id, $event)"></textarea>
+		</label>
+		<div class="actions">
+			<button type="button" class="danger" (click)="store.removeSelected()">Delete</button>
+		</div>
 	} @else {
 		<header>
 			<h2>{{ store.circuit().name }}</h2>
 		</header>
-		@if (store.circuit().description) {
+		<app-lesson-card />
+		@if (store.circuit().description && !store.circuit().lesson) {
 			<p class="description">{{ store.circuit().description }}</p>
 		}
 		@if (store.timeDependent()) {
@@ -99,6 +112,7 @@
 				<span class="field-hint">simulated seconds per real second</span>
 			</label>
 		}
+		<button type="button" class="add-note" data-add-note (click)="store.addNote('New note')">Add a note</button>
 		<ol class="help">
 			<li>Pick a part above, then click the canvas to place it.</li>
 			<li>Click a pin, then another pin, to connect them with a wire.</li>

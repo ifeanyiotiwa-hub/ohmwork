@@ -60,6 +60,7 @@ test("offers the build, inspect and file tools", async () => {
 	const { tools } = await client.listTools()
 	expect(tools.map((tool) => tool.name).sort()).toEqual([
 		"add_component",
+		"add_note",
 		"check_solution",
 		"connect",
 		"create_circuit",
@@ -75,6 +76,7 @@ test("offers the build, inspect and file tools", async () => {
 		"probe",
 		"recent_changes",
 		"remove_component",
+		"remove_note",
 		"rename_circuit",
 		"rotate_component",
 		"save_circuit",
@@ -482,4 +484,24 @@ describe("lessons and tutoring", () => {
 test("rename_circuit renames the circuit", async () => {
 	expect((await call("rename_circuit", { name: "Night light" })).text).toBe('Renamed the circuit "Night light"')
 	expect((await call("get_circuit")).data).toMatchObject({ circuit: { name: "Night light" } })
+})
+
+test("the agent can leave a note on the canvas and take it away", async () => {
+	expect((await call("add_note", { text: "This resistor limits the LED current", x: 120, y: -40 })).text).toBe(
+		'Added note "This resistor limits the LED current"',
+	)
+	expect((await call("get_circuit")).data).toMatchObject({
+		circuit: { notes: [{ id: "note1", position: { x: 120, y: -40 }, text: "This resistor limits the LED current" }] },
+	})
+	expect((await call("remove_note", { noteId: "note1" })).isError).toBe(false)
+})
+
+test("the lesson travels with the circuit, so a learner's saved attempt can be checked later", async () => {
+	await call("load_lesson", { id: "light-an-led" })
+	expect((await call("get_circuit")).data).toMatchObject({ circuit: { lesson: "light-an-led" } })
+	const saved = (await call("get_circuit")).data as { circuit: unknown }
+	await call("create_circuit", { name: "Something else" })
+	expect((await call("check_solution")).isError).toBe(true)
+	document.replace(saved.circuit as ReturnType<typeof createCircuit>, "learner", "Opened my attempt")
+	expect((await call("check_solution")).data).toMatchObject({ lesson: "light-an-led", passed: false })
 })

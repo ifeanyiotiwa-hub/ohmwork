@@ -31,6 +31,7 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 		...document,
 		simulation: { ...(isObject(document.simulation) ? document.simulation : {}), logicHigh: 5 },
 	}),
+	4: (document) => ({ ...document, notes: [] }),
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

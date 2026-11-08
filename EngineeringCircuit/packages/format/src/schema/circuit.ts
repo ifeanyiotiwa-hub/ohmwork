@@ -3,7 +3,7 @@ import { componentSchema } from "./components/catalog"
 import { pointSchema } from "./geometry"
 
 export const FORMAT_ID = "engineering-circuit"
-export const CURRENT_VERSION = 4
+export const CURRENT_VERSION = 5
 
 export const pinRefSchema = z.strictObject({
 	componentId: z.string().min(1),
@@ -30,12 +30,26 @@ export type SimulationSettings = z.infer<typeof simulationSchema>
 /** CircuitJS1's default time step and 5 V logic; speed shows a 40 Hz wave at 0.4 cycles per second. */
 export const DEFAULT_SIMULATION: SimulationSettings = { timeStep: 5e-6, speed: 0.01, logicHigh: 5 }
 
+/** Longest text a note may hold. */
+export const MAX_NOTE_LENGTH = 1000
+
+/** A text note on the canvas, written by the learner or the agent (separate from the circuit's parts). */
+export const noteSchema = z.strictObject({
+	id: z.string().min(1),
+	position: pointSchema,
+	text: z.string().min(1).max(MAX_NOTE_LENGTH),
+})
+export type Note = z.infer<typeof noteSchema>
+
 export const circuitSchema = z.strictObject({
 	format: z.literal(FORMAT_ID),
 	version: z.literal(CURRENT_VERSION),
 	name: z.string(),
 	description: z.string(),
 	simulation: simulationSchema,
+	/** The lesson this circuit is an attempt at, if any (a lesson id). */
+	lesson: z.string().min(1).optional(),
+	notes: z.array(noteSchema),
 	components: z.array(componentSchema),
 	wires: z.array(wireSchema),
 })
@@ -47,6 +61,7 @@ export const createCircuit = (name: string): Circuit => ({
 	name,
 	description: "",
 	simulation: { ...DEFAULT_SIMULATION },
+	notes: [],
 	components: [],
 	wires: [],
 })

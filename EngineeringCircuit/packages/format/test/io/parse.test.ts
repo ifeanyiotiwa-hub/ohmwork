@@ -22,15 +22,20 @@ describe("valid circuits", () => {
 
 describe("older files", () => {
 	test("a version 1 file opens with the default simulation settings", () => {
-		const { simulation: _settings, ...circuit } = voltageDivider()
+		const { simulation: _settings, notes: _notes, ...circuit } = voltageDivider()
 		const result = parseCircuit({ ...circuit, version: 1 })
 		expect(result).toEqual({ ok: true, circuit: voltageDivider() })
 	})
 
 	test("a version 3 file gains the 5 V logic level", () => {
-		const { simulation, ...circuit } = voltageDivider()
+		const { simulation, notes: _notes, ...circuit } = voltageDivider()
 		const { logicHigh: _level, ...older } = simulation
 		expect(parseCircuit({ ...circuit, version: 3, simulation: older })).toEqual({ ok: true, circuit: voltageDivider() })
+	})
+
+	test("a version 4 file gains an empty list of notes", () => {
+		const { notes: _notes, ...circuit } = voltageDivider()
+		expect(parseCircuit({ ...circuit, version: 4 })).toEqual({ ok: true, circuit: voltageDivider() })
 	})
 
 	test("version 2 diodes and LEDs gain electrical parameters; the LED keeps its colour", () => {
@@ -146,5 +151,18 @@ describe("reference errors", () => {
 		circuit.wires[0]!.to = { componentId: "V1", pin: "positive" }
 
 		expect(errorsOf(circuit)).toEqual([{ path: "wires[0]", message: "Wire connects a pin to itself" }])
+	})
+})
+
+describe("notes and lessons", () => {
+	test("a circuit keeps text notes and the lesson it belongs to", () => {
+		const circuit = { ...createCircuit("t"), lesson: "light-an-led", notes: [{ id: "note1", position: { x: 10, y: 20 }, text: "Current flows this way" }] }
+		expect(parseCircuit(circuit)).toEqual({ ok: true, circuit })
+	})
+
+	test("notes need text and unique ids", () => {
+		const note = { id: "note1", position: { x: 0, y: 0 }, text: "Hi" }
+		expect(errorsOf({ ...createCircuit("t"), notes: [note, note] })).toEqual([{ path: "notes", message: 'Duplicate note id "note1"' }])
+		expect(errorsOf({ ...createCircuit("t"), notes: [{ ...note, text: "" }] })[0]?.path).toBe("notes[0].text")
 	})
 })

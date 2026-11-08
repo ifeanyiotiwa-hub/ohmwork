@@ -16,7 +16,10 @@ import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
 import { kvlExample } from "./examples"
 import { UI_CONFIG } from "./ui-config"
 
-export type Selection = { kind: "component" | "wire"; id: string }
+/** How far below the lowest part a new note goes, in canvas units. */
+const NOTE_GAP_BELOW = 100
+
+export type Selection = { kind: "component" | "wire" | "note"; id: string }
 
 /**
  * The circuit being edited. On its own the app keeps a local CircuitDocument; joined to the live link, the
@@ -108,6 +111,11 @@ export class CircuitStore {
 		return selection?.kind === "wire" ? this.circuit().wires.find((wire) => wire.id === selection.id) : undefined
 	})
 
+	readonly selectedNote = computed(() => {
+		const selection = this.selection()
+		return selection?.kind === "note" ? this.circuit().notes.find((note) => note.id === selection.id) : undefined
+	})
+
 	readonly placing = signal<ComponentType | undefined>(undefined)
 	readonly wiringFrom = signal<PinRef | undefined>(undefined)
 	readonly paused = signal(false)
@@ -168,6 +176,21 @@ export class CircuitStore {
 		this.localRevision.update((revision) => revision + 1)
 	}
 
+	/** Adds a note just below the circuit and selects it, ready for its text to be edited. */
+	addNote(text: string): void {
+		const parts = this.circuit().components
+		const position =
+			parts.length === 0
+				? { x: 0, y: 0 }
+				: {
+						x: Math.min(...parts.map((part) => part.position.x)),
+						y: Math.max(...parts.map((part) => part.position.y)) + NOTE_GAP_BELOW,
+					}
+		const result = this.apply({ type: "add-note", note: { text, position } })
+		const added = result?.notes.at(-1)
+		if (added) this.selection.set({ kind: "note", id: added.id })
+	}
+
 	newCircuit(): void {
 		this.replace(createCircuit("Untitled"), "New circuit")
 	}
@@ -182,7 +205,9 @@ export class CircuitStore {
 		const removed =
 			selection.kind === "component"
 				? this.apply({ type: "remove-component", componentId: selection.id })
-				: this.apply({ type: "disconnect", wireId: selection.id })
+				: selection.kind === "note"
+					? this.apply({ type: "remove-note", noteId: selection.id })
+					: this.apply({ type: "disconnect", wireId: selection.id })
 		if (removed) this.selection.set(undefined)
 	}
 
