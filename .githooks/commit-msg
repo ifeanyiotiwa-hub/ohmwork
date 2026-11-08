@@ -1,5 +1,5 @@
 #!/bin/sh
-if grep -qiE '^co-authored-by:.*(claude|anthropic)' "$1"; then
+if grep -qiE '^co-authored-by:.*(claude|anthropic|openai|chatgpt|codex|gemini|gemma|copilot|cursor|junie)' "$1"; then
 	echo "commit-msg: AI Co-Authored-By trailers are not allowed in this repo (see projectKnowledge/CONVENTIONS.md)." >&2
 	exit 1
 fi

@@ -9,6 +9,10 @@ export type UiConfig = {
 	dragThreshold: number
 	/** How long a finger is held still on a touch screen to act as Shift (select several). */
 	longPressMs: number
+	/** How far (screen pixels) a finger may drift during a long press: fingers are not as still as a mouse. */
+	longPressSlopPx: number
+	/** Drawn pin radius, canvas units. The click/tap target is half a grid step, the most that never overlaps a neighbour. */
+	pinRadius: number
 	agentHighlightMs: number
 	simulation: {
 		/** Most time steps run for one animation frame; beyond it the simulation slows down instead of freezing. */
@@ -56,6 +60,8 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	zoomFactor: 1.15,
 	dragThreshold: 4,
 	longPressMs: 500,
+	longPressSlopPx: 10,
+	pinRadius: 5,
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	scope: { windowRealSeconds: 4, maxSamples: 8000 },

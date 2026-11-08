@@ -31,6 +31,16 @@ import { UI_CONFIG } from "../circuit/ui-config"
 import { flowOf, voltageColour } from "../circuit/visuals"
 import { type View, pinchView } from "./gestures"
 
+/** Keys that move a focused part one grid step. */
+const ARROW_STEPS: Readonly<Record<string, Point>> = {
+	ArrowLeft: { x: -1, y: 0 },
+	ArrowRight: { x: 1, y: 0 },
+	ArrowUp: { x: 0, y: -1 },
+	ArrowDown: { x: 0, y: 1 },
+}
+/** Keys that act on a focused part, wire or note as a click would. */
+const ACTIVATE_KEYS: ReadonlySet<string> = new Set(["Enter", " "])
+
 type Interaction =
 	| { kind: "idle" }
 	| { kind: "pan"; startScreen: Point; startView: View }
@@ -84,6 +94,8 @@ export class CircuitCanvas {
 			}
 		})
 	})
+	/** Half a grid step: the largest tap target that never overlaps the next pin. */
+	protected readonly pinHitRadius = this.config.gridSize / 2
 	protected readonly noteLineHeight = NOTE_LINE_HEIGHT
 	protected readonly notePadding = NOTE_PADDING
 	private readonly pointer = signal<Point>({ x: 0, y: 0 })
@@ -182,6 +194,7 @@ export class CircuitCanvas {
 			return [
 				{
 					id: wire.id,
+					label: `Wire ${wire.id} from ${wire.from.componentId} ${wire.from.pin} to ${wire.to.componentId} ${wire.to.pin}`,
 					path: pathThrough(points),
 					colour: voltage === undefined ? null : voltageColour(voltage, largest),
 					flow: solution ? flowOf(currents[wire.id] ?? 0, this.config.flow) : undefined,
@@ -323,7 +336,7 @@ export class CircuitCanvas {
 		const held = this.longPress
 		if (held) {
 			const now = this.screenPoint(event)
-			if (Math.hypot(now.x - held.start.x, now.y - held.start.y) > this.config.dragThreshold) this.cancelLongPress()
+			if (Math.hypot(now.x - held.start.x, now.y - held.start.y) > this.config.longPressSlopPx) this.cancelLongPress()
 		}
 		const interaction = this.interaction
 		if (interaction.kind === "pinch") {
@@ -417,13 +430,63 @@ export class CircuitCanvas {
 		}
 
 		const part = this.store.circuit().components.find((candidate) => candidate.id === interaction.componentId)
-		if (part?.type === "switch") {
+		if (part) this.flip(part)
+	}
+
+	/**
+	 * A focused part from the keyboard: Enter or Space does what a click does (selects it, flips a switch; holds a
+	 * push button down while held), and the arrow keys move it, or its group, one grid step.
+	 */
+	protected onPartKey(event: KeyboardEvent, part: Part): void {
+		const step = ARROW_STEPS[event.key]
+		if (step) {
+			event.preventDefault()
+			this.selectFromKeyboard(part)
+			const grid = this.config.gridSize
+			this.store.moveParts(this.store.selectedParts(), { x: step.x * grid, y: step.y * grid })
+			return
+		}
+		if (!ACTIVATE_KEYS.has(event.key)) return
+		event.preventDefault()
+		if (event.repeat) return
+		this.selectFromKeyboard(part)
+		if (part.type === "push-button") this.store.press(part.id)
+		else this.flip(part)
+	}
+
+	protected onPartKeyUp(event: KeyboardEvent, part: Part): void {
+		if (ACTIVATE_KEYS.has(event.key) && part.type === "push-button") this.store.releaseButtons()
+	}
+
+	protected onWireKey(event: KeyboardEvent, wireId: string): void {
+		if (!ACTIVATE_KEYS.has(event.key)) return
+		event.preventDefault()
+		this.store.clearSelection()
+		this.store.selection.set({ kind: "wire", id: wireId })
+	}
+
+	protected onNoteKey(event: KeyboardEvent, noteId: string): void {
+		if (!ACTIVATE_KEYS.has(event.key)) return
+		event.preventDefault()
+		this.store.clearSelection()
+		this.store.selection.set({ kind: "note", id: noteId })
+	}
+
+	private selectFromKeyboard(part: Part): void {
+		if (this.store.multiSelection().has(part.id)) return
+		this.store.multiSelection.set(new Set())
+		this.store.selection.set({ kind: "component", id: part.id })
+	}
+
+	/** What a click on a part does besides selecting it: flips a switch, a two-way switch or a logic input. */
+	private flip(part: Part): void {
+		if (part.type === "switch") {
 			this.store.apply({ type: "set-parameter", componentId: part.id, name: "closed", value: !part.params.closed })
 		}
-		if (part?.type === "logic-input") {
+		if (part.type === "logic-input") {
 			this.store.apply({ type: "set-parameter", componentId: part.id, name: "high", value: !part.params.high })
 		}
-		if (part?.type === "switch-spdt") {
+		if (part.type === "switch-spdt") {
 			const position = part.params.position === "a" ? "b" : "a"
 			this.store.apply({ type: "set-parameter", componentId: part.id, name: "position", value: position })
 		}

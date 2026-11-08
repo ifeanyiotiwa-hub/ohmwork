@@ -8,17 +8,17 @@ with the reason. When an item is done, mark it here and in `HANDOVER.md` "Known 
 
 | D | Left out | Why |
 |---|---|---|
-| D2 DC engine | Nothing significant | – |
-| D3 Time simulation | Adaptive time step (fixed step only); AC frequency analysis (Bode plots); a fix for ringing when an inductor's switch opens | Fixed step is what CircuitJS1 does and was accurate to 0.003%; adaptive stepping is a large, separate project. Ringing is a known side-effect of the trapezoidal method (CircuitJS1 has it too) |
-| D4 Diodes / transistors | Burn-out warnings; per-colour LED models (blue/white should be about 3 V, ours are 1.8 V); transistor switching delays, Early effect, temperature; a fallback when the solver won't settle | Not in D4's acceptance criteria, and each needs sourced data |
+| D2 DC engine | Nothing significant (the "part not simulated yet" error has no test because every part is simulated now) | – |
+| D3 Time simulation | Adaptive time step (fixed step only); AC frequency analysis (Bode plots); ~~a fix for ringing when an inductor's switch opens~~ (done, D15a) | Fixed step is what CircuitJS1 does and was accurate to 0.003%; adaptive stepping is a large, separate project. Ringing is a known side-effect of the trapezoidal method (CircuitJS1 has it too) |
+| D4 Diodes / transistors | ~~Burn-out warnings; per-colour LED models~~ (done, D15a; RGB LED D15c); transistor switching delays, Early effect, temperature; a fallback when the solver won't settle (partly done, D15a) | Not in D4's acceptance criteria, and each needs sourced data |
 | D5 Logic | An event-driven engine; gates with more than 2 inputs; tri-state outputs and buses | Stepping logic with the analog solve (one step of delay) is simpler and is what CircuitJS1 does (ADR-018). Wider gates can be built by chaining 2-input ones |
-| D6 App | Joining a wire in its middle (wires only go pin to pin); copy/paste and multi-select; label overlap around a sideways battery | The junction was in D6's scope and was missed. Several wires on one pin cover most cases, but it is a real gap. Copy/paste was not in the acceptance criteria |
+| D6 App | ~~Joining a wire in its middle; copy/paste and multi-select; label overlap around a sideways battery~~ (all done, D15b) | The junction was in D6's scope and was missed. Several wires on one pin cover most cases, but it is a real gap. Copy/paste was not in the acceptance criteria |
 | D7 AI tools | A remote (network) connection. ~~An AI tool for renaming a circuit~~ (done in D12a: `rename_circuit`) | Remote needs hosting (D14) |
-| D8 Live link | Reconnecting after a drop; more than one learner at a time | The link lives as long as Claude Code runs. Several learners would need the D14 backend |
+| D8 Live link | ~~Reconnecting after a drop~~ (done, D15b); more than one learner at a time | The link lives as long as Claude Code runs. Several learners would need the D14 backend |
 | D9 Oscilloscope + ICs | Scope triggering, a separate scale per trace, X-Y mode, "show any part on the scope"; op-amp speed limits (slew rate, bandwidth); ADC/DAC with more than 4 bits; an LED-style 7-segment display | Kept to the acceptance criteria. The 4-bit limit comes from the rule that a part's pins can't change with a setting (ADR-009) |
-| D10 Saving | Saving back over the same file on disk; syncing across devices; image export | Browser support for writing files in place is uneven, and syncing needs the D14 backend |
+| D10 Saving | ~~Saving back over the same file on disk~~ (done, D11a); syncing across devices; ~~image export~~ (done, D15b) | Browser support for writing files in place is uneven, and syncing needs the D14 backend |
 | D11a Desktop | Code signing and notarization; running the Windows/Linux CI builds; joining a live session from the desktop app (deep link); iOS; a signed release APK and Play Store listing | Signing needs paid developer accounts (Apple, a Windows certificate); CI needs a GitHub remote; a deep link needs a registered URL scheme and the MCP server allowing the Tauri origin; iOS needs full Xcode, not installed; a release APK needs a signing key kept outside the repo |
-| Parts list "later" items | Net labels, subcircuits (custom chips), a parts browser with "request a part". ~~Text notes~~ (done in D12b) | Not assigned to any deliverable yet |
+| Parts list "later" items | Net labels, subcircuits (custom chips), a parts browser with "request a part" (all D17). ~~Text notes~~ (done in D12b). Tapped transformer, DC motor (D16) | Assigned |
 
 ## The plan
 
@@ -49,10 +49,10 @@ whatever the app is at that point.
 | ~~Claims not enforced~~ (done) | RC golden at the claimed 0.003%, RLC within 1% at every point; op-amp at 0.03%; a typical-mistake test for every lesson; a square source simulated in a circuit |
 | ~~RGB LED~~ (done, format v7) | One model and rating per colour (red, green, blue from the LED_MODELS); burn-out warnings per colour |
 | ~~Missing tests~~ (done; the status bar now says "Paused" while paused) | Logic hold/reset cases, relay drop-out, settling triggers, MCP `remove_component`/`disconnect`, oversized live messages, library delete, rotate, pause, Ctrl/⌘+A, Escape |
-| Keyboard and screen readers | Parts and wires focusable and operable from the keyboard; status bar announces only problems and changes, not the time |
-| Touch | Larger invisible pin hit areas; drag/long-press threshold in screen pixels, sized for fingers |
-| Android template leftovers | Remove the TV launcher entry, template layout/colours/robot icon; dark icon background and splash |
-| Docs | HANDOVER counts and stale lines, ARCHITECTURE (SVG, dependency rule, app copy), COMPONENTS rows, README env vars, GLOSSARY terms, VISION levels |
+| ~~Keyboard and screen readers~~ (done) | Parts and wires focusable and operable from the keyboard; status bar announces only problems and changes, not the time |
+| ~~Touch~~ (done) | Larger invisible pin hit areas; drag/long-press threshold in screen pixels, sized for fingers |
+| ~~Android template leftovers~~ (done) | Remove the TV launcher entry, template layout/colours/robot icon; dark icon background and splash |
+| ~~Docs~~ (done) | HANDOVER counts and stale lines, ARCHITECTURE (SVG, dependency rule, app copy), COMPONENTS rows, README env vars, GLOSSARY terms, VISION levels |
 
 ### D16 Engine depth
 | Item | How |
@@ -100,6 +100,8 @@ whatever the app is at that point.
 | Item | Deliverable |
 |---|---|
 | Ratings for Zener, transistors, op-amp | D16 |
+| Tapped transformer, DC motor (COMPONENTS.md "planned") | D16 |
+| Wiring from the keyboard (pins are not in the Tab order) | D16 |
 | Redo; group rotate; notes in box select and copy/paste; library delete confirmation; manual Reconnect and telling the learner when offline edits are replaced; palette arrow keys; slider label; PWA manifest `id`, separate maskable icons | D16 (app items alongside) |
 | AI from the Android app or the desktop app (deep link, remote MCP) | D14 |
 | Accessibility audit with a screen reader; other languages | D18 |

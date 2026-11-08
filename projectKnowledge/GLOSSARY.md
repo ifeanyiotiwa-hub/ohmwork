@@ -26,3 +26,16 @@
 | Short circuit | Two points joined with (almost) no resistance, e.g. a wire straight across a battery. Real batteries overheat; the simulator reports it. |
 | Floating | A part of the circuit with no connection to ground, so its voltages have no fixed reference. |
 | Passive sign convention | How we sign current: positive when it flows into a part's first pin. A battery delivering power shows negative current. |
+| Truth table | A list of a logic circuit's outputs for every combination of its inputs. |
+| Logic level | The voltage that counts as 1 (logic high, 5 V by default); anything above half of it reads as 1. |
+| Zener diode | A diode made to conduct backwards at a set voltage; used to hold a voltage steady. |
+| Relay | A switch moved by an electromagnet: current in its coil pulls the contact over. |
+| ADC / DAC | Analog-to-digital converter (a voltage in, a number out) and digital-to-analog converter (the reverse). |
+| Transformer | Two coils sharing a magnetic core: AC in one makes AC in the other, scaled by the turns ratio. |
+| Potentiometer | A resistor with a sliding middle contact; a knob that splits a voltage. |
+| Controlled source | A source whose output is set by a voltage or current elsewhere in the circuit (SPICE E, F, G, H). |
+| Rating / burn-out | The most a real part can take (current, power, voltage); beyond it a real one would be damaged, and the simulator warns. |
+| Junction (dot) | A point where wires join in the middle of a wire. |
+| Lesson check | A test of what the learner's circuit does (a reading, a voltage, a truth table), not how it is drawn. |
+| Live link | The connection that lets the learner and the AI agent edit the same circuit at once. |
+

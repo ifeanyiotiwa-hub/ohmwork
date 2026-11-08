@@ -5,7 +5,9 @@ Free, open-source circuit simulator for learning and creative building: web, des
 Project docs: `../projectKnowledge/`. License: GPL-2.0-or-later.
 
 ## Use it with an AI agent (MCP)
-The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `engineering-circuit` server (approve it once). Other MCP clients: run `pnpm --silent --dir EngineeringCircuit/apps/mcp start` as a stdio server.
+The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `engineering-circuit` server (approve it once). Other MCP clients: run `pnpm --silent --dir apps/mcp start` from this folder (or `--dir EngineeringCircuit/apps/mcp` from `circuitProject/`) as a stdio server.
+
+Server settings (environment variables): `EC_WORKSPACE_DIR` (the folder `open_circuit` / `save_circuit` read and write; default: where it was started), `EC_HISTORY_LIMIT` (undo steps kept, default 200), `EC_MAX_FILE_BYTES` (largest circuit file, default 5 MB), `EC_MAX_TRANSIENT_STEPS` (most steps one `simulate_over_time` call runs, default 200000). The agent's files stay inside the workspace folder.
 
 Try: "Build a 9 V battery with two resistors in series, simulate it, and explain where the voltage goes."
 
@@ -28,6 +30,8 @@ In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens
 
 Editing: click a wire while wiring to join it in the middle; Shift-click or Shift-drag to select several parts; Ctrl/⌘ + A, C, V, Z select all, copy, paste and undo; **Library** → Picture (SVG or PNG) saves an image of the circuit.
 
+Keyboard: Tab moves between parts, wires and notes; Enter or Space acts like a click (selects, flips a switch, holds a push button); the arrow keys move the selected part one grid step; Delete removes it, R rotates it, Escape clears the selection.
+
 ## Desktop app (macOS, Windows, Linux)
 Needs Rust (`brew install rustup && rustup default stable`; Homebrew's rustup needs `/opt/homebrew/opt/rustup/bin` on your `PATH`) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
 ```
@@ -43,4 +47,4 @@ On a touch screen: one finger pans, two fingers pinch to zoom, press and hold a 
 
 Windows and Linux installers are built by GitHub Actions (`.github/workflows/desktop.yml`) on a `v*` tag or by hand.
 
-Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).
+Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests; `pnpm test:core` for the packages and the MCP server only), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).

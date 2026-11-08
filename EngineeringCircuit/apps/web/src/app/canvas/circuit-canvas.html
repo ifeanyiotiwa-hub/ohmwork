@@ -24,9 +24,15 @@
 	@for (wire of wires(); track wire.id) {
 		<g
 			class="wire"
+			role="button"
+			tabindex="0"
 			[class.selected]="wire.selected"
 			[class.agent-changed]="wire.agentChanged"
-			[attr.data-wire]="wire.id" (pointerdown)="onWireDown($event, wire.id)">
+			[attr.data-wire]="wire.id"
+			[attr.aria-label]="wire.label"
+			(pointerdown)="onWireDown($event, wire.id)"
+			(keydown)="onWireKey($event, wire.id)"
+		>
 			<path class="wire-hit" [attr.d]="wire.path" />
 			<path class="wire-line" [attr.d]="wire.path" [style.stroke]="wire.colour" />
 			@if (wire.flow; as flow) {
@@ -39,6 +45,7 @@
 		<g
 			class="part"
 			role="button"
+			tabindex="0"
 			[class.selected]="item.selected"
 			[class.agent-changed]="item.agentChanged"
 			[class.junction]="item.part.type === 'junction'"
@@ -46,6 +53,8 @@
 			[attr.aria-label]="item.part.id + ' ' + item.value"
 			[attr.transform]="item.transform"
 			(pointerdown)="onPartDown($event, item.part)"
+			(keydown)="onPartKey($event, item.part)"
+			(keyup)="onPartKeyUp($event, item.part)"
 		>
 			<rect
 				class="part-hit"
@@ -82,7 +91,17 @@
 	}
 
 	@for (note of notes(); track note.id) {
-		<g class="note" [class.selected]="note.selected" [attr.data-note]="note.id" [attr.transform]="note.transform" (pointerdown)="onNoteDown($event, note.id)">
+		<g
+			class="note"
+			role="button"
+			tabindex="0"
+			[class.selected]="note.selected"
+			[attr.data-note]="note.id"
+			[attr.aria-label]="'Note: ' + note.lines.join(' ')"
+			[attr.transform]="note.transform"
+			(pointerdown)="onNoteDown($event, note.id)"
+			(keydown)="onNoteKey($event, note.id)"
+		>
 			<rect class="note-box" [attr.width]="note.width" [attr.height]="note.height" rx="4" />
 			<text class="note-text">
 				@for (line of note.lines; track $index) {
@@ -98,9 +117,10 @@
 
 	@for (item of parts(); track item.part.id) {
 		@for (pin of item.pins; track pin.key) {
+			<circle class="pin-hit" [attr.r]="pinHitRadius" [attr.cx]="pin.at.x" [attr.cy]="pin.at.y" (pointerdown)="onPinDown($event, pin.ref)" />
 			<circle
 				class="pin"
-				r="5"
+				[attr.r]="config.pinRadius"
 				[class.pending]="pin.pending"
 				[attr.cx]="pin.at.x"
 				[attr.cy]="pin.at.y"

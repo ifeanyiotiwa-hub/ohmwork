@@ -1,7 +1,7 @@
 # Component inventory
 
 Every part the app will support up to scope level 3, plus what was considered and left out.
-Status: `in format` (defined in `packages/format`) · `simulated` (engine model + golden test) · `planned`.
+Status: `in format` (defined in `packages/format`) · `simulated` (engine model, or a display/recorder's behaviour, covered by tests; golden tests against ngspice or textbook answers where the row says so) · `planned`.
 Units are SI. Pin names are lowercase words. Parameter names are ours; defaults are confirmed by the owning deliverable's golden test.
 
 **One stored value per quantity.** The file stores one canonical value; the UI and MCP accept equivalent forms and convert, and display both. Frequency (Hz) is stored, and period (s) = 1/frequency is accepted and shown. A sine's amplitude (peak V) is stored, and RMS = amplitude/√2 is accepted and shown. Storing both would let them disagree.
@@ -17,9 +17,9 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 ## Reference and sources
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `ground` | terminal | – | 0 V reference node | EC, CJS | D2 | in format |
-| `voltage-source` (DC) | positive, negative | voltage (V) | ideal voltage source | EC, CJS, SPICE `V` | D2 | in format |
-| `current-source` | positive, negative | current (A), flows out of `positive` | ideal current source | EC, CJS, SPICE `I` | D2 | in format |
+| `ground` | terminal | – | 0 V reference node | EC, CJS | D2 | simulated |
+| `voltage-source` (DC) | positive, negative | voltage (V) | ideal voltage source | EC, CJS, SPICE `V` | D2 | simulated |
+| `current-source` | positive, negative | current (A), flows out of `positive` | ideal current source | EC, CJS, SPICE `I` | D2 | simulated |
 | `vcvs` | controlPositive, controlNegative, positive, negative | gain (V/V) | voltage-controlled voltage source | EC, CJS, SPICE `E` | D3 | simulated |
 | `vccs` | controlPositive, controlNegative, positive, negative | transconductance (S = A/V) | voltage-controlled current source; output current flows out of `positive` (like `current-source`; SPICE G is the reverse) | EC, CJS, SPICE `G` | D3 | simulated |
 | `ccvs` | senseIn, senseOut, positive, negative | transresistance (Ω) | current through sense pins (0 V path) controls voltage | EC, CJS, SPICE `H` | D3 | simulated |
@@ -32,11 +32,12 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 ## Passive
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `resistor` | a, b | resistance (Ω), powerRating (W, default ¼ W) | Ohm's law | EC, CJS, SPICE `R` | D2 | in format |
+| `resistor` | a, b | resistance (Ω), powerRating (W, default ¼ W) | Ohm's law; burn-out above its power rating | EC, CJS, SPICE `R` | D2 | simulated |
 | `capacitor` | a, b | capacitance (F) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `C` | D3 | simulated |
 | `polarized-capacitor` | positive, negative | capacitance (F), maxReverseVoltage (V, default 1 as CJS) | capacitor; warns when reversed past the limit (CJS stops the simulation) | EC, CJS | D3 | simulated |
 | `inductor` | a, b | inductance (H) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `L` | D3 | simulated |
 | `potentiometer` | a, b, wiper | resistance (Ω), position (0–1) | two resistors split at the wiper (a wire at an end stop) | EC, CJS | D3 | simulated |
+| `junction` | terminal | – | no model: a dot where wires join; placed by clicking a wire, which splits it in two (`split-wire`) | CJS (wires join anywhere) | D15 | simulated |
 | `transformer` | primaryA, primaryB, secondaryA, secondaryB | primaryInductance (H), turnsRatio, coupling (0–1, exclusive: k = 1 makes the inductance matrix singular) | coupled inductors, SPICE `K`; defaults 4 H, 1, 0.999 as CJS; windings are wires at DC | EC, CJS, SPICE `K` | D3 | simulated |
 | `tapped-transformer` | primaryA, primaryB, secondaryA, secondaryTap, secondaryB | as transformer | coupled inductors, centre tap | EC, CJS | later | planned |
 | `lamp` | a, b | ratedVoltage (V), ratedPower (W) | resistor R = V²/P; brightness from power. Defaults 6 V / 1 W (CJS: 120 V / 100 W mains lamp with a heating filament; ours is fixed-resistance so a 5 V source lights it) | EC, CJS | D3 | simulated |
@@ -45,13 +46,13 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 ## Switches
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `switch` (SPST) | a, b | closed | tiny / huge resistance | EC, CJS | D2 | in format |
+| `switch` (SPST) | a, b | closed | ideal: a wire (0 V branch) when closed, nothing when open; so a closed switch across a source is a short circuit | EC, CJS | D2 | simulated |
 | `switch-spdt` | common, a, b | position (a/b) | common wired to the selected pin; click flips it | EC, CJS | D3 | simulated |
 | `push-button` | a, b | normallyOpen (true = NO, false = NC) | switch, toggles while pressed (held state is an engine input, never saved) | EC (NO and NC), CJS | D6 | simulated |
 | `relay` | coilA, coilB, common, normallyOpen, normallyClosed | coilInductance (H), coilResistance (Ω), onCurrent (A), offCurrent (A); CJS defaults 0.2 H, 20 Ω, 20 mA, 15 mA | series RL coil; contacts flip with hysteresis | EC, CJS | D9 | simulated |
 
 ## Semiconductors
-Diode-family params follow SPICE §7.2: saturationCurrent (IS, default 1e-14 A), emissionCoefficient (N, default 1), seriesResistance (RS, default 0 Ω), breakdownVoltage (BV, default none). The UI may also offer "forward voltage at a current" and convert, as CJS does.
+Diode-family params follow SPICE §7.2 names and meanings (SPICE's own defaults: IS 1e-14 A, N 1, RS 0 Ω, BV none). Our defaults are CircuitJS1's models and the sourced LED models, given in each row (the plain diode: IS 1.714e-7 A, N 2, RS 0). The UI may also offer "forward voltage at a current" and convert, as CJS does.
 
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
@@ -77,7 +78,7 @@ Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chainin
 | `sr-latch-inverted` (NAND, active-low S̄R̄) | sNot, rNot, q, qNot | – | EC | D5 | simulated |
 | `d-flip-flop` | d, clk, q, qNot | – | EC, CJS | D5 | simulated |
 | `t-flip-flop` | t, clk, q, qNot | – | EC, CJS | D5 | simulated |
-| `jk-flip-flop` | j, k, clk, q, qNot | – | EC, CJS | D5 | simulated |
+| `jk-flip-flop` | j, clk, k, q, qNot | – | EC, CJS | D5 | simulated |
 | `counter-4bit` | clk, reset, q0, q1, q2, q3 | – | EC, CJS | D5 | simulated |
 
 Half and full adders are not parts. Learners build them from gates (lessons in D12). CJS has them as chips; revisit with subcircuits.
@@ -104,14 +105,14 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 | Item | Why | Seen in | Deliverable |
 |---|---|---|---|
 | Junction | A `junction` part (one pin, any number of wires, no model) placed by clicking a wire, which splits it in two | CJS (wires join anywhere) | done (D15b) |
-| Labeled node (net label, e.g. "VCC") | Connect distant points by name | CJS | later |
+| Labeled node (net label, e.g. "VCC") | Connect distant points by name | CJS | D17 |
 | Text notes | Lessons and AI explanations (separate `notes` list, format v5) | CJS | done (D12) |
 | Simulation settings | Time step, speed (D3), logic high voltage (D5); saved with the circuit | SPICE (TSTEP/TSTOP), CJS | done |
-| Subcircuits ("custom chips") | Learner builds a half adder, saves it as a reusable part | CJS, SPICE `X`, EC `+` | later |
-| Parts browser + "request a new part" | Browse all parts; request a missing one with an explanation and sources, which the AI drafts into a `COMPONENTS.md` row + `defineComponent` entry for review | EC `+` | after D7 |
+| Subcircuits ("custom chips") | Learner builds a half adder, saves it as a reusable part | CJS, SPICE `X`, EC `+` | D17 |
+| Parts browser + "request a new part" | Browse all parts; request a missing one with an explanation and sources, which the AI drafts into a `COMPONENTS.md` row + `defineComponent` entry for review | EC `+` | D17 |
 
 ## Considered and left out (for now)
-From CJS / SPICE, not in EC: battery (covered by `voltage-source`; internal resistance could be added later), DPDT and make-before-break switches, analog switches, transmission lines (SPICE `T`/`O`), photoresistor, thermistor, memristor, spark gap, fuse, crystal, gyrator, AM/FM/noise/audio sources, antenna, JFET (SPICE `J`), MESFET (`Z`), SCR, DIAC, TRIAC, Darlington, varactor, tunnel diode, triode, UJT, real op-amp, comparator, Schmitt trigger, OTA, CCII, optocoupler, LM317, TL431, buffers/tristate, multiplexers, shift registers, RAM/ROM, VCO, phase comparator, monostable, wattmeter, 3-phase motor, LED array, behavioural source (SPICE `B`), microcontrollers (D13). Add any of them with the checklist below.
+From CJS / SPICE, not in EC: battery (covered by `voltage-source`; internal resistance could be added later), DPDT and make-before-break switches, analog switches, transmission lines (SPICE `T`/`O`), photoresistor, thermistor, memristor, spark gap, fuse, crystal, gyrator, AM/FM/noise/audio sources, antenna, JFET (SPICE `J`), MESFET (`Z`), SCR, DIAC, TRIAC, Darlington, varactor, tunnel diode, triode, UJT, real op-amp, comparator, Schmitt trigger, OTA, CCII, optocoupler, LM317, TL431, buffers (tri-state buffers are planned in D16), multiplexers, shift registers, RAM/ROM, VCO, phase comparator, monostable, wattmeter, 3-phase motor, LED array, behavioural source (SPICE `B`), microcontrollers (D13). Add any of them with the checklist below.
 
 ## Reference screenshot readings (confirmed by owner, 2026-11-07)
 - LED icon with bars beneath: RGB LED → `rgb-led`.
@@ -121,7 +122,7 @@ From CJS / SPICE, not in EC: battery (covered by `voltage-source`; internal resi
 
 ## How to add a component
 1. Add a row to this file (pins, params with units, model, seen in, deliverable).
-2. Add one `defineComponent(type, { idPrefix, pins, params })` entry in the matching category file in `packages/format/src/schema/components/` (`sources`, `passives`, `switches`, `semiconductors`). `idPrefix` gives automatic ids (R1, R2…). Describe each param with its unit (`positive("ohms")`, `.describe(...)`): the AI reads these. For a new category, add a file and spread it into `catalog.ts`.
+2. Add one `defineComponent(type, { idPrefix, pins, params })` entry in the matching category file in `packages/format/src/schema/components/` (`sources`, `passives`, `switches`, `semiconductors`, `logic`, `ics`, `measurement`). `idPrefix` gives automatic ids (R1, R2…). Describe each param with its unit (`positive("ohms")`, `.describe(...)`): the AI reads these. For a new category, add a file and spread it into `catalog.ts`.
 3. Add format tests for valid and invalid params in `packages/format/test/`.
 4. No format version bump for a **new** type: older apps report "Unknown component type ... update the app". Changing an **existing** part's pins or params needs a version bump plus a migration that fills defaults (ADR-008).
 5. Add the part to `DC_MODELS` in `packages/engine/src/dc/branches.ts` (TypeScript fails until you do): a model, or `"not-simulated"` until its deliverable. The engine model ships with a golden test, then status becomes `simulated`.

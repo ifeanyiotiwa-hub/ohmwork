@@ -10,6 +10,12 @@
 	background: var(--surface);
 }
 
+.announced {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
 .issue {
 	margin: 0;
 	padding: 4px 10px;

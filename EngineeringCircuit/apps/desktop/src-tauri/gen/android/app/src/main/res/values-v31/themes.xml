@@ -1,0 +1,7 @@
+<resources>
+    <!-- Android 12+ splash screen: the canvas colour behind the app icon. -->
+    <style name="Theme.engineering_circuit" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/canvas_background</item>
+        <item name="android:windowSplashScreenBackground">@color/canvas_background</item>
+    </style>
+</resources>

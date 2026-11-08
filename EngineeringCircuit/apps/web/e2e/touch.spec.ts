@@ -84,3 +84,17 @@ test("pressing and holding the background, then dragging, draws a selection box"
 	await send("touchEnd", [])
 	await expect(page.locator("[data-group-count]")).toHaveText("2 parts selected")
 })
+
+test("a tap just beside a pin (within half a grid step) still starts a wire: pins are bigger targets than they look", async ({ page }) => {
+	const send = await touch(page)
+	const pin = await centreOf(page, '[data-pin="R1:a"]')
+	const pixelsPerUnit = await page.evaluate(() => {
+		const canvas = document.querySelector<SVGSVGElement>("svg.canvas")
+		return (canvas?.getScreenCTM()?.a ?? 1)
+	})
+	// 8 canvas units below the centre: outside the drawn 5-unit circle, inside the 10-unit target.
+	const beside = { x: pin.x, y: pin.y + 8 * pixelsPerUnit }
+	await send("touchStart", [beside])
+	await send("touchEnd", [])
+	await expect(page.locator('[data-pin="R1:a"]')).toHaveClass(/pending/)
+})

@@ -5,12 +5,15 @@ test.beforeEach(async ({ page }) => {
 	await page.goto("/")
 })
 
+/** Tests that wait for simulated time to pass run at wall-clock speed: slower on a busy machine. */
+const REAL_TIME_TEST_MS = 90_000
+
 test("the example circuit is solved on load: 6 V, 4 V and 2 A", async ({ page }) => {
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })
 	await expect(canvas.locator(".node-label", { hasText: "6 V" })).toBeVisible()
 	await expect(canvas.locator(".node-label", { hasText: "4 V" })).toBeVisible()
 	await expect(canvas.locator(".part-reading", { hasText: "2 A" }).first()).toBeVisible()
-	await expect(page.getByRole("status")).toContainText("Simulating")
+	await expect(page.locator("[data-sim-time]")).toContainText("Simulating")
 })
 
 test("editing a value re-solves: R2 = 4 Ω gets 4.8 V", async ({ page }) => {
@@ -125,6 +128,7 @@ test("a push button conducts only while held down", async ({ page }) => {
 })
 
 test("a capacitor charges over time, and Restart empties it again", async ({ page }) => {
+	test.setTimeout(REAL_TIME_TEST_MS)
 	await page.getByRole("button", { name: "New" }).click()
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })
 	for (const [type, x, y] of [
@@ -299,6 +303,7 @@ test("logic: clicking an input flips the indicator through a NOT gate", async ({
 })
 
 test("a 555 astable shows a square wave on the oscilloscope", async ({ page }) => {
+	test.setTimeout(REAL_TIME_TEST_MS)
 	await page.getByRole("button", { name: "New" }).click()
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })
 	for (const [type, x, y] of [

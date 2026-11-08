@@ -5,18 +5,17 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
-/** The app's canvas colour (--canvas-bg), shown behind the status and navigation bars. */
-private val CANVAS_BACKGROUND = Color.parseColor("#0f1419")
 
 class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     // Light status bar icons on the app's dark background.
     enableEdgeToEdge(SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT))
     super.onCreate(savedInstanceState)
-    window.decorView.setBackgroundColor(CANVAS_BACKGROUND)
+    // The app's canvas colour (res/values/colors.xml), behind the status and navigation bars.
+    window.decorView.setBackgroundColor(ContextCompat.getColor(this, R.color.canvas_background))
     keepClearOfSystemBars(findViewById(android.R.id.content))
   }
 

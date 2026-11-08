@@ -10,10 +10,10 @@ Learners from zero knowledge upward, and makers who want to experiment.
 ## Scope levels
 | Level | Content | Status |
 |---|---|---|
-| 1 | Sources, resistors, switches, LEDs, capacitors, inductors | planned |
-| 2 | Logic gates, flip-flops, counters, adders | planned |
-| 3 | ICs: 555 timer, op-amps, 7-segment displays, transistors | planned |
-| 4 (optional) | Microcontrollers (Arduino/AVR) running user code | later |
+| 1 | Sources, resistors, switches, LEDs, capacitors, inductors | done (D2–D4) |
+| 2 | Logic gates, flip-flops, counters, adders | done (D5) |
+| 3 | ICs: 555 timer, op-amps, 7-segment displays, transistors | done (D4, D9) |
+| 4 (optional) | Microcontrollers (Arduino/AVR) running user code | later (D13) |
 
 ## What makes it different
 - AI-native: the agent builds and explains real circuits through MCP, using real simulation data instead of guesses.

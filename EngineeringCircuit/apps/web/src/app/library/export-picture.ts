@@ -52,7 +52,7 @@ const STYLE_PROPERTIES = [
 	"filter",
 ] as const
 /** Click targets and moving current dots: interaction and animation, not part of a picture. */
-const LEAVE_OUT = ".part-hit, .wire-hit, .wire-flow, .pin, .rubber-band, .selection-box"
+const LEAVE_OUT = ".part-hit, .wire-hit, .wire-flow, .pin, .pin-hit, .rubber-band, .selection-box"
 
 /** The canvas as a standalone SVG of the whole circuit, styles inlined, on the canvas background. */
 export function circuitSvg(canvas: SVGSVGElement, bounds: Bounds, background: string): string {

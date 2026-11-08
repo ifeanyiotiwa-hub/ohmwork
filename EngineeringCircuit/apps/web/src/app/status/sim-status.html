@@ -1,13 +1,5 @@
-<footer class="status" role="status" aria-live="polite">
-	@if (store.editError(); as message) {
-		<p class="issue error">{{ message }}</p>
-	}
-	@for (issue of store.errors(); track $index) {
-		<button type="button" class="issue error" (click)="show(issue)">{{ issue.message }}</button>
-	}
-	@for (issue of store.warnings(); track $index) {
-		<button type="button" class="issue warning" (click)="show(issue)">{{ issue.message }}</button>
-	}
+<footer class="status">
+	<!-- The ticking time is shown, not announced; problems and messages below are. -->
 	@if (healthy()) {
 		<p class="issue ok" data-sim-time>
 			{{ store.paused() ? "Paused" : "Simulating" }} · {{ store.circuit().components.length }} parts ·
@@ -18,34 +10,45 @@
 			}
 		</p>
 	}
-	@if (library.damaged(); as damaged) {
-		<p class="issue warning" data-damaged-circuit>
-			Your last circuit couldn't be opened ({{ damaged.reason }}). It has been kept aside: download it from the Library.
-		</p>
-	}
-	@if (library.problem(); as problem) {
-		<p class="issue warning" data-storage-problem>{{ problem }}</p>
-	}
-	@if (store.slowed()) {
-		<p class="issue warning">Running slower than the set speed: too many time steps per frame. Raise the time step or lower the speed.</p>
-	}
-	@switch (store.liveStatus()) {
-		@case ("connecting") {
-			<p class="live" data-live>Connecting to the agent…</p>
+	<div class="announced" role="status" aria-live="polite">
+		@if (store.editError(); as message) {
+			<p class="issue error">{{ message }}</p>
 		}
-		@case ("connected") {
-			<p class="live connected" data-live>
-				Live with agent
-				@if (store.lastChange(); as change) {
-					· <strong>{{ change.author === "agent" ? "Agent" : "You" }}:</strong> {{ change.summary }}
-				}
+		@for (issue of store.errors(); track $index) {
+			<button type="button" class="issue error" (click)="show(issue)">{{ issue.message }}</button>
+		}
+		@for (issue of store.warnings(); track $index) {
+			<button type="button" class="issue warning" (click)="show(issue)">{{ issue.message }}</button>
+		}
+		@if (library.damaged(); as damaged) {
+			<p class="issue warning" data-damaged-circuit>
+				Your last circuit couldn't be opened ({{ damaged.reason }}). It has been kept aside: download it from the Library.
 			</p>
 		}
-		@case ("reconnecting") {
-			<p class="live closed" data-live>Reconnecting to the agent… · working on your own copy</p>
+		@if (library.problem(); as problem) {
+			<p class="issue warning" data-storage-problem>{{ problem }}</p>
 		}
-		@case ("closed") {
-			<p class="live closed" data-live>Live link closed · working on your own copy</p>
+		@if (store.slowed()) {
+			<p class="issue warning">Running slower than the set speed: too many time steps per frame. Raise the time step or lower the speed.</p>
 		}
-	}
+		@switch (store.liveStatus()) {
+			@case ("connecting") {
+				<p class="live" data-live>Connecting to the agent…</p>
+			}
+			@case ("connected") {
+				<p class="live connected" data-live>
+					Live with agent
+					@if (store.lastChange(); as change) {
+						· <strong>{{ change.author === "agent" ? "Agent" : "You" }}:</strong> {{ change.summary }}
+					}
+				</p>
+			}
+			@case ("reconnecting") {
+				<p class="live closed" data-live>Reconnecting to the agent… · working on your own copy</p>
+			}
+			@case ("closed") {
+				<p class="live closed" data-live>Live link closed · working on your own copy</p>
+			}
+		}
+	</div>
 </footer>

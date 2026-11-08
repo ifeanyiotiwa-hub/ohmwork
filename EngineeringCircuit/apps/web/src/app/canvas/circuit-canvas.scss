@@ -110,6 +110,14 @@
 	stroke-linecap: round;
 }
 
+/* Keyboard focus: the same accent outline as a selection, plus a ring, so it is visible on any part. */
+.part:focus-visible,
+.wire:focus-visible,
+.note:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 .part.selected .symbol {
 	stroke: var(--accent);
 	stroke-width: 2.5;
@@ -138,6 +146,12 @@
 .node-label {
 	fill: var(--voltage-label);
 	font-weight: 600;
+}
+
+/* The invisible, larger target around each pin (transparent fill still receives taps and clicks). */
+.pin-hit {
+	fill: transparent;
+	cursor: crosshair;
 }
 
 .pin {
