@@ -17,6 +17,7 @@ with the reason. When an item is done, mark it here and in `HANDOVER.md` "Known 
 | D8 Live link | Reconnecting after a drop; more than one learner at a time | The link lives as long as Claude Code runs. Several learners would need the D14 backend |
 | D9 Oscilloscope + ICs | Scope triggering, a separate scale per trace, X-Y mode, "show any part on the scope"; op-amp speed limits (slew rate, bandwidth); ADC/DAC with more than 4 bits; an LED-style 7-segment display | Kept to the acceptance criteria. The 4-bit limit comes from the rule that a part's pins can't change with a setting (ADR-009) |
 | D10 Saving | Saving back over the same file on disk; syncing across devices; image export | Browser support for writing files in place is uneven, and syncing needs the D14 backend |
+| D11a Desktop | Code signing and notarization; running the Windows/Linux CI builds; joining a live session from the desktop app (deep link); iOS | Signing needs paid developer accounts (Apple, a Windows certificate); CI needs a GitHub remote; a deep link needs a registered URL scheme and the MCP server allowing the Tauri origin; iOS needs full Xcode, not installed |
 | Parts list "later" items | Net labels, subcircuits (custom chips), a parts browser with "request a part". ~~Text notes~~ (done in D12b) | Not assigned to any deliverable yet |
 
 ## The plan
@@ -60,7 +61,7 @@ whatever the app is at that point.
 ### Assigned to existing deliverables
 | Item | Deliverable | How |
 |---|---|---|
-| Save in place to disk | D11 | Native file dialogs in the desktop app; in the browser, the File System Access API where supported, with download as the fallback |
+| ~~Save in place to disk~~ (done, D11a) | D11 | Native file dialogs in the desktop app; in the browser, the File System Access API where supported, with download as the fallback |
 | Remote MCP connection | D14 | Streamable HTTP transport behind the backend's accounts |
 | Several learners on one circuit | D14 | The shared document moves to the server |
 | Cross-device sync | D14 | Library entries stored per account |

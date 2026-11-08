@@ -1,0 +1,63 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Engineering Circuit",
+  "mainBinaryName": "engineering-circuit",
+  "version": "0.1.0",
+  "identifier": "dev.engineeringcircuit.app",
+  "build": {
+    "frontendDist": "../../web/dist/web/browser",
+    "devUrl": "http://localhost:4200",
+    "beforeDevCommand": "pnpm --filter @engineering-circuit/web start",
+    "beforeBuildCommand": "pnpm --filter @engineering-circuit/web build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Engineering Circuit",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 560,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data: blob:",
+        "font-src": "'self'",
+        "worker-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost ws://127.0.0.1:*"
+      },
+      "devCsp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data: blob:",
+        "font-src": "'self'",
+        "worker-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost ws://127.0.0.1:* ws://localhost:*"
+      },
+      "dangerousDisableAssetCspModification": ["style-src"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "shortDescription": "Build, simulate and learn electronic circuits",
+    "license": "GPL-2.0-or-later",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  }
+}

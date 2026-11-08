@@ -1,0 +1,19 @@
+[package]
+name = "engineering-circuit"
+version = "0.1.0"
+description = "Engineering Circuit: build, simulate and learn electronic circuits"
+license = "GPL-2.0-or-later"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "engineering_circuit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.5", features = [] }
+tauri-plugin-dialog = "2.8.4"
+tauri-plugin-fs = "2.7.1"

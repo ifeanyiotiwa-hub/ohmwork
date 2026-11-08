@@ -15,7 +15,7 @@ export function fileNameFor(circuit: Circuit): string {
 }
 
 /** Reads a chosen file as a circuit, with the format's own checks and migrations. */
-export async function readCircuitFile(file: File, maxBytes: number): Promise<FileResult> {
+export async function readCircuitFile(file: Pick<File, "name" | "size" | "text">, maxBytes: number): Promise<FileResult> {
 	if (file.size > maxBytes) return { ok: false, message: `"${file.name}" is ${file.size} bytes; files up to ${maxBytes} bytes open.` }
 	const parsed = parseCircuitJson(await file.text())
 	if (parsed.ok) return parsed
@@ -23,10 +23,7 @@ export async function readCircuitFile(file: File, maxBytes: number): Promise<Fil
 	return { ok: false, message: `Couldn't open "${file.name}":\n${reasons}` }
 }
 
-/** Offers the circuit to the browser as a download. */
-export function downloadCircuit(circuit: Circuit, document: Document): void {
-	offerDownload(new Blob([serializeCircuit(circuit)], { type: "application/json" }), fileNameFor(circuit), document)
-}
+export const circuitBlob = (circuit: Circuit) => new Blob([serializeCircuit(circuit)], { type: "application/json" })
 
 /** Hands a file to the browser's download. */
 export function offerDownload(blob: Blob, name: string, document: Document): void {

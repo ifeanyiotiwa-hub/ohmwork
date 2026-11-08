@@ -33,12 +33,19 @@
 	}
 
 	<footer>
-		<label class="file-button">
-			Open file…
-			<input type="file" accept=".json,application/json" data-library-file (change)="openFile($event)" />
-		</label>
-		<button type="button" data-library-download (click)="download()">Download file</button>
-		<button type="button" data-picture-svg (click)="downloadPicture('svg')">Picture (SVG)</button>
-		<button type="button" data-picture-png (click)="downloadPicture('png')">Picture (PNG)</button>
+		@if (pickers; as dialogs) {
+			<button type="button" data-library-open-file (click)="openFromDisk(dialogs)">Open file…</button>
+		} @else {
+			<label class="file-button">
+				Open file…
+				<input type="file" accept=".json,application/json" data-library-file (change)="openFile($event)" />
+			</label>
+		}
+		@if (file(); as current) {
+			<button type="button" data-library-save-file (click)="saveToFile(current)">Save to {{ current.name }}</button>
+		}
+		<button type="button" data-library-download (click)="saveAs()">{{ pickers ? "Save as file…" : "Download file" }}</button>
+		<button type="button" data-picture-svg (click)="savePicture('svg')">Picture (SVG)</button>
+		<button type="button" data-picture-png (click)="savePicture('png')">Picture (PNG)</button>
 	</footer>
 </dialog>

@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test"
+import { fakeFileDialogs, savedFiles, withoutFileDialogs } from "./support/file-dialogs"
 
+// Most tests act as Firefox or Safari (downloads and a file input); the file-dialog test adds its fake dialogs.
 test.beforeEach(async ({ page }) => {
+	await withoutFileDialogs(page)
 	await page.goto("/")
 })
 
@@ -60,4 +63,36 @@ test("a file that is not a circuit is explained, not opened", async ({ page }) =
 		.setInputFiles({ name: "notes.json", mimeType: "application/json", buffer: Buffer.from('{"shopping": ["milk"]}') })
 	await expect(library(page).locator("[data-library-message]")).toContainText('Couldn\'t open "notes.json"')
 	await expect(page.locator('[data-part="R2"]')).toBeVisible()
+})
+
+test("with file dialogs, Save as picks a file, Save writes it again in place, and Open reads it back", async ({ page }) => {
+	const name = "divider.circuit.json"
+	await fakeFileDialogs(page, { saveAs: name, toOpen: { name, text: "" } })
+	await page.reload()
+	const resistanceOfR2 = async () => {
+		const saved: { components: { id: string; params: { resistance?: number } }[] } = JSON.parse((await savedFiles(page))[name] ?? "{}")
+		return saved.components.find((part) => part.id === "R2")?.params.resistance
+	}
+
+	await page.getByRole("button", { name: "Library" }).click()
+	await library(page).getByRole("button", { name: "Save as file…" }).click()
+	await expect(library(page).locator("[data-library-message]")).toHaveText(`Saved to ${name}.`)
+	expect(await resistanceOfR2()).toBe(2)
+	await library(page).getByRole("button", { name: "Close" }).click()
+
+	await page.locator('[data-part="R2"]').click()
+	const resistance = page.locator('[data-field="resistance"]')
+	await resistance.fill("4")
+	await resistance.press("Enter")
+	await page.getByRole("button", { name: "Library" }).click()
+	await library(page).getByRole("button", { name: `Save to ${name}` }).click()
+	await expect(library(page).locator("[data-library-message]")).toHaveText(`Saved to ${name}.`)
+	expect(await resistanceOfR2()).toBe(4)
+	await library(page).getByRole("button", { name: "Close" }).click()
+
+	await page.getByRole("button", { name: "New" }).click()
+	await page.getByRole("button", { name: "Library" }).click()
+	await library(page).locator("[data-library-open-file]").click()
+	await expect(library(page)).toBeHidden()
+	await expect(page.locator(".node-label", { hasText: "4.8 V" })).toBeVisible()
 })

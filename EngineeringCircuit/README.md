@@ -24,8 +24,16 @@ The link only accepts this computer, the app's own address and the session token
 pnpm install
 pnpm web            # http://localhost:4200
 ```
-In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens or downloads `.circuit.json` files; the circuit you are editing is kept across reloads. A production build is an installable app that works offline.
+In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens or saves `.circuit.json` files (in Chrome, Edge and the desktop app, "Save to <file>" writes the opened file again in place; other browsers download); the circuit you are editing is kept across reloads. A production build is an installable app that works offline.
 
 Editing: click a wire while wiring to join it in the middle; Shift-click or Shift-drag to select several parts; Ctrl/⌘ + A, C, V, Z select all, copy, paste and undo; **Library** → Picture (SVG or PNG) saves an image of the circuit.
+
+## Desktop app (macOS, Windows, Linux)
+Needs Rust (`brew install rustup && rustup default stable`; Homebrew's rustup needs `/opt/homebrew/opt/rustup/bin` on your `PATH`) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
+```
+pnpm desktop        # the desktop window, with the web app reloading as you edit
+pnpm desktop:build  # installers in apps/desktop/src-tauri/target/release/bundle
+```
+Windows and Linux installers are built by GitHub Actions (`.github/workflows/desktop.yml`) on a `v*` tag or by hand.
 
 Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).

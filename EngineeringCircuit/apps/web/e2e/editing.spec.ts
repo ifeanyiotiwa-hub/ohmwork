@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises"
 import { expect, test } from "@playwright/test"
+import { withoutFileDialogs } from "./support/file-dialogs"
 import { choosePart } from "./support/parts"
 
 test.beforeEach(async ({ page }) => {
+	await withoutFileDialogs(page)
 	await page.goto("/")
 })
 

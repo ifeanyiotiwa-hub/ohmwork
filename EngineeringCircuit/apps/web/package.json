@@ -21,21 +21,24 @@
 		"@engineering-circuit/editing": "workspace:*",
 		"@engineering-circuit/engine": "workspace:*",
 		"@engineering-circuit/format": "workspace:*",
+		"@engineering-circuit/lessons": "workspace:*",
+		"@tauri-apps/api": "^2.12.4",
+		"@tauri-apps/plugin-dialog": "^2.8.4",
+		"@tauri-apps/plugin-fs": "^2.7.1",
 		"rxjs": "~7.8.0",
 		"tslib": "^2.3.0",
-		"zod": "^4.6.7",
-		"@engineering-circuit/lessons": "workspace:*"
+		"zod": "^4.6.7"
 	},
 	"devDependencies": {
 		"@angular/build": "^22.2.6",
 		"@angular/cli": "^22.2.6",
 		"@angular/compiler-cli": "^22.2.0",
+		"@modelcontextprotocol/client": "^2.4.0",
 		"@playwright/test": "^1.65.0",
 		"jsdom": "^30.0.0",
 		"prettier": "^3.8.1",
 		"typescript": "~6.0.2",
-		"vitest": "^5.0.0",
-		"@modelcontextprotocol/client": "^2.4.0"
+		"vitest": "^5.0.0"
 	},
 	"license": "GPL-2.0-or-later",
 	"type": "module"

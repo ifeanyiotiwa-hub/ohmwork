@@ -1,5 +1,5 @@
 import type { Circuit } from "@engineering-circuit/format"
-import { fileNameFor, offerDownload } from "./circuit-files"
+import { fileNameFor } from "./circuit-files"
 
 export type Bounds = { x: number; y: number; width: number; height: number }
 
@@ -58,14 +58,15 @@ export function circuitSvg(canvas: SVGSVGElement, bounds: Bounds, background: st
 	return new XMLSerializer().serializeToString(clone)
 }
 
-/** Offers the picture as `<circuit name>.svg`. */
-export function downloadSvg(circuit: Circuit, svg: string, document: Document): void {
-	offerDownload(new Blob([svg], { type: "image/svg+xml" }), `${baseName(circuit)}.svg`, document)
-}
+/** The picture's file name: `<circuit name>.svg` or `.png`. */
+export const pictureName = (circuit: Circuit, extension: "svg" | "png") =>
+	`${fileNameFor(circuit).replace(/\.circuit\.json$/, "")}.${extension}`
 
-/** Draws the SVG at `scale` on a canvas and offers it as `<circuit name>.png`. */
-export async function downloadPng(circuit: Circuit, svg: string, bounds: Bounds, scale: number, document: Document): Promise<void> {
-	const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }))
+export const svgBlob = (svg: string) => new Blob([svg], { type: "image/svg+xml" })
+
+/** Draws the SVG at `scale` on a canvas, as a PNG. */
+export async function pngBlob(svg: string, bounds: Bounds, scale: number, document: Document): Promise<Blob> {
+	const url = URL.createObjectURL(svgBlob(svg))
 	try {
 		const image = new Image()
 		image.src = url
@@ -76,10 +77,8 @@ export async function downloadPng(circuit: Circuit, svg: string, bounds: Bounds,
 		canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height)
 		const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"))
 		if (!png) throw new Error("The browser could not make a PNG.")
-		offerDownload(png, `${baseName(circuit)}.png`, document)
+		return png
 	} finally {
 		URL.revokeObjectURL(url)
 	}
 }
-
-const baseName = (circuit: Circuit) => fileNameFor(circuit).replace(/\.circuit\.json$/, "")
