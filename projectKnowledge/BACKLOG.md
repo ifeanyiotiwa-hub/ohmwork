@@ -38,6 +38,22 @@ whatever the app is at that point.
 | ~~Inductor ringing~~ (done, D15a: ten settling steps, ADR-023) | Use one backward-Euler step whenever a switch changes state (what SPICE does at breakpoints); tested on an inductor switched off |
 | Solver fallback | Partly done (D15a): runaway current is now diagnosed by name. gmin / source stepping deferred until a circuit that fails to settle turns up (none found) |
 
+### D15c Audit fixes (from the 2026-11-08 audit, below)
+| Item | How |
+|---|---|
+| Autosave after a live session | Autosave the learner's copy once the link has dropped (it is their work now); test: link drops, edit, reload keeps it |
+| Picture crop | Bounds from each part's rotated body box, its labels and each note's drawn size, not origins |
+| Damaged saved circuit | Say so in the status bar and keep the damaged copy aside instead of overwriting it |
+| Shortcuts behind dialogs; Ctrl/⌘+C/A swallowed; Ctrl/⌘+R rotates | Ignore canvas shortcuts while a dialog is open or a button has focus; leave modified keys other than ours to the browser |
+| MCP file paths | `open_circuit` / `save_circuit` refuse paths outside the workspace folder |
+| Claims not enforced | RC golden at the claimed 0.003%, RLC 200 µs within 1% of the swing… or as claimed; op-amp at 0.03%; a typical-mistake test for every lesson; a square source simulated in a circuit |
+| RGB LED | One model and rating per colour (red, green, blue from the LED_MODELS); burn-out warnings per colour |
+| Missing tests | Logic hold/reset cases, relay drop-out, settling triggers, MCP `remove_component`/`disconnect`, oversized live messages, library delete, rotate, pause, Ctrl/⌘+A, Escape |
+| Keyboard and screen readers | Parts and wires focusable and operable from the keyboard; status bar announces only problems and changes, not the time |
+| Touch | Larger invisible pin hit areas; drag/long-press threshold in screen pixels, sized for fingers |
+| Android template leftovers | Remove the TV launcher entry, template layout/colours/robot icon; dark icon background and splash |
+| Docs | HANDOVER counts and stale lines, ARCHITECTURE (SVG, dependency rule, app copy), COMPONENTS rows, README env vars, GLOSSARY terms, VISION levels |
+
 ### D16 Engine depth
 | Item | How |
 |---|---|
@@ -66,7 +82,45 @@ whatever the app is at that point.
 | Several learners on one circuit | D14 | The shared document moves to the server |
 | Cross-device sync | D14 | Library entries stored per account |
 
+### D18 Release (new, from the audit)
+| Item | How |
+|---|---|
+| Public repo and hosting | A git remote (GitHub), the PWA hosted (static hosting), the licence and contribution notes |
+| Desktop CI and signing | Run the existing workflow; macOS notarization and Windows signing when accounts exist |
+| Android release | A signed release APK/AAB (key kept outside the repo), store listing |
+| iOS | Needs full Xcode; same Tauri app |
+
+### D19 Curriculum (new, from the audit)
+| Item | How |
+|---|---|
+| More lessons and challenges | Lessons for levels 2–3 (op-amp, 555, flip-flops) and open challenges ("make it blink at 1 Hz"), each tested like the starters |
+| Writing lessons | A documented lesson format and an MCP tool for the agent to draft one for review |
+
+### Assigned by the audit to existing deliverables
+| Item | Deliverable |
+|---|---|
+| Ratings for Zener, transistors, op-amp | D16 |
+| Redo; group rotate; notes in box select and copy/paste; library delete confirmation; manual Reconnect and telling the learner when offline edits are replaced; palette arrow keys; slider label; PWA manifest `id`, separate maskable icons | D16 (app items alongside) |
+| AI from the Android app or the desktop app (deep link, remote MCP) | D14 |
+| Accessibility audit with a screen reader; other languages | D18 |
+
 ### Not planned
 | Item | Why |
 |---|---|
 | Event-driven logic engine | Stepping logic with the analog solve is exact enough for teaching and is what CircuitJS1 does; revisit only if large digital circuits become slow (ADR-018) |
+
+## Audit 2026-11-08 (before D16)
+Four read-only reviews checked every acceptance item against code and tests, plus VISION, ARCHITECTURE and the docs;
+findings were verified in the code before recording. Summary (details in the D15c, D18, D19 tables above):
+- Bugs: no autosave after a live session (work lost on reload); picture export crops parts, labels and notes; a damaged
+  saved circuit is dropped silently and overwritten; shortcuts edit the circuit behind open dialogs; MCP file tools
+  accept paths outside the workspace.
+- Claims stricter than their tests: RC 0.003% (tested 1%), RLC "within 1%" (200 µs point 0.1 V), op-amp 0.03%
+  (tested 0.05%), "every lesson catches a typical mistake" (2 of 5), square source "simulated" (no circuit test).
+- Model gaps: RGB LED uses the red model for every colour and has no rating; no ratings for Zener, transistors, op-amp.
+- Untested: logic hold/reset cases, relay drop-out, settling triggers other than a switch, two MCP tools, oversized
+  live messages, several app actions.
+- Access: canvas not keyboard-operable; status bar announces the time every frame; pins too small for touch.
+- Docs: tool counts, PixiJS, stale statuses and lines across HANDOVER, ARCHITECTURE, COMPONENTS, BACKLOG, VISION, README.
+- Not covered by any deliverable before the audit: publishing/hosting, iOS/signing (now D18), challenges and more
+  lessons (now D19), the AI from mobile (D14), accessibility and languages (D18).
