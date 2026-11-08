@@ -5,8 +5,12 @@ export const PASSIVES = [
 	defineComponent("resistor", {
 		idPrefix: "R",
 		pins: ["a", "b"],
-		params: { resistance: positive("ohms") },
-		defaults: { resistance: 1000 },
+		params: {
+			resistance: positive("ohms"),
+			powerRating: positive("watts it can turn into heat safely; more is reported as burning it out"),
+		},
+		// The common through-hole resistor is ¼ W.
+		defaults: { resistance: 1000, powerRating: 0.25 },
 	}),
 	defineComponent("capacitor", {
 		idPrefix: "C",

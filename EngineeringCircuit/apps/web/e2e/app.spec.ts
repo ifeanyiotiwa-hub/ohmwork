@@ -380,3 +380,25 @@ test("a BCD decoder drives a 7-segment display: input 1 lights segments b and c"
 	await expect(page.locator('[data-part="DISP1"] [data-segment="b"]')).toHaveClass(/lit/)
 	await expect(page.locator('[data-part="DISP1"] [data-segment="c"]')).toHaveClass(/lit/)
 })
+
+test("an LED wired straight to a battery warns that it would burn out", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-source", 200, 300],
+		["led", 500, 300],
+		["ground", 350, 450],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "LED1:anode"],
+		["LED1:cathode", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await expect(page.getByRole("status")).toContainText("but it is rated for 30 mA: a real one would burn out")
+})

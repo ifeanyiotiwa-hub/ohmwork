@@ -31,7 +31,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 ## Passive
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `resistor` | a, b | resistance (Ω) | Ohm's law | EC, CJS, SPICE `R` | D2 | in format |
+| `resistor` | a, b | resistance (Ω), powerRating (W, default ¼ W) | Ohm's law | EC, CJS, SPICE `R` | D2 | in format |
 | `capacitor` | a, b | capacitance (F) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `C` | D3 | simulated |
 | `polarized-capacitor` | positive, negative | capacitance (F), maxReverseVoltage (V, default 1 as CJS) | capacitor; warns when reversed past the limit (CJS stops the simulation) | EC, CJS | D3 | simulated |
 | `inductor` | a, b | inductance (H) | companion model (trapezoidal; backward Euler first step) | EC, CJS, SPICE `L` | D3 | simulated |
@@ -54,9 +54,9 @@ Diode-family params follow SPICE §7.2: saturationCurrent (IS, default 1e-14 A),
 
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `diode` | anode, cathode | diode-family params | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | simulated |
+| `diode` | anode, cathode | diode-family params, maxCurrent (A, default 1 A as 1N4001–1N4007) | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | simulated |
 | `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | simulated |
-| `led` | anode, cathode | color, diode-family params, maxBrightnessCurrent (CJS 10 mA); every colour uses CJS's one LED model for now | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | simulated |
+| `led` | anode, cathode | color, diode-family params (per colour, `LED_MODELS`, Kingbright 5 mm Vf at 20 mA), maxCurrent (30 mA, green 25 mA), maxBrightnessCurrent (CJS 10 mA) | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | simulated |
 | `rgb-led` | red, green, blue, common | commonCathode, diode-family params per colour | three LEDs sharing one pin; colours mix | EC | D4 | simulated |
 | `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13) | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | simulated |
 | `pnp-transistor` | collector, base, emitter | as NPN | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | simulated |

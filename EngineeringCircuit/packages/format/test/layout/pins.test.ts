@@ -7,7 +7,7 @@ const resistor = (rotation: Component["rotation"]): Component => ({
 	type: "resistor",
 	position: { x: 100, y: 100 },
 	rotation,
-	params: { resistance: 1 },
+	params: { resistance: 1, powerRating: 0.25 },
 })
 
 test("every part type places exactly its own pins", () => {

@@ -161,7 +161,7 @@ test("separate ground symbols are the same node", () => {
 		circuitOf(
 			[
 				{ id: "V1", type: "voltage-source", params: { voltage: 9 } },
-				{ id: "R1", type: "resistor", params: { resistance: 3 } },
+				{ id: "R1", type: "resistor", params: { resistance: 3, powerRating: 100 } },
 				{ id: "G1", type: "ground", params: {} },
 				{ id: "G2", type: "ground", params: {} },
 			],

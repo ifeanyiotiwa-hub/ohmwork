@@ -22,7 +22,7 @@ function expectSane(circuit: Circuit) {
 	return result
 }
 
-test("a diode straight across a battery gives a (huge) finite answer", () => {
+test("a diode straight across a battery is reported as unlimited current, not a huge number", () => {
 	const result = expectSane(
 		circuitOf(
 			[
@@ -32,7 +32,7 @@ test("a diode straight across a battery gives a (huge) finite answer", () => {
 			[["V1.positive", "D1.anode"], ["D1.cathode", "V1.negative"]],
 		),
 	)
-	expect(result.ok).toBe(true)
+	expect(result.ok ? "" : result.errors[0]?.message).toContain("The current through D1 grows without limit")
 })
 
 test("an LED straight across a battery is limited by its series resistance", () => {
@@ -112,4 +112,33 @@ test("a full-wave bridge rectifier runs over time and outputs the positive halve
 	expect(lowest).toBeGreaterThan(-0.01)
 	expect(highest).toBeGreaterThan(8.5)
 	expect(highest).toBeLessThan(10)
+})
+
+test("a source straight across a junction with nothing to limit the current is named, not called singular", () => {
+	const across = (parts: Parameters<typeof circuitOf>[0], wires: Parameters<typeof circuitOf>[1]) => {
+		const result = solveDc(circuitOf(parts, wires))
+		return result.ok ? undefined : result.errors[0]
+	}
+	const zener = across(
+		[
+			{ id: "V1", type: "voltage-source", params: { voltage: 100 } },
+			{ id: "DZ1", type: "zener-diode", params: {} },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[["V1.positive", "DZ1.cathode"], ["DZ1.anode", "GND.terminal"], ["V1.negative", "GND.terminal"]],
+	)
+	expect(zener).toEqual({
+		componentIds: ["DZ1"],
+		message:
+			"The current through DZ1 grows without limit: a source drives it directly, with nothing to limit the current. Add a series resistor.",
+	})
+	const transistor = across(
+		[
+			{ id: "V1", type: "voltage-source", params: { voltage: 50 } },
+			{ id: "Q1", type: "npn-transistor", params: {} },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[["V1.positive", "Q1.base"], ["Q1.emitter", "GND.terminal"], ["Q1.collector", "V1.positive"], ["V1.negative", "GND.terminal"]],
+	)
+	expect(transistor?.componentIds).toEqual(["Q1"])
 })

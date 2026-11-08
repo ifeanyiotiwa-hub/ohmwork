@@ -4,6 +4,7 @@ import {
 	type Net,
 	type PinRef,
 	buildNets,
+	formatSi,
 	pinKey,
 	pinsOf,
 } from "@engineering-circuit/format"
@@ -140,6 +141,18 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		return pin ? (inputs.guess?.[pinKey(pin)] ?? 0) : 0
 	})
 	const solved = solveIterating(nets.length, references.referenceNets, branches, start)
+	if (solved.outcome === "runaway") {
+		const names = solved.componentIds.join(", ")
+		return {
+			ok: false,
+			errors: [
+				{
+					componentIds: solved.componentIds,
+					message: `The current through ${names} grows without limit: a source drives it directly, with nothing to limit the current. Add a series resistor.`,
+				},
+			],
+		}
+	}
 	if (solved.outcome === "singular") {
 		return { ok: false, errors: [{ componentIds: [], message: "The circuit's equations have no single solution." }] }
 	}
@@ -162,6 +175,7 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		...references.warnings,
 		...poweredOhmmeterWarnings(circuit, branches, conductive),
 		...reversedCapacitorWarnings(circuit, readings.readings),
+		...burnOutWarnings(circuit, readings.readings),
 	]
 	const states = Object.fromEntries(Object.entries(inputs.logic ?? {}).map(([id, memory]) => [id, memory.outputs]))
 	return { ok: true, solution: { ...readings, ...(Object.keys(states).length > 0 ? { states } : {}), warnings } }
@@ -177,6 +191,12 @@ type Solved =
 	| { outcome: "solved"; mna: MnaSolution; branches: NetBranch[] }
 	| { outcome: "singular" }
 	| { outcome: "unsettled" }
+	| { outcome: "runaway"; componentIds: string[] }
+
+/** Devices whose junctions ran away this iteration (see RUNAWAY_CONDUCTANCE). */
+function runawayDevices(branches: readonly NetBranch[]): string[] {
+	return [...new Set(branches.filter((branch) => branch.linearization?.runaway).map((branch) => branch.componentId))]
+}
 
 /** One linear solve, or Newton–Raphson when there are non-linear devices: linearize, solve, repeat until settled. */
 function solveIterating(netCount: number, referenceNets: ReadonlySet<number>, branches: NetBranch[], start: number[]): Solved {
@@ -195,6 +215,8 @@ function solveIterating(netCount: number, referenceNets: ReadonlySet<number>, br
 			if (branch.kind !== "device") return branch
 			return { ...branch, linearization: branch.device.linearize(terminalVoltages(branch, voltages), states[index] ?? []) }
 		})
+		const runaway = runawayDevices(linearized)
+		if (runaway.length > 0) return { outcome: "runaway", componentIds: runaway }
 		const mna = solveMna(netCount, referenceNets, linearized)
 		if (!mna) return { outcome: "singular" }
 
@@ -207,6 +229,57 @@ function solveIterating(netCount: number, referenceNets: ReadonlySet<number>, br
 		if (devicesSettled && voltagesSettled) return { outcome: "solved", mna, branches: linearized }
 	}
 	return { outcome: "unsettled" }
+}
+
+/** A lamp this far over its rated voltage is reported (bulbs tolerate a little over-voltage, at a cost in life). */
+const LAMP_OVERVOLTAGE = 1.1
+
+/** Parts pushed past their ratings: what a real one would not survive, said with the numbers. */
+function burnOutWarnings(circuit: Circuit, readings: Record<string, ComponentReading>): SimIssue[] {
+	const burnsOut = (id: string, actual: string, rating: string, advice: string): SimIssue => ({
+		componentIds: [id],
+		message: `${id} ${actual}, but it is rated for ${rating}: a real one would burn out.${advice}`,
+	})
+	return circuit.components.flatMap((component): SimIssue[] => {
+		const reading = readings[component.id]
+		if (!reading) return []
+		const current = Math.abs(reading.current)
+		switch (component.type) {
+			case "led":
+			case "diode":
+				return current > component.params.maxCurrent
+					? [
+							burnsOut(
+								component.id,
+								`carries ${formatSi(current, "A")}`,
+								formatSi(component.params.maxCurrent, "A"),
+								" Limit the current with a series resistor.",
+							),
+						]
+					: []
+			case "resistor": {
+				const power = Math.abs(reading.voltage * reading.current)
+				return power > component.params.powerRating
+					? [
+							burnsOut(
+								component.id,
+								`turns ${formatSi(power, "W")} into heat`,
+								formatSi(component.params.powerRating, "W"),
+								" Use a larger resistance or a higher power rating.",
+							),
+						]
+					: []
+			}
+			case "lamp": {
+				const voltage = Math.abs(reading.voltage)
+				return voltage > component.params.ratedVoltage * LAMP_OVERVOLTAGE
+					? [burnsOut(component.id, `has ${formatSi(voltage, "V")} across it`, formatSi(component.params.ratedVoltage, "V"), "")]
+					: []
+			}
+			default:
+				return []
+		}
+	})
 }
 
 const volts = (value: number) => `${Number(value.toPrecision(3))} V`

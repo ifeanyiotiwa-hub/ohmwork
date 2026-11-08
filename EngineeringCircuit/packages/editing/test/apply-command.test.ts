@@ -1,4 +1,4 @@
-import { type Circuit, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, LED_MODELS, createCircuit } from "@engineering-circuit/format"
 import { describe, expect, test } from "vitest"
 import { applyCommand } from "../src/apply-command"
 import type { EditCommand } from "../src/edit-command"
@@ -31,7 +31,7 @@ describe("add-component", () => {
 			{ type: "add-component", component: { type: "resistor" } },
 			{ type: "add-component", component: { type: "voltage-source", params: { voltage: 12 } } },
 		)
-		expect(circuit.components.map((component) => component.params)).toEqual([{ resistance: 1000 }, { voltage: 12 }])
+		expect(circuit.components.map((component) => component.params)).toEqual([{ resistance: 1000, powerRating: 0.25 }, { voltage: 12 }])
 	})
 
 	test("keeps a given id", () => {
@@ -297,5 +297,31 @@ describe("notes", () => {
 		expect(errorsOf(createCircuit("t"), { type: "remove-note", noteId: "note9" })).toEqual([
 			{ path: "notes", message: 'No note with id "note9"' },
 		])
+	})
+})
+
+describe("LED colours", () => {
+	test("a new LED of a colour gets that colour's model", () => {
+		const circuit = run(createCircuit("t"), { type: "add-component", component: { type: "led", params: { color: "blue" } } })
+		expect(circuit.components[0]?.params).toMatchObject({ color: "blue", ...LED_MODELS.blue })
+	})
+
+	test("changing the colour of an untouched LED changes its model too", () => {
+		const circuit = run(
+			createCircuit("t"),
+			{ type: "add-component", component: { type: "led" } },
+			{ type: "set-parameter", componentId: "LED1", name: "color", value: "white" },
+		)
+		expect(circuit.components[0]?.params).toMatchObject({ color: "white", ...LED_MODELS.white })
+	})
+
+	test("an LED whose electrical values were customised keeps them when recoloured", () => {
+		const circuit = run(
+			createCircuit("t"),
+			{ type: "add-component", component: { type: "led" } },
+			{ type: "set-parameter", componentId: "LED1", name: "saturationCurrent", value: 1e-15 },
+			{ type: "set-parameter", componentId: "LED1", name: "color", value: "green" },
+		)
+		expect(circuit.components[0]?.params).toMatchObject({ color: "green", saturationCurrent: 1e-15, maxCurrent: LED_MODELS.red.maxCurrent })
 	})
 })

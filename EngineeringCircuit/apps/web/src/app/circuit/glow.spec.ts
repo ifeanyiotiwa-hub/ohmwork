@@ -28,7 +28,7 @@ test("an RGB LED mixes its colours by current", () => {
 test("a lamp glows with its share of rated power; a resistor never glows", () => {
 	const lamp = { ...at, id: "L1", type: "lamp", params: { ratedVoltage: 6, ratedPower: 1 } } as Component
 	expect(glowOf(lamp, solution({ L1: { voltage: 3, current: 1 / 12 } }), 5)?.strength).toBeCloseTo(0.25, 12)
-	expect(glowOf({ ...at, id: "R1", type: "resistor", params: { resistance: 1 } }, undefined, 5)).toBeUndefined()
+	expect(glowOf({ ...at, id: "R1", type: "resistor", params: { resistance: 1, powerRating: 0.25 } }, undefined, 5)).toBeUndefined()
 })
 
 test("a logic indicator lights above half the logic level", () => {

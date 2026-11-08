@@ -6,8 +6,8 @@ export const kvlExample = (): Circuit => ({
 	description: "6 V shared by 1 Ω and 2 Ω: the 2 Ω resistor gets two thirds of the voltage.",
 	components: [
 		{ id: "V1", type: "voltage-source", position: { x: 0, y: 100 }, rotation: 90, params: { voltage: 6 } },
-		{ id: "R1", type: "resistor", position: { x: 160, y: 0 }, rotation: 0, params: { resistance: 1 } },
-		{ id: "R2", type: "resistor", position: { x: 320, y: 100 }, rotation: 90, params: { resistance: 2 } },
+		{ id: "R1", type: "resistor", position: { x: 160, y: 0 }, rotation: 0, params: { resistance: 1, powerRating: 10 } },
+		{ id: "R2", type: "resistor", position: { x: 320, y: 100 }, rotation: 90, params: { resistance: 2, powerRating: 10 } },
 		{ id: "GND1", type: "ground", position: { x: 160, y: 240 }, rotation: 0, params: {} },
 	],
 	wires: [

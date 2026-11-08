@@ -62,7 +62,7 @@ test("holding a push button re-solves the circuit until it is released", () => {
 			components: [
 				{ id: "V1", type: "voltage-source", position: { x: 0, y: 0 }, rotation: 0, params: { voltage: 5 } },
 				{ id: "PB1", type: "push-button", position: { x: 100, y: 0 }, rotation: 0, params: { normallyOpen: true } },
-				{ id: "R1", type: "resistor", position: { x: 200, y: 0 }, rotation: 0, params: { resistance: 1000 } },
+				{ id: "R1", type: "resistor", position: { x: 200, y: 0 }, rotation: 0, params: { resistance: 1000, powerRating: 0.25 } },
 				{ id: "GND1", type: "ground", position: { x: 0, y: 100 }, rotation: 0, params: {} },
 			],
 			wires: [

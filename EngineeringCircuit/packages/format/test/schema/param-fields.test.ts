@@ -1,9 +1,15 @@
 import { expect, test } from "vitest"
 import { paramFieldsOf } from "../../src/schema/components/param-fields"
 
-test("a resistor has one positive number in ohms", () => {
+test("a resistor has a resistance in ohms and a power rating in watts, both positive", () => {
 	expect(paramFieldsOf("resistor")).toEqual([
 		{ name: "resistance", kind: "number", description: "ohms", positiveOnly: true },
+		{
+			name: "powerRating",
+			kind: "number",
+			description: "watts it can turn into heat safely; more is reported as burning it out",
+			positiveOnly: true,
+		},
 	])
 })
 

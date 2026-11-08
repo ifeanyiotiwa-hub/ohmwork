@@ -1,6 +1,6 @@
 // Shockley diode with optional series resistance and Zener breakdown. The breakdown curve is CircuitJS1's
 // (Diode.ts): a mirrored exponential offset so that 5 mA flows at the breakdown voltage.
-import { type Device, type Linearization, settledBetween } from "./device"
+import { type Device, type Linearization, RUNAWAY_CONDUCTANCE, settledBetween } from "./device"
 import { THERMAL_VOLTAGE, criticalVoltage, limitJunction } from "./junction"
 
 export type DiodeParams = {
@@ -90,6 +90,7 @@ export function diodeDevice(params: DiodeParams, anode: string, cathode: string)
 				offset: [offset, -offset],
 				state: [junction],
 				settled: settledBetween([junction], [previous], limited),
+				runaway: !(conductance <= RUNAWAY_CONDUCTANCE),
 			}
 		},
 	}

@@ -79,7 +79,7 @@ test("a part not connected to ground still solves, with a warning", () => {
 	const circuit = circuitOf(
 		[
 			{ id: "V1", type: "voltage-source", params: { voltage: 6 } },
-			{ id: "R1", type: "resistor", params: { resistance: 2 } },
+			{ id: "R1", type: "resistor", params: { resistance: 2, powerRating: 100 } },
 			{ id: "GND", type: "ground", params: {} },
 			{ id: "R9", type: "resistor", params: { resistance: 10 } },
 		],
@@ -105,7 +105,7 @@ test("a part not connected to ground still solves, with a warning", () => {
 test("a circuit without ground is measured from the battery's negative pin", () => {
 	const circuit = circuitOf(
 		[
-			{ id: "R1", type: "resistor", params: { resistance: 2 } },
+			{ id: "R1", type: "resistor", params: { resistance: 2, powerRating: 100 } },
 			{ id: "V1", type: "voltage-source", params: { voltage: 6 } },
 		],
 		[

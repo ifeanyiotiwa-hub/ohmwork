@@ -39,8 +39,17 @@ export type DcInputs = { pressed?: ReadonlySet<string> }
 /** A capacitor's or inductor's voltage and current at the end of the previous time step. */
 export type StoredState = { voltage: number; current: number }
 
-/** Present only when solving one time step: the time at the end of the step, its length, and stored states. */
-export type TransientContext = { time: number; timeStep: number; memory: Readonly<Record<string, StoredState>> }
+/**
+ * Present only when solving one time step: the time at the end of the step, its length, and stored states.
+ * `backwardEuler`: something switched since the last step, so this step uses backward Euler (as SPICE does at a
+ * breakpoint); the trapezoidal rule would make an inductor's suddenly cut current ring from step to step.
+ */
+export type TransientContext = {
+	time: number
+	timeStep: number
+	memory: Readonly<Record<string, StoredState>>
+	backwardEuler?: boolean
+}
 
 /**
  * `guess`: pin voltages (keyed "R1:a") to start Newton–Raphson from, e.g. the previous time step's.
@@ -109,9 +118,9 @@ const AT_REST: StoredState = { voltage: 0, current: 0 }
 function capacitorModel(id: string, capacitance: number, pins: Pins, transient: TransientContext | undefined): Branch[] {
 	if (!transient) return []
 	const previous = transient.memory[id]
-	if (!previous) {
+	if (!previous || transient.backwardEuler) {
 		const conductance = capacitance / transient.timeStep
-		return companion(id, conductance, conductance * AT_REST.voltage, pins)
+		return companion(id, conductance, conductance * (previous ?? AT_REST).voltage, pins)
 	}
 	const conductance = (2 * capacitance) / transient.timeStep
 	return companion(id, conductance, conductance * previous.voltage + previous.current, pins)
@@ -154,11 +163,13 @@ const COIL: Pins = ["coilA", "coilB"]
 function seriesCoil(id: string, resistance: number, inductance: number, transient: TransientContext | undefined): Branch[] {
 	if (!transient) return [{ kind: "resistor", componentId: id, pins: COIL, resistance, port: "coil" }]
 	const previous = transient.memory[`${id}/coil`]
-	const reactance = (previous ? 2 : 1) * (inductance / transient.timeStep)
+	const trapezoidal = previous !== undefined && !transient.backwardEuler
+	const reactance = (trapezoidal ? 2 : 1) * (inductance / transient.timeStep)
 	const conductance = 1 / (resistance + reactance)
-	const history = previous
-		? conductance * (previous.voltage - (resistance - reactance) * previous.current)
-		: conductance * reactance * AT_REST.current
+	const before = previous ?? AT_REST
+	const history = trapezoidal
+		? conductance * (before.voltage - (resistance - reactance) * before.current)
+		: conductance * reactance * before.current
 	return [
 		{ kind: "resistor", componentId: id, pins: COIL, resistance: 1 / conductance, port: "coil" },
 		{ kind: "current", componentId: id, pins: COIL, current: -history, port: "coil" },
@@ -192,7 +203,7 @@ function transformerModel(
 
 	const previousPrimary = transient.memory[`${id}/primary`]
 	const previousSecondary = transient.memory[`${id}/secondary`]
-	const firstStep = !previousPrimary || !previousSecondary
+	const firstStep = !previousPrimary || !previousSecondary || transient.backwardEuler === true
 	const factor = (firstStep ? transient.timeStep : transient.timeStep / 2) / determinant
 	const self1 = factor * secondary
 	const self2 = factor * primary
@@ -244,7 +255,9 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	inductor: ({ id, params }, { transient }) => {
 		if (!transient) return [wire(id)]
 		const previous = transient.memory[id]
-		if (!previous) return companion(id, transient.timeStep / params.inductance, -AT_REST.current)
+		if (!previous || transient.backwardEuler) {
+			return companion(id, transient.timeStep / params.inductance, -(previous ?? AT_REST).current)
+		}
 		const conductance = transient.timeStep / (2 * params.inductance)
 		return companion(id, conductance, -(previous.current + conductance * previous.voltage))
 	},

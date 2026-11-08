@@ -98,7 +98,7 @@ test("list_component_types describes pins, parameter units and simulation suppor
 				pins: ["a", "b"],
 				simulated: true,
 				params: expect.objectContaining({
-					properties: { resistance: expect.objectContaining({ description: "ohms" }) },
+					properties: expect.objectContaining({ resistance: expect.objectContaining({ description: "ohms" }) }),
 				}),
 			}),
 			expect.objectContaining({ type: "diode", simulated: true, defaults: expect.objectContaining({ emissionCoefficient: 2 }) }),
@@ -138,7 +138,7 @@ describe("a voltage divider built through the tools", () => {
 		expect(data).toMatchObject({
 			name: "Divider",
 			components: expect.arrayContaining([
-				{ id: "R1", type: "resistor", params: { resistance: { value: 1000, unit: "ohms" } } },
+				{ id: "R1", type: "resistor", params: { resistance: { value: 1000, unit: "ohms" }, powerRating: expect.objectContaining({ value: 0.25 }) } },
 			]),
 			nodes: expect.arrayContaining([{ name: "ground", voltage: 0, pins: ["V1.negative", "R2.b", "GND1.terminal"] }]),
 			simulation: expect.objectContaining({ ok: true }),

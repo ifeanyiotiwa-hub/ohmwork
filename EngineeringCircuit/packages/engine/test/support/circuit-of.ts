@@ -1,12 +1,20 @@
-import { type Circuit, type Component, createCircuit, parseCircuit } from "@engineering-circuit/format"
+import { type Circuit, type Component, createCircuit, definitionOf, parseCircuit } from "@engineering-circuit/format"
 import { expect } from "vitest"
 
-type Part = Component extends infer Each ? (Each extends Component ? Omit<Each, "position" | "rotation"> : never) : never
+/** A part without layout; params a test doesn't care about (ratings, say) come from the catalog defaults. */
+type Part = Component extends infer Each
+	? Each extends Component
+		? Omit<Each, "position" | "rotation" | "params"> & { params: Partial<Each["params"]> }
+		: never
+	: never
 type PinName = `${string}.${string}`
 
 export function circuitOf(parts: Part[], wires: [PinName, PinName][]): Circuit {
 	const circuit = createCircuit("test")
-	circuit.components = parts.map((part) => ({ ...part, position: { x: 0, y: 0 }, rotation: 0 }) as Component)
+	circuit.components = parts.map(
+		(part) =>
+			({ ...part, params: { ...definitionOf(part.type).defaults, ...part.params }, position: { x: 0, y: 0 }, rotation: 0 }) as Component,
+	)
 	circuit.wires = wires.map(([from, to], index) => ({
 		id: `w${index + 1}`,
 		from: toPinRef(from),

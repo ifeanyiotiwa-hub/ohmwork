@@ -16,7 +16,7 @@ test("voltage divider has top, middle, and ground nets", () => {
 
 test("unconnected pins get their own net", () => {
 	const circuit = createCircuit("Lonely")
-	circuit.components.push({ id: "R1", type: "resistor", position: { x: 0, y: 0 }, rotation: 0, params: { resistance: 1 } })
+	circuit.components.push({ id: "R1", type: "resistor", position: { x: 0, y: 0 }, rotation: 0, params: { resistance: 1, powerRating: 0.25 } })
 
 	expect(netKeys(circuit)).toEqual([
 		{ pins: ["R1:a"], isGround: false },

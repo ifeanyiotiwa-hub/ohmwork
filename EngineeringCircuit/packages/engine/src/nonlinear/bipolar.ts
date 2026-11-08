@@ -1,6 +1,6 @@
 // Bipolar transistor, Ebers–Moll transport form (SPICE Gummel–Poon level 1 without Early effect or resistances),
 // with CircuitJS1's junction limiting (TransistorElm.ts).
-import { type Device, type Linearization, settledBetween } from "./device"
+import { type Device, type Linearization, RUNAWAY_CONDUCTANCE, settledBetween } from "./device"
 import { THERMAL_VOLTAGE, criticalVoltage, limitJunction } from "./junction"
 
 export type BipolarParams = { beta: number; betaReverse: number; saturationCurrent: number }
@@ -55,6 +55,7 @@ export function bipolarDevice({ beta, betaReverse, saturationCurrent }: BipolarP
 				offset: [collectorOffset, baseOffset, -(collectorOffset + baseOffset)],
 				state: [vbe, vbc],
 				settled: settledBetween([vbe, vbc], [lastBe, lastBc], vbe !== rawBe || vbc !== rawBc),
+				runaway: !(Math.max(gForward, gReverse) <= RUNAWAY_CONDUCTANCE),
 			}
 		},
 		ports: (voltages, currents) => [

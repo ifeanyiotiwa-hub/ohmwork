@@ -5,6 +5,13 @@ export type Migration = (document: JsonObject) => JsonObject
  * Version 3 gave diodes and LEDs electrical parameters. The values are frozen here (CircuitJS1's defaults at the
  * time), so changing a catalog default later never changes what an old file means.
  */
+/** Version 6 gave parts ratings: ¼ W resistors, 1 A diodes, 30 mA LEDs (all LEDs then used the red model). */
+const V6_ADDED_PARAMS: Readonly<Record<string, JsonObject>> = {
+	resistor: { powerRating: 0.25 },
+	diode: { maxCurrent: 1 },
+	led: { maxCurrent: 0.03 },
+}
+
 const V3_ADDED_PARAMS: Readonly<Record<string, JsonObject>> = {
 	diode: { saturationCurrent: 1.7143528192808883e-7, emissionCoefficient: 2, seriesResistance: 0 },
 	led: { saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042, maxBrightnessCurrent: 0.01 },
@@ -13,25 +20,30 @@ const V3_ADDED_PARAMS: Readonly<Record<string, JsonObject>> = {
 export const isObject = (value: unknown): value is JsonObject =>
 	typeof value === "object" && value !== null && !Array.isArray(value)
 
+/** Fills parameters a part type gained, keeping any the document already has. */
+function addParams(document: JsonObject, added: Readonly<Record<string, JsonObject>>): JsonObject {
+	if (!Array.isArray(document.components)) return document
+	return {
+		...document,
+		components: document.components.map((component: unknown) => {
+			if (!isObject(component) || typeof component.type !== "string") return component
+			const extra = added[component.type]
+			const params = isObject(component.params) ? component.params : {}
+			return extra ? { ...component, params: { ...extra, ...params } } : component
+		}),
+	}
+}
+
 /** Keyed by the version migrated from. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	1: (document) => ({ ...document, simulation: { timeStep: 5e-6, speed: 0.01 } }),
-	2: (document) => ({
-		...document,
-		components: Array.isArray(document.components)
-			? document.components.map((component: unknown) => {
-					if (!isObject(component) || typeof component.type !== "string") return component
-					const added = V3_ADDED_PARAMS[component.type]
-					const params = isObject(component.params) ? component.params : {}
-					return added ? { ...component, params: { ...added, ...params } } : component
-				})
-			: document.components,
-	}),
+	2: (document) => addParams(document, V3_ADDED_PARAMS),
 	3: (document) => ({
 		...document,
 		simulation: { ...(isObject(document.simulation) ? document.simulation : {}), logicHigh: 5 },
 	}),
 	4: (document) => ({ ...document, notes: [] }),
+	5: (document) => addParams(document, V6_ADDED_PARAMS),
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

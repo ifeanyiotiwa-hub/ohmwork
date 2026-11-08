@@ -3,6 +3,12 @@ import { CURRENT_VERSION, createCircuit } from "../../src/schema/circuit"
 import { voltageDivider } from "../fixtures/voltage-divider"
 import { parseCircuit, parseCircuitJson, serializeCircuit } from "../../src/io/parse"
 
+/** Older files had no ratings: strip the resistors' power rating to make one. */
+const withoutRatings = (components: ReturnType<typeof voltageDivider>["components"]) =>
+	components.map((component) =>
+		component.type === "resistor" ? { ...component, params: { resistance: component.params.resistance } } : component,
+	)
+
 const errorsOf = (input: unknown) => {
 	const result = parseCircuit(input)
 	if (result.ok) throw new Error("expected parse to fail")
@@ -23,19 +29,42 @@ describe("valid circuits", () => {
 describe("older files", () => {
 	test("a version 1 file opens with the default simulation settings", () => {
 		const { simulation: _settings, notes: _notes, ...circuit } = voltageDivider()
-		const result = parseCircuit({ ...circuit, version: 1 })
+		const result = parseCircuit({ ...circuit, version: 1, components: withoutRatings(circuit.components) })
 		expect(result).toEqual({ ok: true, circuit: voltageDivider() })
 	})
 
 	test("a version 3 file gains the 5 V logic level", () => {
 		const { simulation, notes: _notes, ...circuit } = voltageDivider()
 		const { logicHigh: _level, ...older } = simulation
-		expect(parseCircuit({ ...circuit, version: 3, simulation: older })).toEqual({ ok: true, circuit: voltageDivider() })
+		expect(parseCircuit({ ...circuit, version: 3, simulation: older, components: withoutRatings(circuit.components) })).toEqual({
+			ok: true,
+			circuit: voltageDivider(),
+		})
 	})
 
 	test("a version 4 file gains an empty list of notes", () => {
 		const { notes: _notes, ...circuit } = voltageDivider()
-		expect(parseCircuit({ ...circuit, version: 4 })).toEqual({ ok: true, circuit: voltageDivider() })
+		expect(parseCircuit({ ...circuit, version: 4, components: withoutRatings(circuit.components) })).toEqual({ ok: true, circuit: voltageDivider() })
+	})
+
+	test("a version 5 file gains ratings: ¼ W resistors, 1 A diodes, 30 mA LEDs (their electrical values stay)", () => {
+		const at = { position: { x: 0, y: 0 }, rotation: 0 }
+		const led = { color: "blue", saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042, maxBrightnessCurrent: 0.01 }
+		const result = parseCircuit({
+			...createCircuit("Old"),
+			version: 5,
+			components: [
+				{ id: "R1", type: "resistor", ...at, params: { resistance: 100 } },
+				{ id: "D1", type: "diode", ...at, params: { saturationCurrent: 1e-14, emissionCoefficient: 1, seriesResistance: 0 } },
+				{ id: "LED1", type: "led", ...at, params: led },
+			],
+		})
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.circuit.components.map((component) => component.params)).toEqual([
+			{ resistance: 100, powerRating: 0.25 },
+			{ saturationCurrent: 1e-14, emissionCoefficient: 1, seriesResistance: 0, maxCurrent: 1 },
+			{ ...led, maxCurrent: 0.03 },
+		])
 	})
 
 	test("version 2 diodes and LEDs gain electrical parameters; the LED keeps its colour", () => {
@@ -50,8 +79,8 @@ describe("older files", () => {
 		})
 		if (!result.ok) throw new Error(JSON.stringify(result.errors))
 		expect(result.circuit.components.map((component) => component.params)).toEqual([
-			{ saturationCurrent: 1.7143528192808883e-7, emissionCoefficient: 2, seriesResistance: 0 },
-			{ color: "green", saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042, maxBrightnessCurrent: 0.01 },
+			{ saturationCurrent: 1.7143528192808883e-7, emissionCoefficient: 2, seriesResistance: 0, maxCurrent: 1 },
+			{ color: "green", saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042, maxBrightnessCurrent: 0.01, maxCurrent: 0.03 },
 		])
 	})
 })

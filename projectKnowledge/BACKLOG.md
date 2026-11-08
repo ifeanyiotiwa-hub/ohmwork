@@ -28,14 +28,14 @@ whatever the app is at that point.
 | Item | How |
 |---|---|
 | Mid-wire junction | A `junction` part (one pin, any number of wires) placed by clicking a wire, which splits it in two; no format change beyond the new part |
-| Burn-out warnings | Rated limits as part parameters (LED max current, resistor and lamp power, diode max current) with sourced defaults; a plain warning naming the part and the value, like the polarized-capacitor warning |
-| Per-colour LED models | One diode model per colour from sourced datasheet or SPICE data (red about 1.8 V, green about 2.1 V, blue and white about 3 V); default params picked by `color` |
+| ~~Burn-out warnings~~ (done, D15a) | Rated limits as part parameters (LED max current, resistor and lamp power, diode max current) with sourced defaults; a plain warning naming the part and the value, like the polarized-capacitor warning |
+| ~~Per-colour LED models~~ (done, D15a) | One diode model per colour from sourced datasheet or SPICE data (red about 1.8 V, green about 2.1 V, blue and white about 3 V); default params picked by `color` |
 | Label overlap | Place a part's value and reading on the side away from its node labels; tested with a screenshot check of a sideways battery |
 | Copy / paste, multi-select | Box select and Shift-click; copy/paste as new `add-component` + `connect` commands (one undo step via a command batch) |
 | Live-link reconnect | The app retries the same address with back-off; the MCP server can keep a fixed port and token from env, so a restarted server is found again |
 | Image export | Download the canvas as SVG (it already is SVG) and PNG |
-| Inductor ringing | Use one backward-Euler step whenever a switch changes state (what SPICE does at breakpoints); tested on an inductor switched off |
-| Solver fallback | gmin stepping, then source stepping, before reporting "didn't settle"; tested on circuits that fail today |
+| ~~Inductor ringing~~ (done, D15a: ten settling steps, ADR-023) | Use one backward-Euler step whenever a switch changes state (what SPICE does at breakpoints); tested on an inductor switched off |
+| Solver fallback | Partly done (D15a): runaway current is now diagnosed by name. gmin / source stepping deferred until a circuit that fails to settle turns up (none found) |
 
 ### D16 Engine depth
 | Item | How |

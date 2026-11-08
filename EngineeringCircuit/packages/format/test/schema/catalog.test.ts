@@ -1,5 +1,6 @@
 import { expect, test } from "vitest"
 import { COMPONENT_CATEGORIES, COMPONENT_DEFINITIONS, idPrefixOf, isComponentType, pinsOf } from "../../src/schema/components/catalog"
+import { LED_MODELS } from "../../src/schema/components/semiconductors"
 
 const types = COMPONENT_DEFINITIONS.map((definition) => definition.type)
 
@@ -47,4 +48,10 @@ test("every type belongs to exactly one palette category", () => {
 	const listed = COMPONENT_CATEGORIES.flatMap((category) => category.types)
 	expect([...listed].sort()).toEqual([...types].sort())
 	expect(COMPONENT_CATEGORIES.map((category) => category.name)).toEqual(["Sources", "Passive", "Switches", "Semiconductors", "Logic", "ICs", "Meters"])
+})
+
+test("every LED colour has a model and a current rating, and LEDs default to red", () => {
+	expect(Object.keys(LED_MODELS).sort()).toEqual(["blue", "green", "red", "white", "yellow"])
+	const led = COMPONENT_DEFINITIONS.find((definition) => definition.type === "led")
+	expect(led?.defaults).toMatchObject({ color: "red", ...LED_MODELS.red })
 })

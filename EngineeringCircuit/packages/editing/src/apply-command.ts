@@ -3,6 +3,10 @@ import {
 	type CircuitError,
 	type Component,
 	type ComponentType,
+	LED_COLORS,
+	LED_MODELS,
+	type LedColor,
+	type LedModel,
 	type Note,
 	type PinRef,
 	type Point,
@@ -32,7 +36,8 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 	switch (command.type) {
 		case "add-component": {
 			const { type } = command.component
-			const params = { ...definitionOf(type).defaults, ...storedParams(type, command.component.params ?? {}) }
+			const given = storedParams(type, command.component.params ?? {})
+			const params = { ...definitionOf(type).defaults, ...colourModel(type, given["color"]), ...given }
 			const id = command.component.id ?? nextId(draft.components, idPrefixOf(type))
 			const component = {
 				id,
@@ -88,7 +93,7 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 			return updateComponent(draft, command.componentId, (target) => {
 				const { name, value } = storedParam(target.type, command.name, command.value)
 				return {
-					component: { ...target, params: { ...target.params, [name]: value } },
+					component: { ...target, params: { ...target.params, ...recolouredModel(target, name, value), [name]: value } },
 					summary: `Set ${target.id} ${name} to ${String(value)}`,
 				}
 			})
@@ -201,6 +206,24 @@ const gridPosition = (index: number): Point => ({
 const samePin = (first: PinRef, second: PinRef) => first.componentId === second.componentId && first.pin === second.pin
 
 const pinName = (ref: PinRef) => `${ref.componentId}.${ref.pin}`
+
+/** An LED's electrical values for a colour (LED_MODELS), when the colour is a known one. */
+function colourModel(type: ComponentType, colour: unknown): Partial<LedModel> {
+	return type === "led" && isLedColor(colour) ? LED_MODELS[colour] : {}
+}
+
+/**
+ * Recolouring an LED moves it to the new colour's model, but only while its values are still the old colour's
+ * model: values the learner customised are kept.
+ */
+function recolouredModel(target: Component, name: string, value: unknown): Partial<LedModel> {
+	if (target.type !== "led" || name !== "color" || !isLedColor(value)) return {}
+	const current = LED_MODELS[target.params.color]
+	const untouched = (Object.keys(current) as (keyof LedModel)[]).every((key) => target.params[key] === current[key])
+	return untouched ? LED_MODELS[value] : {}
+}
+
+const isLedColor = (value: unknown): value is LedColor => LED_COLORS.some((colour) => colour === value)
 
 const NOTE_PREFIX = "note"
 /** Notes are quoted in summaries up to this many characters. */

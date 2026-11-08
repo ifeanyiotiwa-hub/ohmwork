@@ -9,7 +9,15 @@ export type Linearization = {
 	state: readonly number[]
 	/** False while the junction voltages are still moving or were limited this iteration. */
 	settled: boolean
+	/** A junction driven with nothing to limit its current (its conductance passed RUNAWAY_CONDUCTANCE). */
+	runaway?: boolean
 }
+
+/**
+ * A junction whose conductance passes this (siemens: 1 µΩ, tens of kiloamps) is being driven by a source with
+ * nothing to limit its current. The ideal answer is an impossible current, so it is reported instead.
+ */
+export const RUNAWAY_CONDUCTANCE = 1e6
 
 export type PortReading = { name: string; voltage: number; current: number }
 

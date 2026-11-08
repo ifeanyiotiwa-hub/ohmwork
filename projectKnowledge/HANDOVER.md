@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- D15a done (ADR-023): format v6 (resistor `powerRating`, diode/LED `maxCurrent`, `LED_MODELS` / `LED_COLORS` in `semiconductors.ts`, migration 5→6 via shared `addParams`); editing picks/keeps LED colour models; engine `burnOutWarnings`, `TransientContext.backwardEuler` + `TransientState.switching/settling` (SETTLING_STEPS = 10), `Linearization.runaway` / `RUNAWAY_CONDUCTANCE`; test helpers `circuitOf` / `build` fill catalog defaults. App: resistor label shows resistance only; example uses 10 W resistors.
 - D12b done (ADR-022): format v5 (`noteSchema`, `circuit.notes`, optional `circuit.lesson`, migration 4→5, duplicate note ids rejected); editing `add-note` / `edit-note` / `move-note` / `remove-note`; MCP `add_note`, `remove_note`, `load_lesson` writes `circuit.lesson`, `check_solution` reads it (29 tools + `tutor` prompt). App: `lessons/` (`lessons-panel.*`, `lesson-card.*`, `lesson-progress.ts`), notes on the canvas (`drag-note` interaction), note editor and "Add a note" in the inspector, store `selectedNote` / `addNote`. E2E `e2e/lessons.spec.ts`.
 - D12a done: `packages/lessons` (`schema.ts` checkSchema/lessonSchema, `check.ts` checkSolution, `lessons/` five lessons; tests with reference solutions in `test/solutions.ts`). `formatSi` / `parseSi` / `unitSymbolOf` moved to `packages/format/src/units/si.ts` (the app re-exports them). MCP: `list_lessons`, `load_lesson` (active lesson per server), `check_solution`, `tutor` prompt (`registerPrompt` + `completable`), `rename_circuit` (27 tools).
 - D10 done (ADR-021): `apps/web/src/app/library/` (`circuit-files.ts` fileNameFor / readCircuitFile / downloadCircuit, `circuit-library.ts` IndexedDB service with `problem` signal, `library-panel.*` dialog), App autosave/restore + Library button + Ctrl/⌘+S, `rename-circuit` edit command, `UI_CONFIG.library`. PWA: `ngsw-config.json`, `public/manifest.webmanifest`, `public/icons/` (from `icon.svg`), `provideServiceWorker` in `app.config.ts`. Offline test: `playwright.offline.config.ts` + `e2e/offline/` (global setup builds; test runs `e2e/support/static-server.mjs` and stops it). `pnpm test:e2e` runs both configs.
@@ -59,12 +60,10 @@ Owner tries D12: in the app, Lessons → Start → build → Check my circuit; w
 
 ## Known gaps (do not hide; fix in the listed deliverable)
 Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
-- A diode straight across a battery solves to an absurd but finite current (about 1e35 A): ideal maths, no burn-out warning. Add rated-current warnings (diode, LED, lamp, resistor power).
-- All LED colours use CircuitJS1's single LED model (≈1.8 V); real blue and white LEDs need about 3 V. Add per-colour models with sources.
-- Newton–Raphson has no gmin or source stepping fallback; transistor junction capacitances and the Early effect are not modelled (ADR-017).
+- Newton–Raphson has no gmin or source stepping fallback (no failing circuit found; runaway is diagnosed); transistor junction capacitances and the Early effect are not modelled (ADR-017).
 - The RGB LED palette icon is cluttered (R/G/B letters at icon size).
 - Wires connect pin to pin only; no mid-wire junction. It was in D6's scope and missed; several wires on one pin cover most cases. Owed.
-- Time step is fixed (no adaptive stepping); trapezoidal can ring after an abrupt switch on an inductor (as in CircuitJS1).
+- Time step is fixed (no adaptive stepping, D16); after any switching, ten backward-Euler steps prevent ringing (ADR-023), but square-wave and clock edges on their own don't trigger them.
 - A deleted capacitor's stored charge is reused if a new part later gets the same id during the same run (state is keyed by id). Restart clears it.
 - Wire routing avoids part bodies but not labels or other wires: a wire may pass close to a part's name, and wires of different nodes can overlap along a grid line.
 - A transformer's isolated secondary gets the "Not connected to ground" warning: true (it is isolated) but noisy for a normal transformer circuit; consider wording it as information.
@@ -74,6 +73,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-08 | Claude (Opus) | D15a: ratings and burn-out warnings, per-colour LEDs (Kingbright), settling after switches, runaway diagnosis; ADR-023. 447 core + 87 web + 24 e2e | D15b |
 | 2026-11-08 | Claude (Opus) | D12b: lessons in the app, text notes (format v5), lesson stored in the circuit; ADR-022. 430 core + 87 web + 23 e2e | Owner tries D12; then D11 |
 | 2026-11-08 | Claude (Opus) | D12a: lessons package, 5 lessons, check_solution / load_lesson / tutor prompt, rename_circuit | D12b |
 | 2026-11-07 | Claude (Opus) | D10: library, files, autosave, offline PWA; ADR-021. 397 core + 84 web + 20 e2e (incl. offline) | Owner tries D10; then D12 |
