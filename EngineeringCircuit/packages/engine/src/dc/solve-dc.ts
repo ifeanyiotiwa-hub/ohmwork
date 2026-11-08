@@ -3,6 +3,7 @@ import {
 	type ComponentType,
 	type Net,
 	type PinRef,
+	RGB_COLOURS,
 	buildNets,
 	formatSi,
 	pinKey,
@@ -175,7 +176,7 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		...references.warnings,
 		...poweredOhmmeterWarnings(circuit, branches, conductive),
 		...reversedCapacitorWarnings(circuit, readings.readings),
-		...burnOutWarnings(circuit, readings.readings),
+		...burnOutWarnings(circuit, readings.readings, readings.ports),
 	]
 	const states = Object.fromEntries(Object.entries(inputs.logic ?? {}).map(([id, memory]) => [id, memory.outputs]))
 	return { ok: true, solution: { ...readings, ...(Object.keys(states).length > 0 ? { states } : {}), warnings } }
@@ -235,12 +236,26 @@ function solveIterating(netCount: number, referenceNets: ReadonlySet<number>, br
 const LAMP_OVERVOLTAGE = 1.1
 
 /** Parts pushed past their ratings: what a real one would not survive, said with the numbers. */
-function burnOutWarnings(circuit: Circuit, readings: Record<string, ComponentReading>): SimIssue[] {
+function burnOutWarnings(
+	circuit: Circuit,
+	readings: Record<string, ComponentReading>,
+	ports: Record<string, ComponentReading>,
+): SimIssue[] {
 	const burnsOut = (id: string, actual: string, rating: string, advice: string): SimIssue => ({
 		componentIds: [id],
 		message: `${id} ${actual}, but it is rated for ${rating}: a real one would burn out.${advice}`,
 	})
 	return circuit.components.flatMap((component): SimIssue[] => {
+		if (component.type === "rgb-led") {
+			const { id, params } = component
+			return RGB_COLOURS.flatMap((colour) => {
+				const current = Math.abs(ports[`${id}/${colour}`]?.current ?? 0)
+				const rating = params[`${colour}MaxCurrent`]
+				return current > rating
+					? [burnsOut(id, `${colour} carries ${formatSi(current, "A")}`, formatSi(rating, "A"), " Limit the current with a series resistor.")]
+					: []
+			})
+		}
 		const reading = readings[component.id]
 		if (!reading) return []
 		const current = Math.abs(reading.current)

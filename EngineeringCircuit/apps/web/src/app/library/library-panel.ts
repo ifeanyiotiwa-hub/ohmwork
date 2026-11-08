@@ -4,7 +4,7 @@ import { UI_CONFIG } from "../circuit/ui-config"
 import { circuitBlob, fileNameFor, offerDownload, readCircuitFile } from "./circuit-files"
 import { CircuitLibrary } from "./circuit-library"
 import { CIRCUIT_FILE, type DiskFile, FILE_PICKERS, type FilePickers, type FileType, type OpenedFile, PNG_PICTURE, SVG_PICTURE } from "./disk"
-import { circuitSvg, pictureBounds, pictureName, pngBlob, svgBlob } from "./export-picture"
+import { circuitSvg, drawnBoxes, pictureBounds, pictureName, pngBlob, svgBlob } from "./export-picture"
 
 /**
  * Saving, opening and deleting circuits: the browser library, plus files on disk. Where the system has file dialogs
@@ -100,11 +100,17 @@ export class LibraryPanel {
 		this.message.set(`Saved to ${target.name}.`)
 	}
 
+	/** The kept circuit that didn't open, as it was, so nothing is lost; the notice goes once it is downloaded. */
+	protected downloadDamaged(json: string): void {
+		offerDownload(new Blob([json], { type: "application/json" }), "damaged-circuit.json", this.document)
+		void this.attempt(() => this.library.discardDamaged())
+	}
+
 	protected async savePicture(kind: "svg" | "png"): Promise<void> {
 		const canvas = this.document.querySelector<SVGSVGElement>('svg[aria-label="Circuit canvas"]')
 		if (!canvas) return this.message.set("The canvas isn't on screen, so there is nothing to draw.")
 		const circuit = this.store.circuit()
-		const bounds = pictureBounds(circuit, this.config.library.pictureMargin)
+		const bounds = pictureBounds(drawnBoxes(canvas), this.config.library.pictureMargin)
 		const background = getComputedStyle(this.document.documentElement).getPropertyValue("--canvas-bg").trim()
 		const svg = circuitSvg(canvas, bounds, background)
 		await this.attempt(async () => {

@@ -11,6 +11,37 @@ const warningsOf = (parts: Parameters<typeof circuitOf>[0], wires: Parameters<ty
 
 test.each([
 	["red", 1.85],
+	["green", 3.3],
+	["blue", 3.3],
+] as const)("an RGB LED's %s pin drops the datasheet voltage (%s V, Kingbright WP154A4SUREQBFZGW: 1.9/3.3/3.3 ±0.1 V) at 20 mA", (colour, volts) => {
+	const result = solveDc(
+		circuitOf(
+			[
+				{ id: "I1", type: "current-source", params: { current: 0.02 } },
+				{ id: "RGB1", type: "rgb-led", params: { commonCathode: true } },
+			],
+			[[`I1.positive`, `RGB1.${colour}`], ["RGB1.common", "I1.negative"]],
+		),
+	)
+	expect(result.ok && result.solution.ports[`RGB1/${colour}`]?.voltage).toBeCloseTo(volts, 1)
+})
+
+test("an RGB LED colour driven past its rating is named in the burn-out warning", () => {
+	const messages = warningsOf(
+		[
+			{ id: "V1", type: "voltage-source", params: { voltage: 5 } },
+			{ id: "R1", type: "resistor", params: { resistance: 47, powerRating: 1 } },
+			{ id: "RGB1", type: "rgb-led", params: { commonCathode: true } },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[["V1.positive", "R1.a"], ["R1.b", "RGB1.green"], ["RGB1.common", "GND.terminal"], ["V1.negative", "GND.terminal"]],
+	)
+	expect(messages).toContainEqual(expect.stringMatching(/^RGB1 green carries 3\d(\.\d+)? mA, but it is rated for 25 mA: a real one would burn out\./))
+	expect(messages.join(" ")).not.toContain("RGB1 red")
+})
+
+test.each([
+	["red", 1.85],
 	["yellow", 2.1],
 	["green", 2.2],
 	["blue", 3.3],

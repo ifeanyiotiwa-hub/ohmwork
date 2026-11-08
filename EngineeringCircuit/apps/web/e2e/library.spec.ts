@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises"
 import { expect, test } from "@playwright/test"
 import { fakeFileDialogs, savedFiles, withoutFileDialogs } from "./support/file-dialogs"
 
@@ -95,4 +96,33 @@ test("with file dialogs, Save as picks a file, Save writes it again in place, an
 	await library(page).locator("[data-library-open-file]").click()
 	await expect(library(page)).toBeHidden()
 	await expect(page.locator(".node-label", { hasText: "4.8 V" })).toBeVisible()
+})
+
+test("a saved circuit that no longer opens is explained and kept aside to download, not silently overwritten", async ({ page }) => {
+	const damaged = '{"format": "engineering-circuit", "version": 6, "name": "Half'
+	await page.evaluate(
+		(json) =>
+			new Promise<void>((resolve, reject) => {
+				const request = indexedDB.open("engineering-circuit", 1)
+				request.onsuccess = () => {
+					const transaction = request.result.transaction("workspace", "readwrite")
+					transaction.objectStore("workspace").put(json, "current")
+					transaction.oncomplete = () => resolve()
+					transaction.onerror = () => reject(transaction.error)
+				}
+				request.onerror = () => reject(request.error)
+			}),
+		damaged,
+	)
+	await page.reload()
+	await expect(page.getByRole("status")).toContainText("Your last circuit couldn't be opened")
+	await page.waitForTimeout(800)
+	await page.reload()
+	await expect(page.getByRole("status")).toContainText("Your last circuit couldn't be opened")
+
+	await page.getByRole("button", { name: "Library" }).click()
+	const download = page.waitForEvent("download")
+	await library(page).getByRole("button", { name: "Download damaged copy" }).click()
+	expect(await readFile((await (await download).path()) ?? "", "utf8")).toBe(damaged)
+	await expect(page.locator("[data-damaged-circuit]")).toHaveCount(0)
 })

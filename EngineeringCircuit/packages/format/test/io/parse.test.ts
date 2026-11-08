@@ -67,6 +67,30 @@ describe("older files", () => {
 		])
 	})
 
+	test("a version 6 RGB LED keeps its one model for every colour (it behaves as before) and gains the datasheet ratings", () => {
+		const shared = { saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042 }
+		const result = parseCircuit({
+			...createCircuit("Old"),
+			version: 6,
+			components: [
+				{ id: "RGB1", type: "rgb-led", position: { x: 0, y: 0 }, rotation: 0, params: { commonCathode: false, ...shared, maxBrightnessCurrent: 0.01 } },
+			],
+		})
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.circuit.components[0]?.params).toEqual({
+			commonCathode: false,
+			emissionCoefficient: 3.73,
+			seriesResistance: 0.042,
+			redSaturationCurrent: 93.2e-12,
+			greenSaturationCurrent: 93.2e-12,
+			blueSaturationCurrent: 93.2e-12,
+			redMaxCurrent: 0.03,
+			greenMaxCurrent: 0.025,
+			blueMaxCurrent: 0.03,
+			maxBrightnessCurrent: 0.01,
+		})
+	})
+
 	test("version 2 diodes and LEDs gain electrical parameters; the LED keeps its colour", () => {
 		const at = { position: { x: 0, y: 0 }, rotation: 0 }
 		const result = parseCircuit({

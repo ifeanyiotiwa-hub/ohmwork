@@ -31,7 +31,26 @@ export const LED_MODELS: Readonly<Record<LedColor, LedModel>> = {
 	white: { saturationCurrent: 2.816e-17, emissionCoefficient: 3.73, seriesResistance: 0.042, maxCurrent: 0.03 },
 }
 const LED_DEFAULTS = { ...LED_MODELS.red, maxBrightnessCurrent: 0.01 }
-const { maxCurrent: _rating, ...DIODE_LIKE_LED } = LED_MODELS.red
+
+export const RGB_COLOURS = ["red", "green", "blue"] as const
+/**
+ * An RGB LED is three LEDs sharing a pin. Kingbright WP154A4SUREQBFZGW (5 mm full colour, spec DSAJ8688 V.12A,
+ * 2024-11-01): forward voltage at 20 mA red 1.9 V, blue 3.3 V, green 3.3 V (an InGaN chip, like the blue), ±0.1 V;
+ * DC forward current red 30, green 25, blue 30 mA. Red uses the red LED model; green and blue the InGaN blue one.
+ * N and RS are shared, as they are across all the LED models.
+ */
+const RGB_DEFAULTS = {
+	commonCathode: true,
+	emissionCoefficient: LED_MODELS.red.emissionCoefficient,
+	seriesResistance: LED_MODELS.red.seriesResistance,
+	redSaturationCurrent: LED_MODELS.red.saturationCurrent,
+	greenSaturationCurrent: LED_MODELS.blue.saturationCurrent,
+	blueSaturationCurrent: LED_MODELS.blue.saturationCurrent,
+	redMaxCurrent: 0.03,
+	greenMaxCurrent: 0.025,
+	blueMaxCurrent: 0.03,
+	maxBrightnessCurrent: 0.01,
+}
 const ledParams = { ...diodeParams, maxCurrent, maxBrightnessCurrent: positive("amps for full brightness") }
 
 const transistorParams = {
@@ -73,10 +92,17 @@ export const SEMICONDUCTORS = [
 		pins: ["red", "green", "blue", "common"],
 		params: {
 			commonCathode: z.boolean().describe("true = the shared pin is the cathode (minus side)"),
-			...diodeParams,
+			emissionCoefficient: diodeParams.emissionCoefficient,
+			seriesResistance: diodeParams.seriesResistance,
+			redSaturationCurrent: positive("amps (IS) of the red LED"),
+			greenSaturationCurrent: positive("amps (IS) of the green LED"),
+			blueSaturationCurrent: positive("amps (IS) of the blue LED"),
+			redMaxCurrent: positive("amps the red LED can carry continuously"),
+			greenMaxCurrent: positive("amps the green LED can carry continuously"),
+			blueMaxCurrent: positive("amps the blue LED can carry continuously"),
 			maxBrightnessCurrent: positive("amps for full brightness"),
 		},
-		defaults: { commonCathode: true, ...DIODE_LIKE_LED, maxBrightnessCurrent: 0.01 },
+		defaults: RGB_DEFAULTS,
 	}),
 	defineComponent("npn-transistor", {
 		idPrefix: "Q",

@@ -7,6 +7,8 @@ import { circuitOf } from "../support/circuit-of"
 
 /** The deliverable's bar: within 1% of the reference. */
 const TOLERANCE = 0.01
+/** RC charging is documented as within 0.003% of ngspice (DELIVERABLES D3a); held to that. */
+const RC_TOLERANCE = 3e-5
 
 function run(circuit: Circuit, timeStep: number, until: number, onStep?: (time: number, solution: DcSolution) => void) {
 	let state = initialTransientState()
@@ -23,8 +25,8 @@ function run(circuit: Circuit, timeStep: number, until: number, onStep?: (time: 
 	return last
 }
 
-const within = (actual: number | undefined, expected: number) =>
-	expect(Math.abs((actual ?? Number.NaN) - expected)).toBeLessThanOrEqual(Math.abs(expected) * TOLERANCE)
+const within = (actual: number | undefined, expected: number, tolerance = TOLERANCE) =>
+	expect(Math.abs((actual ?? Number.NaN) - expected)).toBeLessThanOrEqual(Math.abs(expected) * tolerance)
 
 const rc = () =>
 	circuitOf(
@@ -39,9 +41,9 @@ const rc = () =>
 
 test("RC charging follows 5(1 − e^(−t/τ)) (ngspice: 3.16060, 4.32332, 4.96631 V)", () => {
 	const timeStep = 1e-5
-	within(run(rc(), timeStep, 1e-3).readings.C1?.voltage, 3.1606)
-	within(run(rc(), timeStep, 2e-3).readings.C1?.voltage, 4.32332)
-	within(run(rc(), timeStep, 5e-3).readings.C1?.voltage, 4.96631)
+	within(run(rc(), timeStep, 1e-3).readings.C1?.voltage, 3.1606, RC_TOLERANCE)
+	within(run(rc(), timeStep, 2e-3).readings.C1?.voltage, 4.32332, RC_TOLERANCE)
+	within(run(rc(), timeStep, 5e-3).readings.C1?.voltage, 4.96631, RC_TOLERANCE)
 })
 
 test("the charging current is the resistor's current, flowing into the capacitor", () => {
@@ -84,8 +86,7 @@ test("a series RLC rings like ngspice says (4.97235, 9.75669, 0.476638 V)", () =
 	const timeStep = 1e-7
 	within(run(rlc, timeStep, 50e-6).readings.C1?.voltage, 4.97235)
 	within(run(rlc, timeStep, 100e-6).readings.C1?.voltage, 9.75669)
-	// Near a zero crossing 1% of the value is tiny, so compare against the 10 V swing instead.
-	expect(Math.abs((run(rlc, timeStep, 200e-6).readings.C1?.voltage ?? Number.NaN) - 0.476638)).toBeLessThan(0.1)
+	within(run(rlc, timeStep, 200e-6).readings.C1?.voltage, 0.476638)
 })
 
 test("an RC low-pass passes 1/√2 of a sine at its corner frequency (ngspice: 0.707107 V)", () => {

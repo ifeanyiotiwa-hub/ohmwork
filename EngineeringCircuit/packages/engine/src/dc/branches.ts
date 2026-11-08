@@ -1,4 +1,4 @@
-import type { Component, ComponentType } from "@engineering-circuit/format"
+import { type Component, type ComponentType, RGB_COLOURS } from "@engineering-circuit/format"
 import type { LogicMemories } from "../digital/advance"
 import { LOGIC_PARTS, type LogicPart, initialMemory } from "../digital/logic"
 import { bipolarDevice } from "../nonlinear/bipolar"
@@ -136,8 +136,6 @@ const deviceBranch = (componentId: string, device: Device, port?: string): Branc
 		? { kind: "device", componentId, pins: [first, second], device }
 		: { kind: "device", componentId, pins: [first, second], device, port }
 }
-
-const RGB_COLOURS = ["red", "green", "blue"] as const
 
 const toGround = (componentId: string, pin: string, voltage: number): Branch => ({
 	kind: "voltage",
@@ -299,13 +297,14 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	"zener-diode": ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
 	led: ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
 	"rgb-led": ({ id, params }) =>
-		RGB_COLOURS.map((colour) =>
-			deviceBranch(
-				id,
-				params.commonCathode ? diodeDevice(params, colour, "common") : diodeDevice(params, "common", colour),
-				colour,
-			),
-		),
+		RGB_COLOURS.map((colour) => {
+			const model = {
+				saturationCurrent: params[`${colour}SaturationCurrent`],
+				emissionCoefficient: params.emissionCoefficient,
+				seriesResistance: params.seriesResistance,
+			}
+			return deviceBranch(id, params.commonCathode ? diodeDevice(model, colour, "common") : diodeDevice(model, "common", colour), colour)
+		}),
 	"npn-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, 1))],
 	"pnp-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, -1))],
 	"n-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, 1))],

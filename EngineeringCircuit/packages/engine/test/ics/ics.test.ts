@@ -35,8 +35,8 @@ const inverting = (input: number) =>
 
 /** Closed-loop output with a finite open-loop gain A: ideal × 1 / (1 + noise gain / A). */
 const withFiniteGain = (ideal: number, noiseGain: number) => ideal / (1 + noiseGain / OP_AMP.gain)
-/** Within 0.05%: the smooth output limit costs a little gain as the output nears a supply limit. */
-const near = (actual: number, expected: number) => expect(Math.abs(actual - expected)).toBeLessThan(Math.abs(expected) * 5e-4)
+/** Within 0.03% (ADR-019): the smooth output limit costs a little gain as the output nears a supply limit. */
+const near = (actual: number, expected: number) => expect(Math.abs(actual - expected)).toBeLessThan(Math.abs(expected) * 3e-4)
 
 test("an inverting amplifier has gain −Rf/Rin = −10 (less a hair for the finite gain)", () => {
 	near(inverting(0.5), withFiniteGain(-5, 11))

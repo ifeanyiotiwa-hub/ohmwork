@@ -45,6 +45,9 @@
 			<button type="button" data-library-save-file (click)="saveToFile(current)">Save to {{ current.name }}</button>
 		}
 		<button type="button" data-library-download (click)="saveAs()">{{ pickers ? "Save as file…" : "Download file" }}</button>
+		@if (library.damaged(); as damaged) {
+			<button type="button" data-damaged-download (click)="downloadDamaged(damaged.json)">Download damaged copy</button>
+		}
 		<button type="button" data-picture-svg (click)="savePicture('svg')">Picture (SVG)</button>
 		<button type="button" data-picture-png (click)="savePicture('png')">Picture (PNG)</button>
 	</footer>

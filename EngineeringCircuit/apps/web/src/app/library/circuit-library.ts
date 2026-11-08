@@ -10,7 +10,12 @@ const DATABASE = "engineering-circuit"
 const VERSION = 1
 const CIRCUITS = "circuits"
 const WORKSPACE = "workspace"
-const CURRENT = "current"
+/** The workspace slot for the learner's own circuit; a live session keeps its copy under `liveWorkspaceSlot`. */
+export const CURRENT_WORKSPACE = "current"
+/** A kept circuit that no longer opens is moved here (the latest one), so autosave never overwrites it unseen. */
+const DAMAGED = "damaged"
+
+export type WorkspaceLoad = { kind: "none" } | { kind: "found"; circuit: Circuit } | { kind: "damaged"; reason: string }
 const BY_SAVED_AT = "savedAt"
 
 const done = <Value>(request: IDBRequest<Value>) =>
@@ -38,6 +43,8 @@ export class CircuitLibrary {
 	readonly entries = signal<LibraryEntry[]>([])
 	/** Why the circuit being edited isn't being kept, if it isn't (shown in the status bar). */
 	readonly problem = signal<string | undefined>(undefined)
+	/** A kept circuit that no longer opened, set aside for the learner to download, and why it didn't open. */
+	readonly damaged = signal<{ json: string; reason: string } | undefined>(undefined)
 
 	get available(): boolean {
 		return typeof indexedDB !== "undefined"
@@ -92,20 +99,44 @@ export class CircuitLibrary {
 		await this.refresh()
 	}
 
-	async saveWorkspace(circuit: Circuit): Promise<void> {
+	async saveWorkspace(circuit: Circuit, slot = CURRENT_WORKSPACE): Promise<void> {
 		const transaction = (await this.database()).transaction(WORKSPACE, "readwrite")
-		transaction.objectStore(WORKSPACE).put(serializeCircuit(circuit), CURRENT)
+		transaction.objectStore(WORKSPACE).put(serializeCircuit(circuit), slot)
 		await finished(transaction)
 	}
 
-	/** The circuit from the last session, if there is one that still opens. */
-	async loadWorkspace(): Promise<Circuit | undefined> {
-		const json = (await done((await this.database()).transaction(WORKSPACE).objectStore(WORKSPACE).get(CURRENT))) as
+	/**
+	 * The circuit from the last session. One that no longer opens (a damaged or newer file) is set aside, kept in
+	 * `damaged`, and reported with the reason, rather than dropped and later overwritten by autosave.
+	 */
+	async loadWorkspace(slot = CURRENT_WORKSPACE): Promise<WorkspaceLoad> {
+		const database = await this.database()
+		const json = (await done(database.transaction(WORKSPACE).objectStore(WORKSPACE).get(slot))) as string | undefined
+		if (json === undefined) return { kind: "none" }
+		const parsed = parseCircuitJson(json)
+		if (parsed.ok) return { kind: "found", circuit: parsed.circuit }
+		const transaction = database.transaction(WORKSPACE, "readwrite")
+		transaction.objectStore(WORKSPACE).put(json, DAMAGED)
+		await finished(transaction)
+		const reason = parsed.errors.map((error) => error.message).join("; ")
+		this.damaged.set({ json, reason })
+		return { kind: "damaged", reason }
+	}
+
+	/** Brings back the notice for a copy set aside in an earlier session and not yet downloaded. */
+	async loadDamaged(): Promise<void> {
+		const json = (await done((await this.database()).transaction(WORKSPACE).objectStore(WORKSPACE).get(DAMAGED))) as
 			| string
 			| undefined
-		if (json === undefined) return undefined
-		const parsed = parseCircuitJson(json)
-		return parsed.ok ? parsed.circuit : undefined
+		if (json !== undefined) this.damaged.set({ json, reason: reasonOf(json) ?? "" })
+	}
+
+	/** The learner has the damaged copy now; forget it. */
+	async discardDamaged(): Promise<void> {
+		this.damaged.set(undefined)
+		const transaction = (await this.database()).transaction(WORKSPACE, "readwrite")
+		transaction.objectStore(WORKSPACE).delete(DAMAGED)
+		await finished(transaction)
 	}
 
 	private database(): Promise<IDBDatabase> {
@@ -122,4 +153,17 @@ export class CircuitLibrary {
 		})
 		return this.connection
 	}
+}
+
+/** A live session's own slot, named by the server's address without the session token (which is never stored). */
+export function liveWorkspaceSlot(socketUrl: string): string {
+	const url = new URL(socketUrl)
+	url.search = ""
+	return `live:${url.href}`
+}
+
+/** Why a kept circuit doesn't open, or undefined if it does. */
+function reasonOf(json: string): string | undefined {
+	const parsed = parseCircuitJson(json)
+	return parsed.ok ? undefined : parsed.errors.map((error) => error.message).join("; ")
 }

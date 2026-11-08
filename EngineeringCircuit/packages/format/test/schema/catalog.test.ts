@@ -50,6 +50,20 @@ test("every type belongs to exactly one palette category", () => {
 	expect(COMPONENT_CATEGORIES.map((category) => category.name)).toEqual(["Sources", "Passive", "Switches", "Semiconductors", "Logic", "ICs", "Meters"])
 })
 
+test("a new RGB LED follows Kingbright WP154A4SUREQBFZGW: red uses the red model, green and blue the InGaN (3.3 V) one; 30/25/30 mA", () => {
+	const rgb = COMPONENT_DEFINITIONS.find((definition) => definition.type === "rgb-led")
+	expect(rgb?.defaults).toMatchObject({
+		emissionCoefficient: LED_MODELS.red.emissionCoefficient,
+		seriesResistance: LED_MODELS.red.seriesResistance,
+		redSaturationCurrent: LED_MODELS.red.saturationCurrent,
+		greenSaturationCurrent: LED_MODELS.blue.saturationCurrent,
+		blueSaturationCurrent: LED_MODELS.blue.saturationCurrent,
+		redMaxCurrent: 0.03,
+		greenMaxCurrent: 0.025,
+		blueMaxCurrent: 0.03,
+	})
+})
+
 test("every LED colour has a model and a current rating, and LEDs default to red", () => {
 	expect(Object.keys(LED_MODELS).sort()).toEqual(["blue", "green", "red", "white", "yellow"])
 	const led = COMPONENT_DEFINITIONS.find((definition) => definition.type === "led")

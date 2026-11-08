@@ -41,13 +41,13 @@ whatever the app is at that point.
 ### D15c Audit fixes (from the 2026-11-08 audit, below)
 | Item | How |
 |---|---|
-| Autosave after a live session | Autosave the learner's copy once the link has dropped (it is their work now); test: link drops, edit, reload keeps it |
-| Picture crop | Bounds from each part's rotated body box, its labels and each note's drawn size, not origins |
-| Damaged saved circuit | Say so in the status bar and keep the damaged copy aside instead of overwriting it |
-| Shortcuts behind dialogs; Ctrl/⌘+C/A swallowed; Ctrl/⌘+R rotates | Ignore canvas shortcuts while a dialog is open or a button has focus; leave modified keys other than ours to the browser |
-| MCP file paths | `open_circuit` / `save_circuit` refuse paths outside the workspace folder |
-| Claims not enforced | RC golden at the claimed 0.003%, RLC 200 µs within 1% of the swing… or as claimed; op-amp at 0.03%; a typical-mistake test for every lesson; a square source simulated in a circuit |
-| RGB LED | One model and rating per colour (red, green, blue from the LED_MODELS); burn-out warnings per colour |
+| ~~Autosave after a live session~~ (done) | Autosave the learner's copy once the link has dropped (it is their work now); test: link drops, edit, reload keeps it |
+| ~~Picture crop~~ (done) | Bounds from each part's rotated body box, its labels and each note's drawn size, not origins |
+| ~~Damaged saved circuit~~ (done) | Say so in the status bar and keep the damaged copy aside instead of overwriting it |
+| ~~Shortcuts behind dialogs; Ctrl/⌘+C/A swallowed; Ctrl/⌘+R rotates~~ (done) | Ignore canvas shortcuts while a dialog is open or a button has focus; leave modified keys other than ours to the browser |
+| ~~MCP file paths~~ (done) | `open_circuit` / `save_circuit` refuse paths outside the workspace folder |
+| ~~Claims not enforced~~ (done) | RC golden at the claimed 0.003%, RLC within 1% at every point; op-amp at 0.03%; a typical-mistake test for every lesson; a square source simulated in a circuit |
+| ~~RGB LED~~ (done, format v7) | One model and rating per colour (red, green, blue from the LED_MODELS); burn-out warnings per colour |
 | Missing tests | Logic hold/reset cases, relay drop-out, settling triggers, MCP `remove_component`/`disconnect`, oversized live messages, library delete, rotate, pause, Ctrl/⌘+A, Escape |
 | Keyboard and screen readers | Parts and wires focusable and operable from the keyboard; status bar announces only problems and changes, not the time |
 | Touch | Larger invisible pin hit areas; drag/long-press threshold in screen pixels, sized for fingers |

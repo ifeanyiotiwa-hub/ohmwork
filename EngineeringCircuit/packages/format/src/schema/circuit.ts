@@ -3,7 +3,7 @@ import { componentSchema } from "./components/catalog"
 import { pointSchema } from "./geometry"
 
 export const FORMAT_ID = "engineering-circuit"
-export const CURRENT_VERSION = 6
+export const CURRENT_VERSION = 7
 
 export const pinRefSchema = z.strictObject({
 	componentId: z.string().min(1),

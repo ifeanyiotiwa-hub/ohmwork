@@ -1,5 +1,5 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
-import { resolve } from "node:path"
+import { isAbsolute, relative, resolve, sep } from "node:path"
 import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
 import { type TransientState, initialTransientState, solveDc, stepTransient } from "@engineering-circuit/engine"
 import {
@@ -322,11 +322,12 @@ export function createServer(
 	server.registerTool(
 		"open_circuit",
 		{
-			description: "Open a circuit JSON file (replaces the current circuit; undo brings it back).",
+			description: "Open a circuit JSON file in the workspace folder (path relative to it; replaces the current circuit; undo brings it back).",
 			inputSchema: z.object({ path: z.string().min(1) }),
 		},
 		async ({ path }) => {
-			const fullPath = resolve(options.workspaceDirectory, path)
+			const fullPath = insideWorkspace(options.workspaceDirectory, path)
+			if (!fullPath) return failure(outsideWorkspace(options.workspaceDirectory, path))
 			try {
 				const { size } = await stat(fullPath)
 				if (size > options.maxFileBytes) return failure(`File is ${size} bytes; the limit is ${options.maxFileBytes}`)
@@ -343,11 +344,12 @@ export function createServer(
 	server.registerTool(
 		"save_circuit",
 		{
-			description: "Save the current circuit as a JSON file.",
+			description: "Save the current circuit as a JSON file in the workspace folder (path relative to it).",
 			inputSchema: z.object({ path: z.string().min(1) }),
 		},
 		async ({ path }) => {
-			const fullPath = resolve(options.workspaceDirectory, path)
+			const fullPath = insideWorkspace(options.workspaceDirectory, path)
+			if (!fullPath) return failure(outsideWorkspace(options.workspaceDirectory, path))
 			try {
 				await writeFile(fullPath, serializeCircuit(document.circuit), "utf8")
 				return text(`Saved to ${fullPath}`)
@@ -495,3 +497,14 @@ export function createServer(
 
 	return server
 }
+
+/** The file's full path if it is inside the workspace folder (the agent's files stay there), else undefined. */
+function insideWorkspace(workspace: string, path: string): string | undefined {
+	const fullPath = resolve(workspace, path)
+	const fromWorkspace = relative(workspace, fullPath)
+	const above = fromWorkspace === ".." || fromWorkspace.startsWith(`..${sep}`)
+	return above || isAbsolute(fromWorkspace) ? undefined : fullPath
+}
+
+const outsideWorkspace = (workspace: string, path: string) =>
+	`${path} is outside the workspace folder (${workspace}); circuit files are read and saved only inside it.`

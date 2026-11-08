@@ -18,6 +18,11 @@
 			}
 		</p>
 	}
+	@if (library.damaged(); as damaged) {
+		<p class="issue warning" data-damaged-circuit>
+			Your last circuit couldn't be opened ({{ damaged.reason }}). It has been kept aside: download it from the Library.
+		</p>
+	}
 	@if (library.problem(); as problem) {
 		<p class="issue warning" data-storage-problem>{{ problem }}</p>
 	}

@@ -34,6 +34,25 @@ function addParams(document: JsonObject, added: Readonly<Record<string, JsonObje
 	}
 }
 
+/**
+ * Version 7 gave each colour of an RGB LED its own model and rating. An old RGB LED keeps its one model on all three
+ * colours, so it behaves as before; the ratings are the Kingbright WP154A4SUREQBFZGW values (frozen here).
+ */
+const V7_RGB_RATINGS: JsonObject = { redMaxCurrent: 0.03, greenMaxCurrent: 0.025, blueMaxCurrent: 0.03 }
+
+function splitRgbModels(document: JsonObject): JsonObject {
+	if (!Array.isArray(document.components)) return document
+	return {
+		...document,
+		components: document.components.map((component: unknown) => {
+			if (!isObject(component) || component.type !== "rgb-led" || !isObject(component.params)) return component
+			const { saturationCurrent, ...rest } = component.params
+			const perColour = { redSaturationCurrent: saturationCurrent, greenSaturationCurrent: saturationCurrent, blueSaturationCurrent: saturationCurrent }
+			return { ...component, params: { ...rest, ...perColour, ...V7_RGB_RATINGS } }
+		}),
+	}
+}
+
 /** Keyed by the version migrated from. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	1: (document) => ({ ...document, simulation: { timeStep: 5e-6, speed: 0.01 } }),
@@ -44,6 +63,7 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	}),
 	4: (document) => ({ ...document, notes: [] }),
 	5: (document) => addParams(document, V6_ADDED_PARAMS),
+	6: splitRgbModels,
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

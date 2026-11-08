@@ -7,7 +7,7 @@ import { Client } from "@modelcontextprotocol/client"
 import { InMemoryTransport } from "@modelcontextprotocol/server"
 import { afterEach, beforeEach, describe, expect, test } from "vitest"
 import { LiveServer } from "../src/live/live-server"
-import { DEFAULT_OPTIONS } from "../src/options"
+import { DEFAULT_OPTIONS, type ServerOptions } from "../src/options"
 import { type ServerContext, createServer } from "../src/server"
 
 type ToolOutput = { isError: boolean; text: string; data: unknown }
@@ -15,9 +15,9 @@ type ToolOutput = { isError: boolean; text: string; data: unknown }
 let client: Client
 let document: CircuitDocument
 
-async function start(context: ServerContext): Promise<void> {
+async function start(context: ServerContext, options: Partial<ServerOptions> = {}): Promise<void> {
 	const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-	await createServer({ ...DEFAULT_OPTIONS, workspaceDirectory: process.cwd() }, context).connect(serverTransport)
+	await createServer({ ...DEFAULT_OPTIONS, workspaceDirectory: process.cwd(), ...options }, context).connect(serverTransport)
 	client = new Client({ name: "test-client", version: "1.0.0" })
 	await client.connect(clientTransport)
 }
@@ -179,6 +179,8 @@ describe("files", () => {
 
 	beforeEach(async () => {
 		directory = await mkdtemp(join(tmpdir(), "engineering-circuit-"))
+		await client.close()
+		await start({ document }, { workspaceDirectory: directory })
 	})
 
 	afterEach(async () => {
@@ -187,7 +189,7 @@ describe("files", () => {
 
 	test("save then open restores the circuit", async () => {
 		await buildVoltageDivider()
-		const path = join(directory, "divider.json")
+		const path = "divider.json"
 
 		expect((await call("save_circuit", { path })).isError).toBe(false)
 		await call("create_circuit", { name: "Blank" })
@@ -197,9 +199,34 @@ describe("files", () => {
 	})
 
 	test("opening an invalid file reports why", async () => {
-		const result = await call("open_circuit", { path: join(directory, "missing.json") })
+		const result = await call("open_circuit", { path: "missing.json" })
 		expect(result.isError).toBe(true)
 		expect(result.text).toContain("Could not read")
+	})
+
+	test("files outside the workspace folder are refused, by a relative or an absolute path", async () => {
+		// Never a real system file: before the check existed, save_circuit would have written there.
+		for (const path of ["../outside.json", join(tmpdir(), "outside.json")]) {
+			for (const tool of ["save_circuit", "open_circuit"]) {
+				const result = await call(tool, { path })
+				expect(result.isError).toBe(true)
+				expect(result.text).toContain("outside the workspace folder")
+			}
+		}
+	})
+
+	test("an absolute path inside the workspace folder is fine, and so is a name that merely starts with dots", async () => {
+		expect((await call("save_circuit", { path: join(directory, "inside.json") })).isError).toBe(false)
+		expect((await call("save_circuit", { path: "..draft.json" })).isError).toBe(false)
+	})
+
+	test("a file over the size limit is not opened", async () => {
+		await call("save_circuit", { path: "big.json" })
+		await client.close()
+		await start({ document }, { workspaceDirectory: directory, maxFileBytes: 10 })
+		const result = await call("open_circuit", { path: "big.json" })
+		expect(result.isError).toBe(true)
+		expect(result.text).toContain("the limit is 10")
 	})
 })
 

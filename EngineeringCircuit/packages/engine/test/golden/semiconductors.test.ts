@@ -185,12 +185,21 @@ test("a P-MOSFET mirrors it (ngspice 2.5 V)", () => {
 	within(pinVoltages["M1:drain"], 2.5)
 })
 
+const redOnEveryColour = {
+	emissionCoefficient: LED.emissionCoefficient,
+	seriesResistance: LED.seriesResistance,
+	redSaturationCurrent: LED.saturationCurrent,
+	greenSaturationCurrent: LED.saturationCurrent,
+	blueSaturationCurrent: LED.saturationCurrent,
+}
+
 test("an RGB LED lights each colour through its own pin", () => {
 	const { ports } = solved(
 		[
 			{ id: "V1", type: "voltage-source", params: { voltage: 5 } },
 			{ id: "R1", type: "resistor", params: { resistance: 220 } },
-			{ id: "RGB1", type: "rgb-led", params: { commonCathode: true, ...LED } },
+			// Every colour on the red LED model, so the green pin matches the ngspice red LED golden.
+			{ id: "RGB1", type: "rgb-led", params: { commonCathode: true, ...redOnEveryColour } },
 			{ id: "GND", type: "ground", params: {} },
 		],
 		[["V1.positive", "R1.a"], ["R1.b", "RGB1.green"], ["RGB1.common", "GND.terminal"], ["V1.negative", "GND.terminal"]],

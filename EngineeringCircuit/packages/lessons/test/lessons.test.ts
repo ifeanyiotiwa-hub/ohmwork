@@ -71,4 +71,61 @@ describe("typical mistakes are caught, with what went wrong", () => {
 		const released = checkSolution(alwaysOn, lesson).results.find((result) => result.description.includes("released"))
 		expect(released).toMatchObject({ passed: false, found: "LED1 carries 14.5 mA." })
 	})
+	const failedCheck = (circuit: Parameters<typeof checkSolution>[0], lessonId: string, kind: string) => {
+		const lesson = lessonById(lessonId)
+		if (!lesson) throw new Error(`missing lesson ${lessonId}`)
+		const index = lesson.checks.findIndex((check) => check.kind === kind)
+		return checkSolution(circuit, lesson).results[index]
+	}
+
+	test("unequal resistors put the divider's middle at 3.33 V, not half the source", () => {
+		const unequal = build(
+			[
+				{ id: "V1", type: "voltage-source", params: { voltage: 5 } },
+				{ id: "R1", type: "resistor", params: { resistance: 1000 } },
+				{ id: "R2", type: "resistor", params: { resistance: 2000 } },
+				{ id: "GND1", type: "ground", params: {} },
+			],
+			[["V1.positive", "R1.a"], ["R1.b", "R2.a"], ["R2.b", "GND1.terminal"], ["V1.negative", "GND1.terminal"]],
+		)
+		const middle = failedCheck(unequal, "voltage-divider", "node-voltage")
+		expect(middle).toMatchObject({ passed: false, found: "Points in the circuit sit at 0 V, 3.33 V, 5 V." })
+	})
+
+	test("a resistor ten times too big charges the capacitor far too slowly: only about 0.48 V after 1 ms", () => {
+		const slow = build(
+			[
+				{ id: "V1", type: "voltage-source", params: { voltage: 5 } },
+				{ id: "R1", type: "resistor", params: { resistance: 10000 } },
+				{ id: "C1", type: "capacitor", params: { capacitance: 1e-6 } },
+				{ id: "GND1", type: "ground", params: {} },
+			],
+			[["V1.positive", "R1.a"], ["R1.b", "C1.a"], ["C1.b", "GND1.terminal"], ["V1.negative", "GND1.terminal"]],
+		)
+		const after = failedCheck(slow, "rc-charging", "reading-at")
+		expect(after).toMatchObject({ passed: false, found: "C1 has 476 mV after 1 ms." })
+	})
+
+	test("an OR gate for the sum gets 1 + 1 wrong, and the check names the row", () => {
+		const withOr = build(
+			[
+				{ id: "IN1", type: "logic-input", params: { high: false } },
+				{ id: "IN2", type: "logic-input", params: { high: false } },
+				{ id: "OR1", type: "or-gate", params: {} },
+				{ id: "AND1", type: "and-gate", params: {} },
+				{ id: "OUT1", type: "logic-output", params: {} },
+				{ id: "OUT2", type: "logic-output", params: {} },
+			],
+			[
+				["IN1.out", "OR1.a"],
+				["IN2.out", "OR1.b"],
+				["IN1.out", "AND1.a"],
+				["IN2.out", "AND1.b"],
+				["OR1.out", "OUT1.in"],
+				["AND1.out", "OUT2.in"],
+			],
+		)
+		const table = failedCheck(withOr, "half-adder", "truth-table")
+		expect(table).toMatchObject({ passed: false, found: "With IN1, IN2 as inputs, OUT1, OUT2 gave: 00→00, 01→10, 10→10, 11→11." })
+	})
 })

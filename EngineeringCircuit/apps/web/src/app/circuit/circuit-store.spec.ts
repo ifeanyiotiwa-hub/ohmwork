@@ -215,6 +215,21 @@ describe("joined to the live link", () => {
 		expect(store.circuit().components.map((component) => component.id)).toEqual(["R1", "GND1"])
 	})
 
+	test("joining with a circuit restored from this session sends it to a server that came back empty", () => {
+		TestBed.resetTestingModule()
+		TestBed.configureTestingModule({ providers: [{ provide: LiveLink, useClass: FakeLiveLink }] })
+		store = TestBed.inject(CircuitStore)
+		live = TestBed.inject(LiveLink) as unknown as FakeLiveLink
+		store.replace(createCircuit("Mine"), "Restored your last circuit")
+		store.apply({ type: "add-component", component: { type: "capacitor" } })
+
+		store.joinLive("ws://127.0.0.1:5000/?token=t", { keepLocal: true })
+		serverSends({ revision: 0, circuit: createCircuit("Untitled"), history: [] })
+
+		expect(live.sent.at(-1)).toMatchObject({ type: "replace", circuit: { components: [{ id: "C1" }] } })
+		expect(store.circuit().components.map((component) => component.id)).toEqual(["C1"])
+	})
+
 	test("reconnecting to a server that has its own work shows the server's circuit", () => {
 		live.listener?.closed()
 		store.apply({ type: "add-component", component: { type: "ground" } })

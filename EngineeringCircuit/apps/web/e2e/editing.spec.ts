@@ -80,3 +80,32 @@ test("the circuit downloads as an SVG and a PNG picture", async ({ page }) => {
 	const bytes = await readFile((await png.path()) ?? "")
 	expect(bytes.subarray(1, 4).toString()).toBe("PNG")
 })
+
+test("the picture frames everything drawn: a note's whole box and a part's label, not just their anchor points", async ({ page }) => {
+	await page.locator("[data-add-note]").click()
+	const inCircuitUnits = (selector: string) =>
+		page.evaluate((target) => {
+			const canvas = document.querySelector<SVGSVGElement>('svg[aria-label="Circuit canvas"]')
+			const element = document.querySelector(target)
+			const toCircuit = canvas?.getScreenCTM()?.inverse()
+			if (!element || !toCircuit) throw new Error(`${target} not found`)
+			const box = element.getBoundingClientRect()
+			const corner = new DOMPoint(box.left, box.top).matrixTransform(toCircuit)
+			const opposite = new DOMPoint(box.right, box.bottom).matrixTransform(toCircuit)
+			return { left: corner.x, top: corner.y, right: opposite.x, bottom: opposite.y }
+		}, selector)
+	const note = await inCircuitUnits("[data-note]")
+	const label = await inCircuitUnits('[data-part="R2"] ~ .part-label')
+
+	await page.getByRole("button", { name: "Library" }).click()
+	const download = page.waitForEvent("download")
+	await page.locator("[data-picture-svg]").click()
+	const text = await readFile((await (await download).path()) ?? "", "utf8")
+	const [x = 0, y = 0, width = 0, height = 0] = (/viewBox="([^"]+)"/.exec(text)?.[1] ?? "").split(" ").map(Number)
+	for (const box of [note, label]) {
+		expect(box.left).toBeGreaterThanOrEqual(x)
+		expect(box.top).toBeGreaterThanOrEqual(y)
+		expect(box.right).toBeLessThanOrEqual(x + width)
+		expect(box.bottom).toBeLessThanOrEqual(y + height)
+	}
+})

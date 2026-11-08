@@ -72,3 +72,30 @@ test("a wave source in a plain DC solve uses SPICE's DC value: the offset, or th
 	)
 	expect(result.ok && result.solution.readings.R1?.voltage).toBeCloseTo(1.5, 12)
 })
+
+test("a square source drives a circuit: its low level at DC, then high for the duty fraction of each period over time", () => {
+	const circuit = circuitOf(
+		[
+			{ id: "SQ1", type: "square-source", params: { low: 1, high: 4, frequency: 1000, dutyCycle: 0.25 } },
+			{ id: "R1", type: "resistor", params: { resistance: 100 } },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[["SQ1.positive", "R1.a"], ["R1.b", "GND.terminal"], ["SQ1.negative", "GND.terminal"]],
+	)
+	const dc = solveDc(circuit)
+	expect(dc.ok && dc.solution.readings.R1?.voltage).toBeCloseTo(1, 12)
+
+	const voltageAt = new Map<number, number>()
+	let state = initialTransientState()
+	for (let step = 0; step < 150; step++) {
+		const result = stepTransient(circuit, state, { timeStep: 1e-5 })
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		state = result.state
+		voltageAt.set(Math.round(state.time * 1e5), result.solution.readings.R1?.voltage ?? Number.NaN)
+	}
+	// Steps are 10 µs: high during 0–250 µs of each 1 ms period, low otherwise.
+	expect(voltageAt.get(10)).toBeCloseTo(4, 12)
+	expect(voltageAt.get(50)).toBeCloseTo(1, 12)
+	expect(voltageAt.get(110)).toBeCloseTo(4, 12)
+	expect(voltageAt.get(140)).toBeCloseTo(1, 12)
+})

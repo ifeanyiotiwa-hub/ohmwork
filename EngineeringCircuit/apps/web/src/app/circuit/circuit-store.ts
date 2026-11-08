@@ -309,9 +309,13 @@ export class CircuitStore {
 	}
 
 	/** Joins the MCP server's circuit. If the link closes, the app keeps the last shared circuit and works alone. */
-	joinLive(socketUrl: string): void {
-		/** The link dropped and the learner has been working on their own copy since. */
-		let dropped = false
+	/**
+	 * Shows the agent's shared circuit. With `keepLocal`, the circuit already shown is the learner's own copy from this
+	 * session (restored after a reload), so a server that comes back empty is given it instead of wiping it.
+	 */
+	joinLive(socketUrl: string, { keepLocal = false }: { keepLocal?: boolean } = {}): void {
+		/** The learner has been working on their own copy (the link dropped, or the copy was restored). */
+		let dropped = keepLocal
 		this.live.connect(socketUrl, {
 			state: (state) => {
 				if (dropped) {

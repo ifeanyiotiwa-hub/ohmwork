@@ -1,5 +1,5 @@
 import type { DcSolution } from "@engineering-circuit/engine"
-import type { Component } from "@engineering-circuit/format"
+import { COMPONENT_DEFINITIONS, type Component } from "@engineering-circuit/format"
 import { expect, test } from "vitest"
 import { glowOf } from "./glow"
 
@@ -20,7 +20,8 @@ test("an LED glows in its colour with current over its full-brightness current",
 })
 
 test("an RGB LED mixes its colours by current", () => {
-	const rgbLed = { ...at, id: "RGB1", type: "rgb-led", params: { commonCathode: true, ...LED } } as Component
+	const defaults = COMPONENT_DEFINITIONS.find((definition) => definition.type === "rgb-led")?.defaults
+	const rgbLed = { ...at, id: "RGB1", type: "rgb-led", params: { ...defaults, commonCathode: true } } as Component
 	const glow = glowOf(rgbLed, solution({}, { "RGB1/red": { voltage: 2, current: 0.01 }, "RGB1/blue": { voltage: 2, current: 0.005 } }), 5)
 	expect(glow).toEqual({ colour: "rgb(255 0 128)", strength: 1 })
 })

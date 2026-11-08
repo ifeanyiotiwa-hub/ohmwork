@@ -12,6 +12,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | EC | Owner's screenshots of the EveryCircuit parts toolbar (`WorkSpaceImage/`, local only, not committed) | Which parts a learning simulator offers. Observed features only (ADR-001). Icon readings marked `?` are my interpretation |
 | CJS | CircuitJS1 `ts/Menus.ts`, `ts/DiodeModel.ts`, `ts/LEDElm.ts`, `ts/TransistorModel.ts` (github.com/pfalstad/circuitjs1, master) | Full parts menu and default models |
 | SPICE | ngspice HTML manual, v47+ (Mar 2026), Table 2.2 element letters, §4.1 source waveforms, §7.2 diode, §7.3 BJT | Standard element set and parameter names/defaults |
+| KB | Kingbright datasheets: 5 mm single-colour LEDs (blue L-7113QBC-D; white L-7113MWC, discontinued listing), and WP154A4SUREQBFZGW full-colour LED (spec DSAJ8688 V.12A, 2024-11-01) | LED forward voltages at 20 mA and maximum DC currents (ADR-023, ADR-027) |
 
 ## Reference and sources
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
@@ -57,7 +58,7 @@ Diode-family params follow SPICE §7.2: saturationCurrent (IS, default 1e-14 A),
 | `diode` | anode, cathode | diode-family params, maxCurrent (A, default 1 A as 1N4001–1N4007) | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | simulated |
 | `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | simulated |
 | `led` | anode, cathode | color, diode-family params (per colour, `LED_MODELS`, Kingbright 5 mm Vf at 20 mA), maxCurrent (30 mA, green 25 mA), maxBrightnessCurrent (CJS 10 mA) | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | simulated |
-| `rgb-led` | red, green, blue, common | commonCathode, diode-family params per colour | three LEDs sharing one pin; colours mix | EC | D4 | simulated |
+| `rgb-led` | red, green, blue, common | commonCathode, N and RS (shared), IS per colour, max current per colour | three LEDs sharing one pin, red on the red LED model, green and blue on the InGaN (3.3 V) model; colours mix; burn-out per colour (format v7) | EC, KB | D4, D15c | simulated |
 | `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13) | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | simulated |
 | `pnp-transistor` | collector, base, emitter | as NPN | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | simulated |
 | `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²) | square-law (SPICE level 1, λ = 0); defaults 1.5 V, 0.02 A/V² (CJS MosfetElm) | EC, CJS, SPICE `M` | D4 | simulated |

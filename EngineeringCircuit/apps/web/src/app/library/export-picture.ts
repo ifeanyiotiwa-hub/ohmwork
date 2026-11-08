@@ -3,15 +3,36 @@ import { fileNameFor } from "./circuit-files"
 
 export type Bounds = { x: number; y: number; width: number; height: number }
 
-/** Everything in the circuit (part positions and note corners), with `margin` around it, in circuit units. */
-export function pictureBounds(circuit: Circuit, margin: number): Bounds {
-	const points = [...circuit.components.map((part) => part.position), ...circuit.notes.map((note) => note.position)]
-	const xs = points.length > 0 ? points.map((point) => point.x) : [0]
-	const ys = points.length > 0 ? points.map((point) => point.y) : [0]
-	const left = Math.min(...xs) - margin
-	const top = Math.min(...ys) - margin
-	return { x: left, y: top, width: Math.max(...xs) + margin - left, height: Math.max(...ys) + margin - top }
+/** The box around everything drawn (each a box in circuit units), with `margin` around it. */
+export function pictureBounds(drawn: readonly Bounds[], margin: number): Bounds {
+	if (drawn.length === 0) return { x: -margin, y: -margin, width: 2 * margin, height: 2 * margin }
+	const left = Math.min(...drawn.map((box) => box.x)) - margin
+	const top = Math.min(...drawn.map((box) => box.y)) - margin
+	const right = Math.max(...drawn.map((box) => box.x + box.width)) + margin
+	const bottom = Math.max(...drawn.map((box) => box.y + box.height)) + margin
+	return { x: left, y: top, width: right - left, height: bottom - top }
 }
+
+/**
+ * Each shape and text drawn on the canvas, as a box in circuit units: measured as rendered, so rotated bodies, label
+ * text and notes count at their real size. Click targets, pins, the grid and moving current dots are left out.
+ */
+export function drawnBoxes(canvas: SVGSVGElement): Bounds[] {
+	const toCircuit = canvas.getScreenCTM()?.inverse()
+	if (!toCircuit) return []
+	const shapes = [...canvas.querySelectorAll<SVGGraphicsElement>(DRAWN)].filter(
+		(shape) => !shape.closest(`${LEAVE_OUT}, .grid, defs`),
+	)
+	return shapes.flatMap((shape) => {
+		const screen = shape.getBoundingClientRect()
+		if (screen.width === 0 && screen.height === 0) return []
+		const corner = new DOMPoint(screen.left, screen.top).matrixTransform(toCircuit)
+		const opposite = new DOMPoint(screen.right, screen.bottom).matrixTransform(toCircuit)
+		return [{ x: corner.x, y: corner.y, width: opposite.x - corner.x, height: opposite.y - corner.y }]
+	})
+}
+
+const DRAWN = "path, line, polyline, polygon, circle, ellipse, rect, text"
 
 /** Styles copied from the page into the picture, so it looks the same outside the app. */
 const STYLE_PROPERTIES = [
