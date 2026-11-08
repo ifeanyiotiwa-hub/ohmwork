@@ -29,8 +29,7 @@ import {
 } from "../circuit/symbols"
 import { UI_CONFIG } from "../circuit/ui-config"
 import { flowOf, voltageColour } from "../circuit/visuals"
-
-type View = { x: number; y: number; width: number; height: number }
+import { type View, pinchView } from "./gestures"
 
 type Interaction =
 	| { kind: "idle" }
@@ -38,6 +37,7 @@ type Interaction =
 	| { kind: "drag"; componentId: string; group: ReadonlySet<string>; startPoint: Point; moved: boolean }
 	| { kind: "box"; start: Point }
 	| { kind: "drag-note"; noteId: string; startPoint: Point; startPosition: Point; moved: boolean }
+	| { kind: "pinch"; from: readonly [Point, Point]; startView: View }
 
 /** Note boxes: text size and padding, in canvas units (a monospace-like estimate of the text width). */
 const NOTE_LINE_HEIGHT = 16
@@ -88,6 +88,9 @@ export class CircuitCanvas {
 	protected readonly notePadding = NOTE_PADDING
 	private readonly pointer = signal<Point>({ x: 0, y: 0 })
 	private interaction: Interaction = { kind: "idle" }
+	/** Fingers on the canvas, in screen pixels from its top left. */
+	private readonly touches = new Map<number, Point>()
+	private longPress: { timer: ReturnType<typeof setTimeout>; start: Point } | undefined
 
 	private positionOf(part: Part): Point {
 		const preview = this.dragPreview()
@@ -215,6 +218,7 @@ export class CircuitCanvas {
 
 
 	protected onBackgroundDown(event: PointerEvent): void {
+		if (this.startsPinch(event)) return
 		const placing = this.store.placing()
 		if (placing) {
 			this.place(placing, this.toCircuitPoint(event))
@@ -229,10 +233,15 @@ export class CircuitCanvas {
 		this.store.clearSelection()
 		this.interaction = { kind: "pan", startScreen: { x: event.clientX, y: event.clientY }, startView: this.view() }
 		this.capture(event)
+		const start = this.toCircuitPoint(event)
+		this.holdFor(event, () => {
+			this.interaction = { kind: "box", start }
+		})
 	}
 
 	protected onPartDown(event: PointerEvent, part: Part): void {
 		event.stopPropagation()
+		if (this.startsPinch(event)) return
 		const placing = this.store.placing()
 		if (placing) {
 			this.place(placing, this.toCircuitPoint(event))
@@ -242,6 +251,7 @@ export class CircuitCanvas {
 			this.store.toggleInSelection(part.id)
 			return
 		}
+		const before = { group: this.store.multiSelection(), single: this.store.selection() }
 		const inGroup = this.store.multiSelection().has(part.id)
 		if (!inGroup) {
 			this.store.multiSelection.set(new Set())
@@ -256,10 +266,20 @@ export class CircuitCanvas {
 			moved: false,
 		}
 		this.capture(event)
+		// Holding a push button is how it is used, so a long press there keeps it pressed rather than selecting it.
+		if (part.type === "push-button") return
+		this.holdFor(event, () => {
+			this.interaction = { kind: "idle" }
+			this.dragPreview.set(undefined)
+			this.store.multiSelection.set(before.group)
+			this.store.selection.set(before.single)
+			this.store.toggleInSelection(part.id)
+		})
 	}
 
 	protected onNoteDown(event: PointerEvent, noteId: string): void {
 		event.stopPropagation()
+		if (this.startsPinch(event)) return
 		const note = this.store.circuit().notes.find((candidate) => candidate.id === noteId)
 		if (!note) return
 		this.store.selection.set({ kind: "note", id: noteId })
@@ -269,6 +289,7 @@ export class CircuitCanvas {
 
 	protected onPinDown(event: PointerEvent, ref: PinRef): void {
 		event.stopPropagation()
+		if (this.startsPinch(event)) return
 		const from = this.store.wiringFrom()
 		if (!from) {
 			this.store.wiringFrom.set(ref)
@@ -282,6 +303,7 @@ export class CircuitCanvas {
 
 	protected onWireDown(event: PointerEvent, wireId: string): void {
 		event.stopPropagation()
+		if (this.startsPinch(event)) return
 		const from = this.store.wiringFrom()
 		this.store.wiringFrom.set(undefined)
 		if (from) {
@@ -297,7 +319,20 @@ export class CircuitCanvas {
 	protected onPointerMove(event: PointerEvent): void {
 		const point = this.toCircuitPoint(event)
 		this.pointer.set(point)
+		if (this.touches.has(event.pointerId)) this.touches.set(event.pointerId, this.screenPoint(event))
+		const held = this.longPress
+		if (held) {
+			const now = this.screenPoint(event)
+			if (Math.hypot(now.x - held.start.x, now.y - held.start.y) > this.config.dragThreshold) this.cancelLongPress()
+		}
 		const interaction = this.interaction
+		if (interaction.kind === "pinch") {
+			const [first, second] = [...this.touches.values()]
+			if (!first || !second) return
+			const limits = { minWidth: this.config.minZoomWidth, maxWidth: this.config.maxZoomWidth }
+			this.view.set(pinchView(interaction.startView, interaction.from, [first, second], this.svg().nativeElement.clientWidth, limits))
+			return
+		}
 
 		if (interaction.kind === "pan") {
 			const scale = interaction.startView.width / this.svg().nativeElement.clientWidth
@@ -344,8 +379,14 @@ export class CircuitCanvas {
 		}
 	}
 
-	protected onPointerUp(): void {
+	protected onPointerUp(event: PointerEvent): void {
 		this.store.releaseButtons()
+		this.touches.delete(event.pointerId)
+		this.cancelLongPress()
+		if (this.interaction.kind === "pinch") {
+			this.interaction = { kind: "idle" }
+			return
+		}
 		const interaction = this.interaction
 		this.interaction = { kind: "idle" }
 		if (interaction.kind === "drag-note") {
@@ -432,5 +473,41 @@ export class CircuitCanvas {
 
 	private capture(event: PointerEvent): void {
 		this.svg().nativeElement.setPointerCapture(event.pointerId)
+	}
+
+	/** Tracks a finger; true when it is the second one, which turns whatever the first one started into a pinch. */
+	private startsPinch(event: PointerEvent): boolean {
+		if (event.pointerType !== "touch") return false
+		this.touches.set(event.pointerId, this.screenPoint(event))
+		const [first, second] = [...this.touches.values()]
+		if (this.touches.size !== 2 || !first || !second) return false
+		this.cancelLongPress()
+		this.dragPreview.set(undefined)
+		this.selectionBox.set(undefined)
+		this.notePreview.set(undefined)
+		this.interaction = { kind: "pinch", from: [first, second], startView: this.view() }
+		this.capture(event)
+		return true
+	}
+
+	/** A finger held still acts as Shift: `action` runs unless the finger moves or lifts first. Touch only. */
+	private holdFor(event: PointerEvent, action: () => void): void {
+		if (event.pointerType !== "touch") return
+		this.cancelLongPress()
+		const timer = setTimeout(() => {
+			this.longPress = undefined
+			action()
+		}, this.config.longPressMs)
+		this.longPress = { timer, start: this.screenPoint(event) }
+	}
+
+	private cancelLongPress(): void {
+		if (this.longPress) clearTimeout(this.longPress.timer)
+		this.longPress = undefined
+	}
+
+	private screenPoint(event: PointerEvent): Point {
+		const box = this.svg().nativeElement.getBoundingClientRect()
+		return { x: event.clientX - box.left, y: event.clientY - box.top }
 	}
 }

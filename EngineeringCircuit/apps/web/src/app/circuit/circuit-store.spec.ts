@@ -51,6 +51,13 @@ test("a note can be added, selected and removed", () => {
 	expect(store.selection()).toBeUndefined()
 })
 
+test("Paste is only offered once something has been copied", () => {
+	expect(store.canPaste()).toBe(false)
+	store.toggleInSelection("R1")
+	store.copySelection()
+	expect(store.canPaste()).toBe(true)
+})
+
 test("a group of parts is copied, pasted with new names and deleted, each as one undo step", () => {
 	store.toggleInSelection("R1")
 	store.toggleInSelection("R2")

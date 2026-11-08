@@ -10,8 +10,8 @@
 	[style.--flow-period.px]="config.flow.dashPeriod"
 	(pointerdown)="onBackgroundDown($event)"
 	(pointermove)="onPointerMove($event)"
-	(pointerup)="onPointerUp()"
-	(pointercancel)="onPointerUp()"
+	(pointerup)="onPointerUp($event)"
+	(pointercancel)="onPointerUp($event)"
 	(wheel)="onWheel($event)"
 >
 	<defs>

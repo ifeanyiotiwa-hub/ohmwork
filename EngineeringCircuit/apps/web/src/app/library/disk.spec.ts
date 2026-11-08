@@ -122,3 +122,19 @@ test("the desktop app uses its own dialogs, a browser with file dialogs uses tho
 	expect(pickersFor(browser)).toBeDefined()
 	expect(pickersFor({})).toBeUndefined()
 })
+
+test("on Android the dialog gives a content URI; the file is still named by its own name", async () => {
+	mockIPC((command) => (command === "plugin:dialog|save" ? "content://com.android.externalstorage.documents/document/primary%3ADownload%2Flamp.circuit.json" : null))
+	const target = await tauriPickers().saveAs(new Blob(["x"]), "lamp.circuit.json", CIRCUIT_FILE)
+	expect(target?.name).toBe("lamp.circuit.json")
+})
+
+test("when Android's URI has only a document number, the file is named by the name it was saved as, or opened as the chosen file", async () => {
+	mockIPC((command) => {
+		if (command === "plugin:dialog|save" || command === "plugin:dialog|open") return "content://com.android.providers.downloads.documents/document/msf%3A2"
+		if (command === "plugin:fs|stat") return { isFile: true, isDirectory: false, isSymlink: false, size: 2, mtime: null, atime: null, birthtime: null }
+		return null
+	})
+	expect((await tauriPickers().saveAs(new Blob(["x"]), "lamp.circuit.json", CIRCUIT_FILE))?.name).toBe("lamp.circuit.json")
+	expect((await tauriPickers().open(CIRCUIT_FILE))?.target.name).toBe("the chosen file")
+})

@@ -11,7 +11,9 @@
 		"test:e2e": "pnpm --filter @engineering-circuit/web test:e2e",
 		"web": "pnpm --filter @engineering-circuit/web start",
 		"desktop": "pnpm --filter @engineering-circuit/desktop dev",
-		"desktop:build": "pnpm --filter @engineering-circuit/desktop build"
+		"desktop:build": "pnpm --filter @engineering-circuit/desktop build",
+		"android": "pnpm --filter @engineering-circuit/desktop android:dev",
+		"android:build": "pnpm --filter @engineering-circuit/desktop android:build"
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",

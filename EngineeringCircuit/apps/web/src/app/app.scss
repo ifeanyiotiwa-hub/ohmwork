@@ -58,6 +58,10 @@ app-part-palette {
 		flex-basis: 100%;
 	}
 
+	.actions {
+		flex-wrap: wrap;
+	}
+
 	.workspace {
 		grid-template-columns: 1fr;
 		grid-template-rows: 1fr minmax(0, 40%);

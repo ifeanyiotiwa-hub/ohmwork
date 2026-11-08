@@ -34,6 +34,13 @@ Needs Rust (`brew install rustup && rustup default stable`; Homebrew's rustup ne
 pnpm desktop        # the desktop window, with the web app reloading as you edit
 pnpm desktop:build  # installers in apps/desktop/src-tauri/target/release/bundle
 ```
+Android: also needs the Android SDK with NDK 30 (`sdkmanager "ndk;30.0.16248370"`), `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`, and `ANDROID_HOME`, `NDK_HOME`, `JAVA_HOME` (JDK 17) set.
+```
+pnpm android        # on a running emulator or a connected phone
+pnpm android:build  # APKs in apps/desktop/src-tauri/gen/android/app/build/outputs/apk
+```
+On a touch screen: one finger pans, two fingers pinch to zoom, press and hold a part (or the background, then drag) to select several; the inspector has Copy, Paste and Delete for them.
+
 Windows and Linux installers are built by GitHub Actions (`.github/workflows/desktop.yml`) on a `v*` tag or by hand.
 
 Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).

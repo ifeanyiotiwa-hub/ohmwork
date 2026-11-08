@@ -126,7 +126,8 @@ export class CircuitStore {
 		const single = this.selectedComponent()
 		return new Set(single ? [single.id] : [])
 	})
-	private clipboard: Copied | undefined
+	private readonly clipboard = signal<Copied | undefined>(undefined)
+	readonly canPaste = computed(() => this.clipboard() !== undefined)
 
 	readonly placing = signal<ComponentType | undefined>(undefined)
 	readonly wiringFrom = signal<PinRef | undefined>(undefined)
@@ -244,22 +245,23 @@ export class CircuitStore {
 	}
 
 	copySelection(): void {
-		this.clipboard = copyParts(this.circuit(), this.selectedParts())
+		this.clipboard.set(copyParts(this.circuit(), this.selectedParts()))
 	}
 
 	/** Pastes the copied parts two grid squares down and right, and selects them. */
 	paste(): void {
-		if (!this.clipboard) return
+		const copied = this.clipboard()
+		if (!copied) return
 		const step = 2 * this.config.gridSize
-		const command = pasteCommand(this.circuit(), this.clipboard, { x: step, y: step })
+		const command = pasteCommand(this.circuit(), copied, { x: step, y: step })
 		if (!command) return
 		const result = this.apply(command)
 		if (!result) return
-		const added = new Set(result.components.slice(-this.clipboard.components.length).map((component) => component.id))
+		const added = new Set(result.components.slice(-copied.components.length).map((component) => component.id))
 		this.multiSelection.set(added)
 		this.selection.set(undefined)
 		// Pasting again goes further along, not on top of this copy.
-		this.clipboard = copyParts(result, added)
+		this.clipboard.set(copyParts(result, added))
 	}
 
 	/** Moves several parts by the same amount, as one change. */

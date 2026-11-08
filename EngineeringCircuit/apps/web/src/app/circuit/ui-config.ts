@@ -7,6 +7,8 @@ export type UiConfig = {
 	maxZoomWidth: number
 	zoomFactor: number
 	dragThreshold: number
+	/** How long a finger is held still on a touch screen to act as Shift (select several). */
+	longPressMs: number
 	agentHighlightMs: number
 	simulation: {
 		/** Most time steps run for one animation frame; beyond it the simulation slows down instead of freezing. */
@@ -53,6 +55,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	maxZoomWidth: 4000,
 	zoomFactor: 1.15,
 	dragThreshold: 4,
+	longPressMs: 500,
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	scope: { windowRealSeconds: 4, maxSamples: 8000 },

@@ -1,5 +1,18 @@
 <aside class="inspector" aria-label="Inspector">
-	@if (store.selectedComponent(); as part) {
+	@if (store.multiSelection().size > 0) {
+		<header>
+			<h2 data-group-count>{{ store.multiSelection().size }} {{ store.multiSelection().size === 1 ? "part" : "parts" }} selected</h2>
+		</header>
+		<p class="description">Drag one of them to move them all. On a touch screen, press and hold a part to add it or take it out.</p>
+		<div class="actions">
+			<button type="button" (click)="store.copySelection()" title="Copy (Ctrl/⌘+C)">Copy</button>
+			@if (store.canPaste()) {
+				<button type="button" (click)="store.paste()" title="Paste (Ctrl/⌘+V)">Paste</button>
+			}
+			<button type="button" (click)="store.clearSelection()" title="Clear the selection (Esc)">Clear</button>
+			<button type="button" class="danger" (click)="store.removeSelected()" title="Delete (Del)">Delete</button>
+		</div>
+	} @else if (store.selectedComponent(); as part) {
 		<header>
 			<h2>{{ part.id }}</h2>
 			<span class="kind">{{ partNames[part.type] }}</span>
@@ -64,6 +77,10 @@
 
 		<div class="actions">
 			<button type="button" (click)="store.rotateSelected()" title="Rotate (R)">Rotate</button>
+			<button type="button" (click)="store.copySelection()" title="Copy (Ctrl/⌘+C)">Copy</button>
+			@if (store.canPaste()) {
+				<button type="button" (click)="store.paste()" title="Paste (Ctrl/⌘+V)">Paste</button>
+			}
 			<button type="button" class="danger" (click)="store.removeSelected()" title="Delete (Del)">Delete</button>
 		</div>
 	} @else if (store.selectedWire(); as wire) {
@@ -113,11 +130,15 @@
 			</label>
 		}
 		<button type="button" class="add-note" data-add-note (click)="store.addNote('New note')">Add a note</button>
+		@if (store.canPaste()) {
+			<button type="button" class="add-note" (click)="store.paste()" title="Paste (Ctrl/⌘+V)">Paste</button>
+		}
 		<ol class="help">
 			<li>Pick a part above, then click the canvas to place it.</li>
 			<li>Click a pin, then another pin, to connect them with a wire.</li>
 			<li>Click a part to edit it; drag to move; click a switch to flip it.</li>
-			<li>Drag the background to pan, scroll to zoom.</li>
+			<li>Drag the background to pan, scroll or pinch to zoom.</li>
+			<li>Shift-click parts, or press and hold them on a touch screen, to select several.</li>
 		</ol>
 		@if (recentHistory().length > 0) {
 			<h3>Recent changes</h3>

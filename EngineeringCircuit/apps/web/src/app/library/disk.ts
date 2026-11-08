@@ -101,7 +101,7 @@ export function tauriPickers(): FilePickers {
 			const { save } = await import("@tauri-apps/plugin-dialog")
 			const path = await save({ defaultPath: suggestedName, filters: filters(type) })
 			if (!path) return undefined
-			const target = pathFile(path)
+			const target = pathFile(path, suggestedName)
 			await target.write(data)
 			return target
 		},
@@ -111,15 +111,27 @@ export function tauriPickers(): FilePickers {
 			if (!path) return undefined
 			const { readTextFile, stat } = await import("@tauri-apps/plugin-fs")
 			const { size } = await stat(path)
-			const target = pathFile(path)
+			const target = pathFile(path, CHOSEN_FILE)
 			return { file: { name: target.name, size, text: () => readTextFile(path) }, target }
 		},
 	}
 }
 
-function pathFile(path: string): DiskFile {
+const CHOSEN_FILE = "the chosen file"
+
+/**
+ * The last part of a path. An Android content URI may end in the encoded path (external storage) or only in a
+ * document number (Downloads), which is no name to show: then `fallback` is used.
+ */
+function fileNameOf(path: string, fallback: string): string {
+	if (!path.startsWith("content://")) return path.split(/[\\/]/).at(-1) || path
+	const last = decodeURIComponent(path).split(/[\\/]/).at(-1) ?? ""
+	return last.includes(".") ? last : fallback
+}
+
+function pathFile(path: string, fallbackName: string): DiskFile {
 	return {
-		name: path.split(/[\\/]/).at(-1) || path,
+		name: fileNameOf(path, fallbackName),
 		async write(data) {
 			const { writeFile } = await import("@tauri-apps/plugin-fs")
 			await writeFile(path, new Uint8Array(await data.arrayBuffer()))
