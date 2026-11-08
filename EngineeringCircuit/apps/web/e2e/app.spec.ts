@@ -401,4 +401,9 @@ test("an LED wired straight to a battery warns that it would burn out", async ({
 		await page.locator(`[data-pin="${to}"]`).click()
 	}
 	await expect(page.getByRole("status")).toContainText("but it is rated for 30 mA: a real one would burn out")
+
+	const ledLabel = page.locator(".part-label", { hasText: "LED1" })
+	const label = await ledLabel.boundingBox()
+	const reading = await ledLabel.locator("xpath=following-sibling::*[1][contains(@class, 'part-reading')]").boundingBox()
+	expect(label && reading && reading.y >= label.y + label.height).toBe(true)
 })

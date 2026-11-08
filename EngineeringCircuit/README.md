@@ -17,7 +17,7 @@ Ask the agent "tutor me through light-an-led" (or use the MCP prompt **tutor**).
 2. Ask the agent: "Give me the link to open this circuit in the app" (it calls `open_in_app`). Open the link.
 3. The status bar shows "Live with agent". What the agent changes appears and glows briefly; what you change, the agent sees (`recent_changes`, `simulate`). Undo works from either side.
 
-The link only accepts this computer, the app's own address and the session token in the link. Settings: `EC_APP_URL` (default `http://localhost:4200`), `EC_LIVE_ORIGINS` (extra allowed app addresses, comma-separated), `EC_LIVE_PORT` (default: any free port).
+The link only accepts this computer, the app's own address and the session token in the link. Settings: `EC_APP_URL` (default `http://localhost:4200`), `EC_LIVE_ORIGINS` (extra allowed app addresses, comma-separated), `EC_LIVE_PORT` (default: any free port), `EC_LIVE_TOKEN` (default: a new random token each start; at least 16 characters if set). Set the port and the token so the app reconnects by itself after Claude Code restarts; keep the token secret.
 
 ## Run the app
 ```
@@ -25,5 +25,7 @@ pnpm install
 pnpm web            # http://localhost:4200
 ```
 In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens or downloads `.circuit.json` files; the circuit you are editing is kept across reloads. A production build is an installable app that works offline.
+
+Editing: click a wire while wiring to join it in the middle; Shift-click or Shift-drag to select several parts; Ctrl/⌘ + A, C, V, Z select all, copy, paste and undo; **Library** → Picture (SVG or PNG) saves an image of the circuit.
 
 Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).

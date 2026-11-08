@@ -30,6 +30,9 @@ test("the live link defaults to any free port and the local app", () => {
 		appUrl: "http://localhost:4200/",
 		allowedOrigins: ["http://localhost:4200"],
 	})
+	expect(optionsFromEnvironment({ EC_LIVE_TOKEN: "kept-across-restarts-0123456789" }, "/work").live.token).toBe(
+		"kept-across-restarts-0123456789",
+	)
 })
 
 test("the live link port, app address and extra origins come from the environment", () => {
@@ -42,4 +45,10 @@ test("the live link port, app address and extra origins come from the environmen
 		appUrl: "http://localhost:4310/",
 		allowedOrigins: ["http://localhost:4310", "http://127.0.0.1:4310", "https://app.example"],
 	})
+})
+
+test("a fixed live token shorter than 16 characters is refused: another program on this computer could guess it", () => {
+	expect(() => optionsFromEnvironment({ EC_LIVE_TOKEN: "short" }, "/work")).toThrow(
+		"EC_LIVE_TOKEN must be at least 16 characters",
+	)
 })

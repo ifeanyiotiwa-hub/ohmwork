@@ -21,6 +21,16 @@ export type UiConfig = {
 		autosaveDelayMs: number
 		/** Largest circuit file the app opens. */
 		maxFileBytes: number
+		/** Space around the circuit in a downloaded picture, in canvas units. */
+		pictureMargin: number
+		/** A PNG picture has this many pixels per canvas unit. */
+		pngScale: number
+	}
+	live: {
+		/** Pauses between tries to reach the live link again after a drop (the last one repeats). */
+		reconnectDelaysMs: readonly number[]
+		/** Tries before giving up and working alone. */
+		maxReconnectAttempts: number
 	}
 	scope: {
 		/** The oscilloscope shows this many real seconds of the run (× the circuit's speed in simulated time). */
@@ -46,7 +56,8 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	scope: { windowRealSeconds: 4, maxSamples: 8000 },
-	library: { maxEntries: 200, autosaveDelayMs: 500, maxFileBytes: 5 * 1024 * 1024 },
+	live: { reconnectDelaysMs: [1000, 2000, 4000, 8000], maxReconnectAttempts: 30 },
+	library: { maxEntries: 200, autosaveDelayMs: 500, maxFileBytes: 5 * 1024 * 1024, pictureMargin: 60, pngScale: 2 },
 	flow: { dashPeriod: 16, minCurrent: 1e-9, pixelsPerSecondPerDecade: 12, maxPixelsPerSecond: 160 },
 }
 

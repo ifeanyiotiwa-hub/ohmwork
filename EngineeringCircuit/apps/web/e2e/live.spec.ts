@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url"
 import { Client } from "@modelcontextprotocol/client"
 import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/client/stdio"
 import { expect, test } from "@playwright/test"
+import { choosePart } from "./support/parts"
 
 const MCP_DIRECTORY = fileURLToPath(new URL("../../mcp", import.meta.url))
 
@@ -15,15 +16,16 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<s
 	return text
 }
 
-test.beforeEach(async ({ baseURL }) => {
-	agent = new Client({ name: "e2e-agent", version: "1.0.0" })
-	await agent.connect(
-		new StdioClientTransport({
-			command: "pnpm",
-			args: ["--silent", "--dir", MCP_DIRECTORY, "start"],
-			env: { ...getDefaultEnvironment(), EC_APP_URL: baseURL ?? "" },
-		}),
+async function startAgent(env: Record<string, string>): Promise<Client> {
+	const client = new Client({ name: "e2e-agent", version: "1.0.0" })
+	await client.connect(
+		new StdioClientTransport({ command: "pnpm", args: ["--silent", "--dir", MCP_DIRECTORY, "start"], env: { ...getDefaultEnvironment(), ...env } }),
 	)
+	return client
+}
+
+test.beforeEach(async ({ baseURL }) => {
+	agent = await startAgent({ EC_APP_URL: baseURL ?? "" })
 })
 
 test.afterEach(async () => {
@@ -69,4 +71,25 @@ test("undo in the app undoes the agent's last change", async ({ page }) => {
 	await page.getByRole("button", { name: "Undo" }).click()
 	await expect(page.locator('[data-part="R1"]')).toHaveCount(0)
 	expect(await call("get_circuit")).not.toContain('"R1"')
+})
+
+test("after the agent restarts, the app reconnects and the new agent gets the learner's circuit", async ({ page, baseURL }) => {
+	await agent.close()
+	// A fixed port and token, so the restarted server is at the same link.
+	const env = { EC_APP_URL: baseURL ?? "", EC_LIVE_PORT: "4391", EC_LIVE_TOKEN: "e2e-reconnect-token-0123456789" }
+	agent = await startAgent(env)
+	await page.goto((await call("open_in_app")).split("\n").at(-1) ?? "")
+	const status = page.locator("[data-live]")
+	await expect(status).toContainText("Live with agent")
+
+	await choosePart(page, "resistor")
+	await page.getByRole("application", { name: "Circuit canvas" }).click({ position: { x: 400, y: 300 } })
+	await expect.poll(async () => call("get_circuit")).toContain('"R1"')
+
+	await agent.close()
+	await expect(status).toContainText("Reconnecting")
+	agent = await startAgent(env)
+	await expect(status).toContainText("Live with agent", { timeout: 20_000 })
+	await expect.poll(async () => call("get_circuit")).toContain('"R1"')
+	await expect(page.locator('[data-part="R1"]')).toBeVisible()
 })

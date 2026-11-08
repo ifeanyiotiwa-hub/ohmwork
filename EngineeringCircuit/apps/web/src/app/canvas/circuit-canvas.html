@@ -41,6 +41,7 @@
 			role="button"
 			[class.selected]="item.selected"
 			[class.agent-changed]="item.agentChanged"
+			[class.junction]="item.part.type === 'junction'"
 			[attr.data-part]="item.part.id"
 			[attr.aria-label]="item.part.id + ' ' + item.value"
 			[attr.transform]="item.transform"
@@ -76,7 +77,7 @@
 			<tspan class="part-name">{{ item.part.id }}</tspan> {{ item.value }}
 		</text>
 		@if (item.reading; as reading) {
-			<text class="part-reading" [class.meter-reading]="item.meter" [attr.x]="item.label.x" [attr.y]="item.label.y + readingOffset" [attr.text-anchor]="item.label.anchor">{{ reading }}</text>
+			<text class="part-reading" [class.meter-reading]="item.meter" [attr.x]="item.readingAt.x" [attr.y]="item.readingAt.y" [attr.text-anchor]="item.readingAt.anchor">{{ reading }}</text>
 		}
 	}
 
@@ -107,6 +108,10 @@
 				(pointerdown)="onPinDown($event, pin.ref)"
 			/>
 		}
+	}
+
+	@if (selectionBox(); as box) {
+		<rect class="selection-box" [attr.x]="box.x" [attr.y]="box.y" [attr.width]="box.width" [attr.height]="box.height" />
 	}
 
 	@if (rubberBand(); as band) {

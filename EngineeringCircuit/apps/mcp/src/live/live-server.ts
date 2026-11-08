@@ -38,7 +38,7 @@ export class LiveServer {
 	}
 
 	static start(document: CircuitDocument, options: LiveServerOptions): Promise<LiveServer> {
-		const token = randomBytes(TOKEN_BYTES).toString("base64url")
+		const token = options.token ?? randomBytes(TOKEN_BYTES).toString("base64url")
 		const sockets = new WebSocketServer({ noServer: true, maxPayload: options.maxMessageBytes })
 		const http = createServer((_request, response) => response.writeHead(426).end("WebSocket only"))
 		http.on("upgrade", (request: IncomingMessage, socket: Duplex, head: Buffer) => {

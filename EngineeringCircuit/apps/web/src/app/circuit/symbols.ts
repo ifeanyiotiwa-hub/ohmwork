@@ -154,6 +154,12 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: LABEL_ABOVE,
 		labelAnchor: "middle",
 	},
+	junction: {
+		body: { left: -6, top: -6, right: 6, bottom: 6 },
+		paths: ["M-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0"],
+		label: { x: 0, y: -12 },
+		labelAnchor: "middle",
+	},
 	capacitor: {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-5 M-5 -14 V14 M5 -14 V14 M5 0 H40"],
@@ -445,6 +451,7 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	transformer: "Transformer",
 	"switch-spdt": "Two-way switch",
 	resistor: "Resistor",
+	junction: "Junction",
 	capacitor: "Capacitor",
 	inductor: "Inductor",
 	switch: "Switch",

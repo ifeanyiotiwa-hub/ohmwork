@@ -325,3 +325,48 @@ describe("LED colours", () => {
 		expect(circuit.components[0]?.params).toMatchObject({ color: "green", saturationCurrent: 1e-15, maxCurrent: LED_MODELS.red.maxCurrent })
 	})
 })
+
+describe("batch", () => {
+	test("applies several commands as one change with one summary", () => {
+		const result = applyCommand(createCircuit("t"), {
+			type: "batch",
+			summary: "Pasted 2 parts",
+			commands: [resistor, { type: "add-component", component: { type: "ground" } }],
+		})
+		expect(result).toMatchObject({ ok: true, summary: "Pasted 2 parts" })
+		expect(result.ok && result.circuit.components.map((component) => component.id)).toEqual(["R1", "GND1"])
+	})
+
+	test("if any command fails, nothing is applied and the failure is reported", () => {
+		const result = applyCommand(createCircuit("t"), {
+			type: "batch",
+			summary: "Broken",
+			commands: [resistor, { type: "remove-component", componentId: "X9" }],
+		})
+		expect(result).toEqual({ ok: false, errors: [{ path: "components", message: 'No component with id "X9"' }] })
+	})
+})
+
+describe("split-wire", () => {
+	test("puts a junction into a wire, keeping both ends connected through it", () => {
+		const wired = run(createCircuit("t"), battery, resistor, {
+			type: "connect",
+			from: { componentId: "V1", pin: "positive" },
+			to: { componentId: "R1", pin: "a" },
+		})
+		const split = applyCommand(wired, { type: "split-wire", wireId: "w1", position: { x: 60, y: 0 } })
+		if (!split.ok) throw new Error(JSON.stringify(split.errors))
+		expect(split.summary).toBe('Joined junction "J1" into wire w1')
+		expect(split.circuit.components.at(-1)).toMatchObject({ id: "J1", type: "junction", position: { x: 60, y: 0 } })
+		expect(split.circuit.wires.map((wire) => [wire.from, wire.to])).toEqual([
+			[{ componentId: "V1", pin: "positive" }, { componentId: "J1", pin: "terminal" }],
+			[{ componentId: "J1", pin: "terminal" }, { componentId: "R1", pin: "a" }],
+		])
+	})
+
+	test("a missing wire is named", () => {
+		expect(errorsOf(createCircuit("t"), { type: "split-wire", wireId: "w7", position: { x: 0, y: 0 } })).toEqual([
+			{ path: "wires", message: 'No wire with id "w7"' },
+		])
+	})
+})

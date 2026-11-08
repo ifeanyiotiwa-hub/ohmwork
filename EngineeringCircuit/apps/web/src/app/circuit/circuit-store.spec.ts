@@ -51,6 +51,28 @@ test("a note can be added, selected and removed", () => {
 	expect(store.selection()).toBeUndefined()
 })
 
+test("a group of parts is copied, pasted with new names and deleted, each as one undo step", () => {
+	store.toggleInSelection("R1")
+	store.toggleInSelection("R2")
+	store.copySelection()
+	store.paste()
+	expect(store.circuit().components.map((component) => component.id)).toEqual(["V1", "R1", "R2", "GND1", "R3", "R4"])
+	expect([...store.multiSelection()]).toEqual(["R3", "R4"])
+	store.removeSelected()
+	expect(store.circuit().components.map((component) => component.id)).toEqual(["V1", "R1", "R2", "GND1"])
+	store.undo()
+	expect(store.circuit().components).toHaveLength(6)
+	store.undo()
+	expect(store.circuit().components).toHaveLength(4)
+})
+
+test("a group moves together, as one change", () => {
+	store.selectAll()
+	store.moveParts(store.selectedParts(), { x: 20, y: 40 })
+	expect(store.circuit().components[0]?.position).toEqual({ x: 20, y: 140 })
+	expect(store.history().at(-1)?.summary).toBe("Moved 4 parts")
+})
+
 test("wire currents follow the loop", () => {
 	expect(store.wireCurrents()["w1"]).toBeCloseTo(2, 9)
 })
@@ -173,6 +195,26 @@ describe("joined to the live link", () => {
 		serverSends({ revision: 1, circuit: withResistor.circuit, history: [change], change })
 
 		expect(store.agentChanges().components.size).toBe(0)
+	})
+
+	test("reconnecting to a restarted, empty server sends it the learner's circuit instead of losing it", () => {
+		store.apply({ type: "add-component", component: { type: "resistor" } })
+		serverSends({ revision: 1, circuit: { ...sharedCircuit, components: store.circuit().components }, history: [] })
+		live.listener?.closed()
+		store.apply({ type: "add-component", component: { type: "ground" } })
+
+		serverSends({ revision: 0, circuit: createCircuit("Untitled"), history: [] })
+		expect(live.sent.at(-1)).toMatchObject({ type: "replace", circuit: { components: [{ id: "R1" }, { id: "GND1" }] } })
+		expect(store.circuit().components.map((component) => component.id)).toEqual(["R1", "GND1"])
+	})
+
+	test("reconnecting to a server that has its own work shows the server's circuit", () => {
+		live.listener?.closed()
+		store.apply({ type: "add-component", component: { type: "ground" } })
+		const agentBuilt = applyCommand(sharedCircuit, { type: "add-component", component: { type: "resistor" } })
+		if (!agentBuilt.ok) throw new Error("setup failed")
+		serverSends({ revision: 3, circuit: agentBuilt.circuit, history: [] })
+		expect(store.circuit().components.map((component) => component.id)).toEqual(["R1"])
 	})
 
 	test("when the link closes, the app keeps the shared circuit and works alone", () => {

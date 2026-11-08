@@ -2,6 +2,7 @@ import { DOCUMENT, Component, type ElementRef, inject, linkedSignal, signal, vie
 import { CircuitStore } from "../circuit/circuit-store"
 import { UI_CONFIG } from "../circuit/ui-config"
 import { downloadCircuit, readCircuitFile } from "./circuit-files"
+import { circuitSvg, downloadPng, downloadSvg, pictureBounds } from "./export-picture"
 import { CircuitLibrary } from "./circuit-library"
 
 /** Saving, opening and deleting circuits: the browser library, plus files to move circuits elsewhere. */
@@ -73,6 +74,17 @@ export class LibraryPanel {
 
 	protected download(): void {
 		downloadCircuit(this.store.circuit(), this.document)
+	}
+
+	protected async downloadPicture(kind: "svg" | "png"): Promise<void> {
+		const canvas = this.document.querySelector<SVGSVGElement>('svg[aria-label="Circuit canvas"]')
+		if (!canvas) return this.message.set("The canvas isn't on screen, so there is nothing to draw.")
+		const circuit = this.store.circuit()
+		const bounds = pictureBounds(circuit, this.config.library.pictureMargin)
+		const background = getComputedStyle(this.document.documentElement).getPropertyValue("--canvas-bg").trim()
+		const svg = circuitSvg(canvas, bounds, background)
+		if (kind === "svg") return downloadSvg(circuit, svg, this.document)
+		await this.attempt(() => downloadPng(circuit, svg, bounds, this.config.library.pngScale, this.document))
 	}
 
 	private async attempt(action: () => Promise<void>): Promise<void> {

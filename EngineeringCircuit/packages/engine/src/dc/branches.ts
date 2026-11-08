@@ -248,6 +248,8 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 		},
 	],
 	resistor: ({ id, params }) => [{ kind: "resistor", componentId: id, pins: ["a", "b"], resistance: params.resistance }],
+	// Only a node: its wires meet there.
+	junction: () => [],
 	// At DC a capacitor is an open gap and an inductor a plain wire; over time they follow i = C dv/dt, v = L di/dt.
 	capacitor: ({ id, params }, { transient }) => capacitorModel(id, params.capacitance, ["a", "b"], transient),
 	"polarized-capacitor": ({ id, params }, { transient }) =>

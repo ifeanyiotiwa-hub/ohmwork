@@ -15,6 +15,7 @@ import { CircuitStore } from "../circuit/circuit-store"
 import { glowOf } from "../circuit/glow"
 import { pathThrough, snap } from "../circuit/geometry"
 import { placeBox, routeAround } from "../circuit/routing"
+import { labelPlacement, readingPlacement } from "../circuit/labels"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
 import {
@@ -34,7 +35,8 @@ type View = { x: number; y: number; width: number; height: number }
 type Interaction =
 	| { kind: "idle" }
 	| { kind: "pan"; startScreen: Point; startView: View }
-	| { kind: "drag"; componentId: string; startPoint: Point; startPosition: Point; moved: boolean }
+	| { kind: "drag"; componentId: string; group: ReadonlySet<string>; startPoint: Point; moved: boolean }
+	| { kind: "box"; start: Point }
 	| { kind: "drag-note"; noteId: string; startPoint: Point; startPosition: Point; moved: boolean }
 
 /** Note boxes: text size and padding, in canvas units (a monospace-like estimate of the text width). */
@@ -42,16 +44,7 @@ const NOTE_LINE_HEIGHT = 16
 const NOTE_CHARACTER_WIDTH = 7
 const NOTE_PADDING = 8
 
-const READING_OFFSET = 14
 const NODE_LABEL_OFFSET = { x: 6, y: -8 }
-const SIDE_LABEL_OFFSET = { x: 24, y: -2 }
-
-function labelPlacement(symbol: SymbolShape, rotation: Part["rotation"], at: Point) {
-	if (rotation === 90 || rotation === 270) {
-		return { x: at.x + SIDE_LABEL_OFFSET.x, y: at.y + SIDE_LABEL_OFFSET.y, anchor: "start" }
-	}
-	return { x: at.x + symbol.label.x, y: at.y + symbol.label.y, anchor: symbol.labelAnchor }
-}
 
 @Component({
 	selector: "app-circuit-canvas",
@@ -69,7 +62,10 @@ export class CircuitCanvas {
 		return `${x} ${y} ${width} ${height}`
 	})
 
-	private readonly dragPreview = signal<{ componentId: string; position: Point } | undefined>(undefined)
+	/** Parts being dragged and how far (snapped to the grid). */
+	private readonly dragPreview = signal<{ ids: ReadonlySet<string>; delta: Point } | undefined>(undefined)
+	/** The Shift-drag selection box, in circuit coordinates. */
+	protected readonly selectionBox = signal<{ x: number; y: number; width: number; height: number } | undefined>(undefined)
 	private readonly notePreview = signal<{ noteId: string; position: Point } | undefined>(undefined)
 
 	protected readonly notes = computed(() => {
@@ -95,7 +91,7 @@ export class CircuitCanvas {
 
 	private positionOf(part: Part): Point {
 		const preview = this.dragPreview()
-		return preview?.componentId === part.id ? preview.position : part.position
+		return preview?.ids.has(part.id) ? { x: part.position.x + preview.delta.x, y: part.position.y + preview.delta.y } : part.position
 	}
 
 	protected readonly parts = computed(() => {
@@ -104,6 +100,7 @@ export class CircuitCanvas {
 		const wiringFrom = this.store.wiringFrom()
 		const agentChanged = this.store.agentChanges().components
 		const pressed = this.store.pressed()
+		const group = this.store.multiSelection()
 		const { logicHigh } = this.store.circuit().simulation
 		return this.store.circuit().components.map((part) => {
 			const at = this.positionOf(part)
@@ -124,6 +121,7 @@ export class CircuitCanvas {
 							}))
 						: [],
 				label: labelPlacement(symbol, part.rotation, at),
+				readingAt: readingPlacement(symbol, part.rotation, at, isMeter(part)),
 				marks: (symbol.marks ?? []).map((mark) => {
 					const offset = rotate(mark.at, part.rotation)
 					return { text: mark.text, x: at.x + offset.x, y: at.y + offset.y }
@@ -134,7 +132,7 @@ export class CircuitCanvas {
 				meter: isMeter(part),
 				body: symbol.body,
 				glow: glowOf(part, solution, logicHigh),
-				selected: selection?.kind === "component" && selection.id === part.id,
+				selected: (selection?.kind === "component" && selection.id === part.id) || group.has(part.id),
 				agentChanged: agentChanged.has(part.id),
 				pins: pinsOf(part.type).map((pin) => {
 					const ref = { componentId: part.id, pin }
@@ -157,7 +155,7 @@ export class CircuitCanvas {
 		const voltages = solution?.pinVoltages ?? {}
 		const largest = Math.max(0, ...Object.values(voltages).map(Math.abs))
 		const selection = this.store.selection()
-		const dragged = this.dragPreview()?.componentId
+		const dragged = this.dragPreview()?.ids ?? new Set<string>()
 		const agentChanged = this.store.agentChanges().wires
 		const bodies = circuit.components.map((part) => placeBox(SYMBOLS[part.type].body, this.positionOf(part), part.rotation))
 
@@ -165,7 +163,7 @@ export class CircuitCanvas {
 			const from = partsById.get(wire.from.componentId)
 			const to = partsById.get(wire.to.componentId)
 			if (!from || !to) return []
-			const bends = dragged === from.id || dragged === to.id ? [] : wire.bends
+			const bends = dragged.has(from.id) || dragged.has(to.id) ? [] : wire.bends
 			const start = pinPosition(from, wire.from.pin, this.positionOf(from))
 			const end = pinPosition(to, wire.to.pin, this.positionOf(to))
 			const points =
@@ -215,7 +213,6 @@ export class CircuitCanvas {
 		return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
 	})
 
-	protected readonly readingOffset = READING_OFFSET
 
 	protected onBackgroundDown(event: PointerEvent): void {
 		const placing = this.store.placing()
@@ -224,7 +221,12 @@ export class CircuitCanvas {
 			return
 		}
 		this.store.wiringFrom.set(undefined)
-		this.store.selection.set(undefined)
+		if (event.shiftKey) {
+			this.interaction = { kind: "box", start: this.toCircuitPoint(event) }
+			this.capture(event)
+			return
+		}
+		this.store.clearSelection()
 		this.interaction = { kind: "pan", startScreen: { x: event.clientX, y: event.clientY }, startView: this.view() }
 		this.capture(event)
 	}
@@ -236,13 +238,21 @@ export class CircuitCanvas {
 			this.place(placing, this.toCircuitPoint(event))
 			return
 		}
-		this.store.selection.set({ kind: "component", id: part.id })
+		if (event.shiftKey) {
+			this.store.toggleInSelection(part.id)
+			return
+		}
+		const inGroup = this.store.multiSelection().has(part.id)
+		if (!inGroup) {
+			this.store.multiSelection.set(new Set())
+			this.store.selection.set({ kind: "component", id: part.id })
+		}
 		if (part.type === "push-button") this.store.press(part.id)
 		this.interaction = {
 			kind: "drag",
 			componentId: part.id,
+			group: inGroup ? this.store.multiSelection() : new Set([part.id]),
 			startPoint: this.toCircuitPoint(event),
-			startPosition: part.position,
 			moved: false,
 		}
 		this.capture(event)
@@ -272,7 +282,15 @@ export class CircuitCanvas {
 
 	protected onWireDown(event: PointerEvent, wireId: string): void {
 		event.stopPropagation()
+		const from = this.store.wiringFrom()
 		this.store.wiringFrom.set(undefined)
+		if (from) {
+			// Finishing a wire on a wire: put a junction there and join it, as one undoable change.
+			const grid = this.config.gridSize
+			const point = this.toCircuitPoint(event)
+			this.store.joinWire(from, wireId, { x: snap(point.x, grid), y: snap(point.y, grid) })
+			return
+		}
 		this.store.selection.set({ kind: "wire", id: wireId })
 	}
 
@@ -304,6 +322,17 @@ export class CircuitCanvas {
 			return
 		}
 
+		if (interaction.kind === "box") {
+			const { start } = interaction
+			this.selectionBox.set({
+				x: Math.min(start.x, point.x),
+				y: Math.min(start.y, point.y),
+				width: Math.abs(point.x - start.x),
+				height: Math.abs(point.y - start.y),
+			})
+			return
+		}
+
 		if (interaction.kind === "drag") {
 			const dx = point.x - interaction.startPoint.x
 			const dy = point.y - interaction.startPoint.y
@@ -311,10 +340,7 @@ export class CircuitCanvas {
 			interaction.moved = true
 			this.store.releaseButtons()
 			const grid = this.config.gridSize
-			this.dragPreview.set({
-				componentId: interaction.componentId,
-				position: { x: snap(interaction.startPosition.x + dx, grid), y: snap(interaction.startPosition.y + dy, grid) },
-			})
+			this.dragPreview.set({ ids: interaction.group, delta: { x: snap(dx, grid), y: snap(dy, grid) } })
 		}
 	}
 
@@ -328,12 +354,24 @@ export class CircuitCanvas {
 			if (interaction.moved && preview) this.store.apply({ type: "move-note", noteId: preview.noteId, position: preview.position })
 			return
 		}
+		if (interaction.kind === "box") {
+			const box = this.selectionBox()
+			this.selectionBox.set(undefined)
+			if (!box) return
+			const inside = this.store
+				.circuit()
+				.components.filter(({ position: { x, y } }) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height)
+				.map((component) => component.id)
+			this.store.multiSelection.set(new Set(inside))
+			this.store.selection.set(undefined)
+			return
+		}
 		if (interaction.kind !== "drag") return
 
 		const preview = this.dragPreview()
 		this.dragPreview.set(undefined)
 		if (interaction.moved && preview) {
-			this.store.apply({ type: "move-component", componentId: interaction.componentId, position: preview.position })
+			this.store.moveParts(preview.ids, preview.delta)
 			return
 		}
 

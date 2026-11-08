@@ -25,6 +25,15 @@ export type EditResult = { ok: true; circuit: Circuit; summary: string } | { ok:
 type Proposal = { candidate: unknown; summary: string } | { errors: CircuitError[] }
 
 export function applyCommand(circuit: Circuit, command: EditCommand): EditResult {
+	if (command.type === "batch") {
+		let current = circuit
+		for (const step of command.commands) {
+			const result = applyCommand(current, step)
+			if (!result.ok) return result
+			current = result.circuit
+		}
+		return { ok: true, circuit: current, summary: command.summary }
+	}
 	const proposal = propose(structuredClone(circuit), command)
 	if ("errors" in proposal) return { ok: false, errors: proposal.errors }
 
@@ -32,7 +41,7 @@ export function applyCommand(circuit: Circuit, command: EditCommand): EditResult
 	return parsed.ok ? { ok: true, circuit: parsed.circuit, summary: proposal.summary } : parsed
 }
 
-function propose(draft: Circuit, command: EditCommand): Proposal {
+function propose(draft: Circuit, command: Exclude<EditCommand, { type: "batch" }>): Proposal {
 	switch (command.type) {
 		case "add-component": {
 			const { type } = command.component
@@ -73,7 +82,7 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 				const message = `${pinName(existing.from)} and ${pinName(existing.to)} are already connected by wire ${existing.id}`
 				return { errors: [{ path: "wires", message }] }
 			}
-			const wire = { id: nextId(draft.wires, "w"), from: command.from, to: command.to, bends: [] }
+			const wire = { id: nextId(draft.wires, WIRE_PREFIX), from: command.from, to: command.to, bends: [] }
 			return {
 				candidate: { ...draft, wires: [...draft.wires, wire] },
 				summary: `Connected ${pinName(command.from)} to ${pinName(command.to)}`,
@@ -102,6 +111,26 @@ function propose(draft: Circuit, command: EditCommand): Proposal {
 			const name = command.name.trim()
 			if (name === "") return { errors: [{ path: "name", message: "A circuit needs a name" }] }
 			return { candidate: { ...draft, name }, summary: `Renamed the circuit "${name}"` }
+		}
+
+		case "split-wire": {
+			const wire = draft.wires.find((candidate) => candidate.id === command.wireId)
+			if (!wire) return notFound("wires", "wire", command.wireId)
+			const id = nextComponentId(draft, "junction")
+			const junction = { id, type: "junction", position: command.position, rotation: 0, params: {} }
+			const middle = { componentId: id, pin: "terminal" }
+			const halves = [
+				{ id: wire.id, from: wire.from, to: middle, bends: [] },
+				{ id: nextId(draft.wires, WIRE_PREFIX), from: middle, to: wire.to, bends: [] },
+			]
+			return {
+				candidate: {
+					...draft,
+					components: [...draft.components, junction],
+					wires: draft.wires.flatMap((candidate) => (candidate === wire ? halves : [candidate])),
+				},
+				summary: `Joined junction "${id}" into wire ${wire.id}`,
+			}
 		}
 
 		case "add-note": {
@@ -191,6 +220,9 @@ function updateComponent(
 	}
 }
 
+/** The id a new part of this type gets: its prefix and the lowest free number (R1, R2, J1…). */
+export const nextComponentId = (circuit: Circuit, type: ComponentType): string => nextId(circuit.components, idPrefixOf(type))
+
 function nextId(items: readonly { id: string }[], prefix: string): string {
 	const taken = new Set(items.map((item) => item.id))
 	let number = 1
@@ -226,6 +258,7 @@ function recolouredModel(target: Component, name: string, value: unknown): Parti
 const isLedColor = (value: unknown): value is LedColor => LED_COLORS.some((colour) => colour === value)
 
 const NOTE_PREFIX = "note"
+const WIRE_PREFIX = "w"
 /** Notes are quoted in summaries up to this many characters. */
 const SUMMARY_TEXT = 40
 const shorten = (text: string) => (text.length > SUMMARY_TEXT ? `${text.slice(0, SUMMARY_TEXT - 1)}…` : text)

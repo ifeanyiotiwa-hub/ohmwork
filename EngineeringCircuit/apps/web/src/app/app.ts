@@ -87,21 +87,27 @@ export class App {
 	protected onKey(event: KeyboardEvent): void {
 		if (event.target instanceof HTMLElement && TYPING_ELEMENTS.has(event.target.tagName)) return
 
-		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
-			event.preventDefault()
-			this.store.undo()
-			return
-		}
-		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-			event.preventDefault()
-			this.openLibrary()
-			return
+		if (event.metaKey || event.ctrlKey) {
+			// Ctrl/⌘ + key.
+			const shortcuts: Readonly<Record<string, () => void>> = {
+				z: () => this.store.undo(),
+				s: () => this.openLibrary(),
+				a: () => this.store.selectAll(),
+				c: () => this.store.copySelection(),
+				v: () => this.store.paste(),
+			}
+			const action = shortcuts[event.key.toLowerCase()]
+			if (action) {
+				event.preventDefault()
+				action()
+				return
+			}
 		}
 		switch (event.key) {
 			case "Escape":
 				this.store.placing.set(undefined)
 				this.store.wiringFrom.set(undefined)
-				this.store.selection.set(undefined)
+				this.store.clearSelection()
 				break
 			case "Delete":
 			case "Backspace":

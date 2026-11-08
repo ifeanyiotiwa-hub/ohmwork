@@ -211,3 +211,15 @@
 	font-size: 12px;
 	pointer-events: none;
 }
+
+.part.junction .symbol {
+	fill: var(--symbol);
+}
+
+.selection-box {
+	fill: var(--accent-soft);
+	stroke: var(--accent);
+	stroke-dasharray: 4 3;
+	vector-effect: non-scaling-stroke;
+	pointer-events: none;
+}

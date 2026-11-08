@@ -2,6 +2,8 @@ export type LiveOptions = {
 	port: number
 	appUrl: string
 	allowedOrigins: string[]
+	/** A fixed session token, so a restarted server is found at the same link (with a fixed port). Else random. */
+	token?: string
 }
 
 export type ServerOptions = {
@@ -15,6 +17,8 @@ export type ServerOptions = {
 
 const ANY_FREE_PORT = 0
 const DEFAULT_APP_URL = "http://localhost:4200"
+/** The link is the only secret between this computer's programs and the circuit, so a fixed one must be hard to guess. */
+const MIN_TOKEN_LENGTH = 16
 
 export const DEFAULT_OPTIONS: Omit<ServerOptions, "workspaceDirectory"> = {
 	historyLimit: 200,
@@ -29,11 +33,14 @@ export function optionsFromEnvironment(environment: NodeJS.ProcessEnv, currentDi
 		maxFileBytes: positiveInteger(environment.EC_MAX_FILE_BYTES) ?? DEFAULT_OPTIONS.maxFileBytes,
 		maxTransientSteps: positiveInteger(environment.EC_MAX_TRANSIENT_STEPS) ?? DEFAULT_OPTIONS.maxTransientSteps,
 		workspaceDirectory: environment.EC_WORKSPACE_DIR || environment.INIT_CWD || currentDirectory,
-		live: liveOptions(
-			positiveInteger(environment.EC_LIVE_PORT) ?? ANY_FREE_PORT,
-			environment.EC_APP_URL || DEFAULT_APP_URL,
-			(environment.EC_LIVE_ORIGINS ?? "").split(","),
-		),
+		live: {
+			...liveOptions(
+				positiveInteger(environment.EC_LIVE_PORT) ?? ANY_FREE_PORT,
+				environment.EC_APP_URL || DEFAULT_APP_URL,
+				(environment.EC_LIVE_ORIGINS ?? "").split(","),
+			),
+			...(environment.EC_LIVE_TOKEN ? { token: fixedToken(environment.EC_LIVE_TOKEN) } : {}),
+		},
 	}
 }
 
@@ -41,6 +48,11 @@ function liveOptions(port: number, appUrl: string, extraOrigins: string[]): Live
 	const app = new URL(appUrl)
 	const origins = [app.origin, ...extraOrigins.map((origin) => origin.trim()).filter(Boolean)]
 	return { port, appUrl: app.href, allowedOrigins: [...new Set(origins)] }
+}
+
+function fixedToken(token: string): string {
+	if (token.length < MIN_TOKEN_LENGTH) throw new Error(`EC_LIVE_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters`)
+	return token
 }
 
 function positiveInteger(text: string | undefined): number | undefined {

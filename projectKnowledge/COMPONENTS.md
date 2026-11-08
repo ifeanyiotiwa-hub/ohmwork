@@ -102,7 +102,7 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 ## Not a component, but needed
 | Item | Why | Seen in | Deliverable |
 |---|---|---|---|
-| Junction | Wires connect pin to pin only today; joining mid-wire needs a junction | CJS (wires join anywhere) | D6 |
+| Junction | A `junction` part (one pin, any number of wires, no model) placed by clicking a wire, which splits it in two | CJS (wires join anywhere) | done (D15b) |
 | Labeled node (net label, e.g. "VCC") | Connect distant points by name | CJS | later |
 | Text notes | Lessons and AI explanations (separate `notes` list, format v5) | CJS | done (D12) |
 | Simulation settings | Time step, speed (D3), logic high voltage (D5); saved with the circuit | SPICE (TSTEP/TSTOP), CJS | done |

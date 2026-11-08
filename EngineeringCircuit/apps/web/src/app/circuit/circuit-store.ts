@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal } from "@angular/core"
-import { CircuitDocument, type EditCommand, type LiveState, applyCommand } from "@engineering-circuit/editing"
+import { CircuitDocument, type EditCommand, type LiveState, applyCommand, nextComponentId } from "@engineering-circuit/editing"
 import {
 	type DcResult,
 	type SimIssue,
@@ -9,10 +9,11 @@ import {
 	stepTransient,
 	wireCurrents,
 } from "@engineering-circuit/engine"
-import { type Circuit, type ComponentType, type PinRef, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, type ComponentType, type PinRef, type Point, createCircuit } from "@engineering-circuit/format"
 import { LiveLink } from "../live/live-link"
 import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
+import { type Copied, copyParts, pasteCommand } from "./clipboard"
 import { kvlExample } from "./examples"
 import { UI_CONFIG } from "./ui-config"
 
@@ -116,6 +117,17 @@ export class CircuitStore {
 		return selection?.kind === "note" ? this.circuit().notes.find((note) => note.id === selection.id) : undefined
 	})
 
+	/** Parts chosen together (Shift-click, box or Ctrl/⌘+A), acted on as a group. */
+	readonly multiSelection = signal<ReadonlySet<string>>(new Set())
+	/** The group to delete, copy or move: the multi-selection, else the one selected part. */
+	readonly selectedParts = computed<ReadonlySet<string>>(() => {
+		const group = this.multiSelection()
+		if (group.size > 0) return group
+		const single = this.selectedComponent()
+		return new Set(single ? [single.id] : [])
+	})
+	private clipboard: Copied | undefined
+
 	readonly placing = signal<ComponentType | undefined>(undefined)
 	readonly wiringFrom = signal<PinRef | undefined>(undefined)
 	readonly paused = signal(false)
@@ -176,6 +188,19 @@ export class CircuitStore {
 		this.localRevision.update((revision) => revision + 1)
 	}
 
+	/** Finishes a wire on another wire: a junction goes into that wire at `at`, and the new wire joins it. */
+	joinWire(from: PinRef, wireId: string, at: Point): void {
+		const junctionId = nextComponentId(this.circuit(), "junction")
+		this.apply({
+			type: "batch",
+			summary: `Joined ${from.componentId}.${from.pin} to wire ${wireId}`,
+			commands: [
+				{ type: "split-wire", wireId, position: at },
+				{ type: "connect", from, to: { componentId: junctionId, pin: "terminal" } },
+			],
+		})
+	}
+
 	/** Adds a note just below the circuit and selects it, ready for its text to be edited. */
 	addNote(text: string): void {
 		const parts = this.circuit().components
@@ -199,7 +224,64 @@ export class CircuitStore {
 		this.replace(kvlExample(), "Loaded example")
 	}
 
+	/** Shift-click: adds a part to the group, or takes it out (the single selection joins the group first). */
+	toggleInSelection(id: string): void {
+		const group = new Set(this.selectedParts())
+		if (group.has(id)) group.delete(id)
+		else group.add(id)
+		this.multiSelection.set(group)
+		this.selection.set(undefined)
+	}
+
+	selectAll(): void {
+		this.multiSelection.set(new Set(this.circuit().components.map((component) => component.id)))
+		this.selection.set(undefined)
+	}
+
+	clearSelection(): void {
+		this.multiSelection.set(new Set())
+		this.selection.set(undefined)
+	}
+
+	copySelection(): void {
+		this.clipboard = copyParts(this.circuit(), this.selectedParts())
+	}
+
+	/** Pastes the copied parts two grid squares down and right, and selects them. */
+	paste(): void {
+		if (!this.clipboard) return
+		const step = 2 * this.config.gridSize
+		const command = pasteCommand(this.circuit(), this.clipboard, { x: step, y: step })
+		if (!command) return
+		const result = this.apply(command)
+		if (!result) return
+		const added = new Set(result.components.slice(-this.clipboard.components.length).map((component) => component.id))
+		this.multiSelection.set(added)
+		this.selection.set(undefined)
+		// Pasting again goes further along, not on top of this copy.
+		this.clipboard = copyParts(result, added)
+	}
+
+	/** Moves several parts by the same amount, as one change. */
+	moveParts(ids: ReadonlySet<string>, delta: Point): void {
+		const moves: EditCommand[] = this.circuit()
+			.components.filter((component) => ids.has(component.id))
+			.map((component) => ({
+				type: "move-component",
+				componentId: component.id,
+				position: { x: component.position.x + delta.x, y: component.position.y + delta.y },
+			}))
+		if (moves.length === 1 && moves[0]) this.apply(moves[0])
+		else if (moves.length > 1) this.apply({ type: "batch", summary: `Moved ${moves.length} parts`, commands: moves })
+	}
+
 	removeSelected(): void {
+		const group = this.multiSelection()
+		if (group.size > 0) {
+			const removals: EditCommand[] = [...group].map((componentId) => ({ type: "remove-component", componentId }))
+			if (this.apply({ type: "batch", summary: `Removed ${group.size} parts`, commands: removals })) this.clearSelection()
+			return
+		}
 		const selection = this.selection()
 		if (!selection) return
 		const removed =
@@ -226,8 +308,22 @@ export class CircuitStore {
 
 	/** Joins the MCP server's circuit. If the link closes, the app keeps the last shared circuit and works alone. */
 	joinLive(socketUrl: string): void {
+		/** The link dropped and the learner has been working on their own copy since. */
+		let dropped = false
 		this.live.connect(socketUrl, {
 			state: (state) => {
+				if (dropped) {
+					dropped = false
+					// A restarted server starts empty: send it the learner's circuit rather than lose it.
+					const restarted = state.revision === 0 && state.circuit.components.length === 0
+					const mine = this.local.circuit
+					if (restarted && mine.components.length > 0) {
+						this.shared.set(state)
+						this.predicted.set(mine)
+						this.live.send({ type: "replace", circuit: mine, summary: "Kept the learner's circuit after reconnecting" })
+						return
+					}
+				}
 				const before = this.shared()?.circuit
 				this.predicted.set(undefined)
 				this.shared.set(state)
@@ -242,6 +338,7 @@ export class CircuitStore {
 				this.predicted.set(undefined)
 				this.shared.set(undefined)
 				if (!last) return
+				dropped = true
 				this.local.replace(last.circuit, "learner", "Kept the circuit from the closed live link")
 				this.localRevision.update((revision) => revision + 1)
 			},

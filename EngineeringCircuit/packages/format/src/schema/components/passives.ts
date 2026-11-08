@@ -12,6 +12,8 @@ export const PASSIVES = [
 		// The common through-hole resistor is ¼ W.
 		defaults: { resistance: 1000, powerRating: 0.25 },
 	}),
+	// A connection point in the middle of wiring: any number of wires meet at its one pin.
+	defineComponent("junction", { idPrefix: "J", pins: ["terminal"], params: {}, defaults: {} }),
 	defineComponent("capacitor", {
 		idPrefix: "C",
 		pins: ["a", "b"],

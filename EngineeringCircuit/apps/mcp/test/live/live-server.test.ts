@@ -147,3 +147,19 @@ test("a connection without the session token is refused", async () => {
 test("a connection from another website is refused", async () => {
 	expect(await refusal(open(undefined, "https://evil.example"))).toBe(403)
 })
+
+test("a fixed token (EC_LIVE_TOKEN) lets a restarted server be found at the same link", async () => {
+	const token = "the-same-after-a-restart-0123456789"
+	const fixed = await LiveServer.start(document, {
+		port: 0,
+		appUrl: `${APP_ORIGIN}/`,
+		allowedOrigins: [APP_ORIGIN],
+		maxMessageBytes: MAX_MESSAGE_BYTES,
+		token,
+	})
+	try {
+		expect(new URL(fixed.link).searchParams.get(LIVE_TOKEN_PARAM)).toBe(token)
+	} finally {
+		await fixed.close()
+	}
+})

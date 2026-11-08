@@ -38,5 +38,7 @@
 			<input type="file" accept=".json,application/json" data-library-file (change)="openFile($event)" />
 		</label>
 		<button type="button" data-library-download (click)="download()">Download file</button>
+		<button type="button" data-picture-svg (click)="downloadPicture('svg')">Picture (SVG)</button>
+		<button type="button" data-picture-png (click)="downloadPicture('png')">Picture (PNG)</button>
 	</footer>
 </dialog>
