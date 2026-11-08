@@ -10,6 +10,7 @@ Single source of truth for humans and agents. Read in this order before doing an
 6. `VISION.md`: what we're building and for whom.
 7. `GLOSSARY.md`: circuit terms in plain language.
 8. `COMPONENTS.md`: every supported/planned part, and the checklist for adding one.
+9. `BACKLOG.md`: what each finished deliverable left out, why, and which deliverable picks it up.
 
 ## Rules for every agent session
 - Before starting: read `HANDOVER.md` and claim one deliverable (set its status to `in-progress` with your agent/session name).

@@ -52,12 +52,13 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries D12: in the app, Lessons → Start → build → Check my circuit; with Claude Code, use the MCP prompt "tutor" (or ask "tutor me through light-an-led") and open the live link. Next deliverable: D11 (Tauri 2 desktop/mobile builds). Optional after: D13 microcontrollers, D14 backend. Owed small items: mid-wire junction (D6), see known gaps. Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
+Owner tries D12: in the app, Lessons → Start → build → Check my circuit; with Claude Code, use the MCP prompt "tutor" (or ask "tutor me through light-an-led") and open the live link. Recommended next: D15 learner polish (the left-out items in `BACKLOG.md`), then D11 (Tauri 2 desktop/mobile builds), D16, D17. Optional: D13 microcontrollers, D14 backend. Earlier: owner tries the live link (restart Claude Code or `/mcp` reconnect so the server picks up the new tools; `pnpm web`; ask the agent for `open_in_app`). Then D3 transient analysis (capacitor charging, AC/square sources, time-stepping reusing the LU factorisation; engine to a Web Worker).
 
 ## Blockers / open questions
 - None.
 
 ## Known gaps (do not hide; fix in the listed deliverable)
+Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 - A diode straight across a battery solves to an absurd but finite current (about 1e35 A): ideal maths, no burn-out warning. Add rated-current warnings (diode, LED, lamp, resistor power).
 - All LED colours use CircuitJS1's single LED model (≈1.8 V); real blue and white LEDs need about 3 V. Add per-colour models with sources.
 - Newton–Raphson has no gmin or source stepping fallback; transistor junction capacitances and the Early effect are not modelled (ADR-017).
