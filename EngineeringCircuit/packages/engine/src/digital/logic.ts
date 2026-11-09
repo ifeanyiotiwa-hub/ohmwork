@@ -23,6 +23,18 @@ const gate =
 		step: ([a = false, b = false], state) => ({ outputs: [truth(a, b)], state }),
 	})
 
+/** A gate over any number of inputs: AND is all of them, OR is any, NAND and NOR their opposites. */
+const wideGate =
+	(pins: readonly string[], truth: (bits: readonly boolean[]) => boolean): LogicPart => ({
+		inputs: pins,
+		outputs: ["out"],
+		step: (bits, state) => ({ outputs: [truth(pins.map((_pin, index) => bits[index] ?? false))], state }),
+	})
+const THREE = ["a", "b", "c"] as const
+const FOUR = ["a", "b", "c", "d"] as const
+const all = (bits: readonly boolean[]) => bits.every(Boolean)
+const any = (bits: readonly boolean[]) => bits.some(Boolean)
+
 const withQ = (value: number, clock: boolean) => ({ outputs: [value === 1, value !== 1], state: { value, clock } })
 
 /** A flip-flop that acts on the clock's rising edge (input 1 is the clock). */
@@ -46,6 +58,14 @@ export type LogicType = Extract<
 	| "nor-gate"
 	| "xor-gate"
 	| "xnor-gate"
+	| "and-gate-3"
+	| "and-gate-4"
+	| "or-gate-3"
+	| "or-gate-4"
+	| "nand-gate-3"
+	| "nand-gate-4"
+	| "nor-gate-3"
+	| "nor-gate-4"
 	| "sr-latch"
 	| "sr-latch-inverted"
 	| "d-flip-flop"
@@ -63,6 +83,14 @@ export const LOGIC_PARTS: Readonly<Record<LogicType, LogicPart>> = {
 	"nor-gate": gate((a, b) => !(a || b)),
 	"xor-gate": gate((a, b) => a !== b),
 	"xnor-gate": gate((a, b) => a === b),
+	"and-gate-3": wideGate(THREE, all),
+	"and-gate-4": wideGate(FOUR, all),
+	"or-gate-3": wideGate(THREE, any),
+	"or-gate-4": wideGate(FOUR, any),
+	"nand-gate-3": wideGate(THREE, (bits) => !all(bits)),
+	"nand-gate-4": wideGate(FOUR, (bits) => !all(bits)),
+	"nor-gate-3": wideGate(THREE, (bits) => !any(bits)),
+	"nor-gate-4": wideGate(FOUR, (bits) => !any(bits)),
 	// NOR latch: S sets, R resets; both at 1 forces Q and Q̄ to 0 (the "forbidden" state).
 	"sr-latch": {
 		inputs: ["s", "r"],

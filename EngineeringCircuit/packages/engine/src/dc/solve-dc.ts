@@ -4,6 +4,7 @@ import {
 	type Net,
 	type PinRef,
 	RGB_COLOURS,
+	SEGMENT_PINS,
 	buildNets,
 	formatSi,
 	pinKey,
@@ -236,6 +237,31 @@ function solveIterating(netCount: number, referenceNets: ReadonlySet<number>, br
 const LAMP_OVERVOLTAGE = 1.1
 
 /** Parts pushed past their ratings: what a real one would not survive, said with the numbers. */
+/**
+ * A transistor or MOSFET over its output-current rating, or turning more than its power rating into heat (output
+ * V·I plus, for a transistor, the base drive's V·I).
+ */
+function overRatings(
+	id: string,
+	rating: { maxCurrent: number; maxPower: number },
+	pin: "collector" | "drain",
+	output: ComponentReading | undefined,
+	drive: ComponentReading | undefined,
+	advice: string,
+): SimIssue[] {
+	if (!output) return []
+	const current = Math.abs(output.current)
+	const power = Math.abs(output.voltage * output.current) + Math.abs((drive?.voltage ?? 0) * (drive?.current ?? 0))
+	const issue = (actual: string, limit: string): SimIssue => ({
+		componentIds: [id],
+		message: `${id} ${actual}, but it is rated for ${limit}: a real one would burn out.${advice}`,
+	})
+	return [
+		...(current > rating.maxCurrent ? [issue(`carries ${formatSi(current, "A")} into its ${pin}`, formatSi(rating.maxCurrent, "A"))] : []),
+		...(power > rating.maxPower ? [issue(`turns ${formatSi(power, "W")} into heat`, formatSi(rating.maxPower, "W"))] : []),
+	]
+}
+
 function burnOutWarnings(
 	circuit: Circuit,
 	readings: Record<string, ComponentReading>,
@@ -256,12 +282,31 @@ function burnOutWarnings(
 					: []
 			})
 		}
+		if (component.type === "seven-segment-led") {
+			const { id, params } = component
+			return SEGMENT_PINS.flatMap((segment) => {
+				const current = Math.abs(ports[`${id}/${segment}`]?.current ?? 0)
+				return current > params.maxCurrent
+					? [burnsOut(id, `segment ${segment} carries ${formatSi(current, "A")}`, formatSi(params.maxCurrent, "A"), " Give each segment its own series resistor.")]
+					: []
+			})
+		}
+		if (component.type === "npn-transistor" || component.type === "pnp-transistor") {
+			const output = ports[`${component.id}/collector-emitter`]
+			const drive = ports[`${component.id}/base-emitter`]
+			return overRatings(component.id, component.params, "collector", output, drive, " Limit the base drive, or the collector current with a resistor.")
+		}
+		if (component.type === "n-mosfet" || component.type === "p-mosfet") {
+			const output = ports[`${component.id}/drain-source`]
+			return overRatings(component.id, component.params, "drain", output, undefined, " Limit the drain current with a resistor.")
+		}
 		const reading = readings[component.id]
 		if (!reading) return []
 		const current = Math.abs(reading.current)
 		switch (component.type) {
 			case "led":
 			case "diode":
+			case "zener-diode":
 				return current > component.params.maxCurrent
 					? [
 							burnsOut(

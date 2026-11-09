@@ -32,6 +32,21 @@ export const LED_MODELS: Readonly<Record<LedColor, LedModel>> = {
 }
 const LED_DEFAULTS = { ...LED_MODELS.red, maxBrightnessCurrent: 0.01 }
 
+export const SEGMENT_PINS = ["a", "b", "c", "d", "e", "f", "g", "dp"] as const
+/**
+ * Kingbright SC56-11EWA (0.56", red, common cathode, spec DSAP6671 V.1A, 2019-03-04): 1.9 V typical at 10 mA per
+ * segment (±0.1 V), 30 mA DC max. N and RS as the LED models; IS fitted to 1.9 V at 10 mA (the red LED model gives
+ * 1.78 V there, outside the tolerance).
+ */
+const SEVEN_SEGMENT_LED_DEFAULTS = {
+	commonCathode: true,
+	saturationCurrent: 2.811e-11,
+	emissionCoefficient: LED_MODELS.red.emissionCoefficient,
+	seriesResistance: LED_MODELS.red.seriesResistance,
+	maxCurrent: 0.03,
+	maxBrightnessCurrent: 0.01,
+}
+
 export const RGB_COLOURS = ["red", "green", "blue"] as const
 /**
  * An RGB LED is three LEDs sharing a pin. Kingbright WP154A4SUREQBFZGW (5 mm full colour, spec DSAJ8688 V.12A,
@@ -57,16 +72,29 @@ const transistorParams = {
 	beta: positive("ratio, forward current gain (SPICE BF)"),
 	betaReverse: positive("ratio, reverse current gain (SPICE BR)"),
 	saturationCurrent: positive("amps (IS)"),
+	maxCurrent: positive("amps the collector can carry continuously; more is reported as burning it out"),
+	maxPower: positive("watts it can turn into heat continuously; more is reported as burning it out"),
 }
-/** CircuitJS1 TransistorModel "default". */
-const TRANSISTOR_DEFAULTS = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13 }
+/**
+ * CircuitJS1 TransistorModel "default", rated as the common small-signal parts: 2N3904 (NPN, onsemi Rev. 9, 2021)
+ * and 2N3906 (PNP, onsemi Rev. 4, 2010) both give IC 200 mA continuous and PD 625 mW at 25 °C.
+ */
+const TRANSISTOR_DEFAULTS = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13, maxCurrent: 0.2, maxPower: 0.625 }
 
 const mosfetParams = {
 	thresholdVoltage: positive("volts between gate and source where it starts to conduct (a size; a P-MOSFET's gate goes below its source)"),
 	transconductance: positive("amps per volt squared (SPICE KP with W = L)"),
+	maxCurrent: positive("amps the drain can carry continuously; more is reported as burning it out"),
+	maxPower: positive("watts it can turn into heat continuously; more is reported as burning it out"),
 }
-/** CircuitJS1 MosfetElm defaults. */
-const MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02 }
+/**
+ * CircuitJS1 MosfetElm defaults, rated as small-signal parts: N 2N7002 (Diodes Inc. DS11303 Rev. 33: ID 170 mA,
+ * PD 370 mW on a minimal pad) and P BSS84 (DS30149 Rev. 27: ID −130 mA, PD 300 mW).
+ */
+const N_MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02, maxCurrent: 0.17, maxPower: 0.37 }
+const P_MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02, maxCurrent: 0.13, maxPower: 0.3 }
+/** 1N4734A (5.6 V, Vishay 85816 Rev. 2.7, 2024): IZM 162 mA. */
+const ZENER_MAX_CURRENT = 0.162
 
 export const SEMICONDUCTORS = [
 	defineComponent("diode", {
@@ -78,8 +106,8 @@ export const SEMICONDUCTORS = [
 	defineComponent("zener-diode", {
 		idPrefix: "DZ",
 		pins: ["anode", "cathode"],
-		params: { ...diodeParams, breakdownVoltage: positive("volts, reverse voltage where it conducts 5 mA") },
-		defaults: { ...DIODE_DEFAULTS, breakdownVoltage: 5.6 },
+		params: { ...diodeParams, breakdownVoltage: positive("volts, reverse voltage where it conducts 5 mA"), maxCurrent },
+		defaults: { ...DIODE_DEFAULTS, breakdownVoltage: 5.6, maxCurrent: ZENER_MAX_CURRENT },
 	}),
 	defineComponent("led", {
 		idPrefix: "LED",
@@ -104,6 +132,17 @@ export const SEMICONDUCTORS = [
 		},
 		defaults: RGB_DEFAULTS,
 	}),
+	defineComponent("seven-segment-led", {
+		idPrefix: "SEG",
+		pins: [...SEGMENT_PINS, "common"],
+		params: {
+			commonCathode: z.boolean().describe("true = the shared pin is every segment's cathode (minus side)"),
+			...diodeParams,
+			maxCurrent: positive("amps each segment can carry continuously; more is reported as burning it out"),
+			maxBrightnessCurrent: positive("amps for a fully lit segment"),
+		},
+		defaults: SEVEN_SEGMENT_LED_DEFAULTS,
+	}),
 	defineComponent("npn-transistor", {
 		idPrefix: "Q",
 		pins: ["collector", "base", "emitter"],
@@ -116,6 +155,6 @@ export const SEMICONDUCTORS = [
 		params: transistorParams,
 		defaults: TRANSISTOR_DEFAULTS,
 	}),
-	defineComponent("n-mosfet", { idPrefix: "M", pins: ["drain", "gate", "source"], params: mosfetParams, defaults: MOSFET_DEFAULTS }),
-	defineComponent("p-mosfet", { idPrefix: "MP", pins: ["drain", "gate", "source"], params: mosfetParams, defaults: MOSFET_DEFAULTS }),
+	defineComponent("n-mosfet", { idPrefix: "M", pins: ["drain", "gate", "source"], params: mosfetParams, defaults: N_MOSFET_DEFAULTS }),
+	defineComponent("p-mosfet", { idPrefix: "MP", pins: ["drain", "gate", "source"], params: mosfetParams, defaults: P_MOSFET_DEFAULTS }),
 ] as const

@@ -1,4 +1,4 @@
-import { type Component, type ComponentType, RGB_COLOURS } from "@engineering-circuit/format"
+import { type Component, type ComponentType, RGB_COLOURS, SEGMENT_PINS } from "@engineering-circuit/format"
 import type { LogicMemories } from "../digital/advance"
 import { LOGIC_PARTS, type LogicPart, initialMemory } from "../digital/logic"
 import { bipolarDevice } from "../nonlinear/bipolar"
@@ -6,8 +6,10 @@ import type { Device } from "../nonlinear/device"
 import { diodeDevice } from "../nonlinear/diode"
 import { mosfetDevice } from "../nonlinear/mosfet"
 import { opAmpDevice } from "../nonlinear/op-amp"
-import { ADC_4BIT, DAC_4BIT, DAC_MAX_CODE, RELAY } from "../digital/mixed-parts"
+import { ADC_4BIT, ADC_8BIT, CONVERTER_4BIT, CONVERTER_8BIT, type Converter, DAC_4BIT, DAC_8BIT, RELAY } from "../digital/mixed-parts"
 import { TIMER_555 } from "../digital/timer-555"
+import { DenseMatrix } from "../linear/dense-matrix"
+import { factorLu } from "../linear/lu"
 import { acVoltage, squareVoltage } from "../transient/waveforms"
 
 export type Pins = [first: string, second: string]
@@ -74,12 +76,15 @@ export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<Componen
 	"scope-probe",
 	"adc-4bit",
 	"dac-4bit",
+	"adc-8bit",
+	"dac-8bit",
 	"relay",
 	...(Object.keys(LOGIC_PARTS) as ComponentType[]),
 	"capacitor",
 	"polarized-capacitor",
 	"inductor",
 	"transformer",
+	"tapped-transformer",
 	"ac-source",
 	"square-source",
 ])
@@ -90,6 +95,7 @@ export const STATEFUL_TYPES: ReadonlySet<ComponentType> = new Set([
 	"polarized-capacitor",
 	"inductor",
 	"transformer",
+	"tapped-transformer",
 	"relay",
 ])
 
@@ -137,6 +143,19 @@ const deviceBranch = (componentId: string, device: Device, port?: string): Branc
 		: { kind: "device", componentId, pins: [first, second], device, port }
 }
 
+/** An ADC's data pins held at its last code: each bit a source to ground. */
+const adcBranches = (id: string, shape: Converter, bits: readonly boolean[], logicHigh: number): Branch[] =>
+	shape.pins.map((pin, index) => toGround(id, pin, bits[index] ? logicHigh : 0))
+
+/** out = code × V(vref) / maxCode, a VCVS from vref so the output follows the reference within the solve. */
+const dacBranch = (id: string, shape: Converter, code: number): Branch => ({
+	kind: "vcvs",
+	componentId: id,
+	pins: ["out", GROUND_PIN],
+	control: ["vref", GROUND_PIN],
+	gain: code / shape.maxCode,
+})
+
 const toGround = (componentId: string, pin: string, voltage: number): Branch => ({
 	kind: "voltage",
 	componentId,
@@ -177,48 +196,75 @@ function seriesCoil(id: string, resistance: number, inductance: number, transien
 const PRIMARY: Pins = ["primaryA", "primaryB"]
 const SECONDARY: Pins = ["secondaryA", "secondaryB"]
 
+type Winding = { port: string; pins: Pins; inductance: number }
+
 /**
- * Coupled inductors (SPICE L + K): v = L di/dt with L = [[L1, M], [M, L2]], L2 = L1·n², M = k√(L1·L2).
- * Over one step each winding's current is i = Γ·v + history with Γ = (Δt/2)·L⁻¹ (trapezoidal; Δt·L⁻¹ for the
- * first step): a conductance per winding, a VCCS per cross term, and a history current source per winding.
- * At DC both windings are wires.
+ * Coupled inductors (SPICE L + K, every pair coupled by k): v = L di/dt with L[i][i] = Lᵢ and L[i][j] = k√(Lᵢ·Lⱼ).
+ * Over one step each winding's current is i = Γ·v + history with Γ = (Δt/2)·L⁻¹ (trapezoidal; Δt·L⁻¹ for the first
+ * step and while settling): a conductance per winding, a VCCS per cross term, and a history current source per
+ * winding. At DC every winding is a wire.
  */
-function transformerModel(
-	id: string,
-	{ primaryInductance, turnsRatio, coupling }: { primaryInductance: number; turnsRatio: number; coupling: number },
-	transient: TransientContext | undefined,
-): Branch[] {
-	if (!transient) {
+function coupledWindings(id: string, windings: readonly Winding[], coupling: number, transient: TransientContext | undefined): Branch[] {
+	if (!transient) return windings.map(({ port, pins }) => ({ kind: "voltage", componentId: id, pins, voltage: 0, port }))
+
+	const inductance = DenseMatrix.fromRows(
+		windings.map((row, i) => windings.map((column, j) => (i === j ? row.inductance : coupling * Math.sqrt(row.inductance * column.inductance)))),
+	)
+	const factors = factorLu(inductance)
+	// 0 < k < 1 (the format's rule) keeps the matrix invertible.
+	if (!factors) throw new Error(`${id}: coupled windings with a singular inductance matrix`)
+	const inverseColumns = windings.map((_, j) => factors.solve(windings.map((_, i) => (i === j ? 1 : 0))))
+
+	const previous = windings.map(({ port }) => transient.memory[`${id}/${port}`])
+	const firstStep = previous.some((state) => !state) || transient.backwardEuler === true
+	const scale = firstStep ? transient.timeStep : transient.timeStep / 2
+	const gamma = (i: number, j: number) => scale * (inverseColumns[j]?.[i] ?? 0)
+	const before = previous.map((state) => state ?? AT_REST)
+
+	return windings.flatMap(({ port, pins }, i): Branch[] => {
+		const history =
+			(before[i]?.current ?? 0) + (firstStep ? 0 : windings.reduce((sum, _, j) => sum + gamma(i, j) * (before[j]?.voltage ?? 0), 0))
 		return [
-			{ kind: "voltage", componentId: id, pins: PRIMARY, voltage: 0, port: "primary" },
-			{ kind: "voltage", componentId: id, pins: SECONDARY, voltage: 0, port: "secondary" },
+			{ kind: "resistor", componentId: id, pins, resistance: 1 / gamma(i, i), port },
+			...windings.flatMap((other, j): Branch[] =>
+				j === i ? [] : [{ kind: "vccs", componentId: id, pins, control: other.pins, transconductance: -gamma(i, j), port }],
+			),
+			{ kind: "current", componentId: id, pins, current: -history, port },
 		]
-	}
-	const primary = primaryInductance
-	const secondary = primaryInductance * turnsRatio * turnsRatio
-	const mutual = coupling * Math.sqrt(primary * secondary)
-	const determinant = primary * secondary - mutual * mutual
+	})
+}
 
-	const previousPrimary = transient.memory[`${id}/primary`]
-	const previousSecondary = transient.memory[`${id}/secondary`]
-	const firstStep = !previousPrimary || !previousSecondary || transient.backwardEuler === true
-	const factor = (firstStep ? transient.timeStep : transient.timeStep / 2) / determinant
-	const self1 = factor * secondary
-	const self2 = factor * primary
-	const cross = -factor * mutual
-	const before1 = previousPrimary ?? AT_REST
-	const before2 = previousSecondary ?? AT_REST
-	const history1 = before1.current + (firstStep ? 0 : self1 * before1.voltage + cross * before2.voltage)
-	const history2 = before2.current + (firstStep ? 0 : cross * before1.voltage + self2 * before2.voltage)
+type TransformerParams = { primaryInductance: number; turnsRatio: number; coupling: number }
 
-	return [
-		{ kind: "resistor", componentId: id, pins: PRIMARY, resistance: 1 / self1, port: "primary" },
-		{ kind: "vccs", componentId: id, pins: PRIMARY, control: SECONDARY, transconductance: -cross, port: "primary" },
-		{ kind: "current", componentId: id, pins: PRIMARY, current: -history1, port: "primary" },
-		{ kind: "resistor", componentId: id, pins: SECONDARY, resistance: 1 / self2, port: "secondary" },
-		{ kind: "vccs", componentId: id, pins: SECONDARY, control: PRIMARY, transconductance: -cross, port: "secondary" },
-		{ kind: "current", componentId: id, pins: SECONDARY, current: -history2, port: "secondary" },
-	]
+/** Primary and secondary; the secondary has n times the turns, so n² times the inductance. */
+const transformerModel = (id: string, { primaryInductance, turnsRatio, coupling }: TransformerParams, transient: TransientContext | undefined) =>
+	coupledWindings(
+		id,
+		[
+			{ port: "primary", pins: PRIMARY, inductance: primaryInductance },
+			{ port: "secondary", pins: SECONDARY, inductance: primaryInductance * turnsRatio ** 2 },
+		],
+		coupling,
+		transient,
+	)
+
+/** A centre tap splits the secondary into two halves of n/2 turns each, wound the same way, all coupled by k. */
+const tappedTransformerModel = (
+	id: string,
+	{ primaryInductance, turnsRatio, coupling }: TransformerParams,
+	transient: TransientContext | undefined,
+) => {
+	const half = primaryInductance * (turnsRatio / 2) ** 2
+	return coupledWindings(
+		id,
+		[
+			{ port: "primary", pins: PRIMARY, inductance: primaryInductance },
+			{ port: "secondaryA", pins: ["secondaryA", "secondaryTap"], inductance: half },
+			{ port: "secondaryB", pins: ["secondaryTap", "secondaryB"], inductance: half },
+		],
+		coupling,
+		transient,
+	)
 }
 
 export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
@@ -269,6 +315,7 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 		{ kind: "resistor", componentId: id, pins: ["a", "b"], resistance: params.ratedVoltage ** 2 / params.ratedPower },
 	],
 	transformer: ({ id, params }, { transient }) => transformerModel(id, params, transient),
+	"tapped-transformer": ({ id, params }, { transient }) => tappedTransformerModel(id, params, transient),
 	vcvs: ({ id, params }) => [
 		{ kind: "vcvs", componentId: id, pins: ["positive", "negative"], control: ["controlPositive", "controlNegative"], gain: params.gain, port: "output" },
 	],
@@ -305,6 +352,11 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 			}
 			return deviceBranch(id, params.commonCathode ? diodeDevice(model, colour, "common") : diodeDevice(model, "common", colour), colour)
 		}),
+	// Eight LEDs sharing the common pin; each segment's current is reported as a port ("SEG1/a").
+	"seven-segment-led": ({ id, params }) =>
+		SEGMENT_PINS.map((segment) =>
+			deviceBranch(id, params.commonCathode ? diodeDevice(params, segment, "common") : diodeDevice(params, "common", segment), segment),
+		),
 	"npn-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, 1))],
 	"pnp-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, -1))],
 	"n-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, 1))],
@@ -322,6 +374,14 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	"nor-gate": logicModel(LOGIC_PARTS["nor-gate"]),
 	"xor-gate": logicModel(LOGIC_PARTS["xor-gate"]),
 	"xnor-gate": logicModel(LOGIC_PARTS["xnor-gate"]),
+	"and-gate-3": logicModel(LOGIC_PARTS["and-gate-3"]),
+	"and-gate-4": logicModel(LOGIC_PARTS["and-gate-4"]),
+	"or-gate-3": logicModel(LOGIC_PARTS["or-gate-3"]),
+	"or-gate-4": logicModel(LOGIC_PARTS["or-gate-4"]),
+	"nand-gate-3": logicModel(LOGIC_PARTS["nand-gate-3"]),
+	"nand-gate-4": logicModel(LOGIC_PARTS["nand-gate-4"]),
+	"nor-gate-3": logicModel(LOGIC_PARTS["nor-gate-3"]),
+	"nor-gate-4": logicModel(LOGIC_PARTS["nor-gate-4"]),
 	"sr-latch": logicModel(LOGIC_PARTS["sr-latch"]),
 	"sr-latch-inverted": logicModel(LOGIC_PARTS["sr-latch-inverted"]),
 	"d-flip-flop": logicModel(LOGIC_PARTS["d-flip-flop"]),
@@ -344,20 +404,10 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	"scope-probe": () => [],
 	"seven-segment": () => [],
 	"bcd-to-seven-segment": logicModel(LOGIC_PARTS["bcd-to-seven-segment"]),
-	"adc-4bit": ({ id }, { logic, logicHigh }) => {
-		const outputs = (logic?.[id] ?? ADC_4BIT.initial()).outputs
-		return ["d0", "d1", "d2", "d3"].map((pin, index) => toGround(id, pin, outputs[index] ? logicHigh : 0))
-	},
-	// out = code × V(vref) / 15, a VCVS from vref so the output follows the reference within the solve.
-	"dac-4bit": ({ id }, { logic }) => [
-		{
-			kind: "vcvs",
-			componentId: id,
-			pins: ["out", GROUND_PIN],
-			control: ["vref", GROUND_PIN],
-			gain: (logic?.[id] ?? DAC_4BIT.initial()).state.value / DAC_MAX_CODE,
-		},
-	],
+	"adc-4bit": ({ id }, context) => adcBranches(id, CONVERTER_4BIT, (context.logic?.[id] ?? ADC_4BIT.initial()).outputs, context.logicHigh),
+	"adc-8bit": ({ id }, context) => adcBranches(id, CONVERTER_8BIT, (context.logic?.[id] ?? ADC_8BIT.initial()).outputs, context.logicHigh),
+	"dac-4bit": ({ id }, { logic }) => [dacBranch(id, CONVERTER_4BIT, (logic?.[id] ?? DAC_4BIT.initial()).state.value)],
+	"dac-8bit": ({ id }, { logic }) => [dacBranch(id, CONVERTER_8BIT, (logic?.[id] ?? DAC_8BIT.initial()).state.value)],
 	relay: ({ id, params }, { logic, transient }) => {
 		const pulledIn = (logic?.[id] ?? RELAY.initial()).outputs[0] ?? false
 		return [...seriesCoil(id, params.coilResistance, params.coilInductance, transient), wire(id, ["common", pulledIn ? "normallyOpen" : "normallyClosed"])]

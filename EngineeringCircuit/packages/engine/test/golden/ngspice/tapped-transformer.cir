@@ -1,0 +1,20 @@
+* Centre-tapped transformer: 10 V peak, 1 kHz into a 4 H primary; whole secondary 2 x the primary's turns, so each
+* half has the primary's turns (4 H); every pair coupled 0.999. Tap grounded, 1 kOhm on each half.
+V1 p 0 SIN(0 10 1k)
+L1 p 0 4 IC=0
+L2 a t 4 IC=0
+L3 t b 4 IC=0
+K12 L1 L2 0.999
+K13 L1 L3 0.999
+K23 L2 L3 0.999
+Vtap t 0 0
+Ra a 0 1k
+Rb b 0 1k
+.tran 1u 5m uic
+.control
+run
+meas tran peak_a MAX v(a) FROM=4m TO=5m
+meas tran peak_b MAX v(b) FROM=4m TO=5m
+meas tran low_a MIN v(a) FROM=4m TO=5m
+.endc
+.end

@@ -9,7 +9,11 @@ const LEADS = { a: { x: -40, y: 0 }, b: { x: 40, y: 0 } }
 const POLARISED_LEADS = { positive: { x: -40, y: 0 }, negative: { x: 40, y: 0 } }
 const TRANSISTOR_LEADS = { collector: { x: 20, y: -40 }, base: { x: -40, y: 0 }, emitter: { x: 20, y: 40 } }
 const MOSFET_LEADS = { drain: { x: 20, y: -40 }, gate: { x: -40, y: 0 }, source: { x: 20, y: 40 } }
+const EIGHT_BITS = ["d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7"]
 const GATE_LEADS = { a: { x: -40, y: -20 }, b: { x: -40, y: 20 }, out: { x: 40, y: 0 } }
+const GATE_3_LEADS = { a: { x: -40, y: -20 }, b: { x: -40, y: 0 }, c: { x: -40, y: 20 }, out: { x: 40, y: 0 } }
+/** Four inputs on the grid need a taller body (±40), so its output sits one grid step further out. */
+const GATE_4_LEADS = { a: { x: -40, y: -40 }, b: { x: -40, y: -20 }, c: { x: -40, y: 20 }, d: { x: -40, y: 40 }, out: { x: 60, y: 0 } }
 const TWO_IN_TWO_OUT = (first: string, second: string) => ({
 	[first]: { x: -40, y: -20 },
 	[second]: { x: -40, y: 20 },
@@ -49,6 +53,13 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 		secondaryA: { x: 40, y: -40 },
 		secondaryB: { x: 40, y: 40 },
 	},
+	"tapped-transformer": {
+		primaryA: { x: -40, y: -40 },
+		primaryB: { x: -40, y: 40 },
+		secondaryA: { x: 40, y: -40 },
+		secondaryTap: { x: 40, y: 0 },
+		secondaryB: { x: 40, y: 40 },
+	},
 	"switch-spdt": { common: { x: -40, y: 0 }, a: { x: 40, y: -20 }, b: { x: 40, y: 20 } },
 	resistor: LEADS,
 	capacitor: LEADS,
@@ -68,6 +79,10 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	junction: { terminal: { x: 0, y: 0 } },
 	"scope-probe": POLARISED_LEADS,
 	"seven-segment": Object.fromEntries(["a", "b", "c", "d", "e", "f", "g", "dp"].map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
+	"seven-segment-led": {
+		...Object.fromEntries(["a", "b", "c", "d", "e", "f", "g", "dp"].map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
+		common: { x: 0, y: 100 },
+	},
 	"bcd-to-seven-segment": {
 		...Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: -40, y: -30 + index * 20 }])),
 		...Object.fromEntries(["a", "b", "c", "d", "e", "f", "g"].map((pin, index) => [pin, { x: 40, y: -60 + index * 20 }])),
@@ -80,6 +95,16 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"dac-4bit": {
 		...Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: -40, y: -30 + index * 20 }])),
 		vref: { x: 0, y: -40 },
+		out: { x: 40, y: 0 },
+	},
+	"adc-8bit": {
+		in: { x: -40, y: -20 },
+		vref: { x: -40, y: 20 },
+		...Object.fromEntries(EIGHT_BITS.map((pin, index) => [pin, { x: 40, y: -70 + index * 20 }])),
+	},
+	"dac-8bit": {
+		...Object.fromEntries(EIGHT_BITS.map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
+		vref: { x: 0, y: -80 },
 		out: { x: 40, y: 0 },
 	},
 	relay: {
@@ -111,6 +136,14 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"nor-gate": GATE_LEADS,
 	"xor-gate": GATE_LEADS,
 	"xnor-gate": GATE_LEADS,
+	"and-gate-3": GATE_3_LEADS,
+	"and-gate-4": GATE_4_LEADS,
+	"or-gate-3": GATE_3_LEADS,
+	"or-gate-4": GATE_4_LEADS,
+	"nand-gate-3": GATE_3_LEADS,
+	"nand-gate-4": GATE_4_LEADS,
+	"nor-gate-3": GATE_3_LEADS,
+	"nor-gate-4": GATE_4_LEADS,
 	"sr-latch": TWO_IN_TWO_OUT("s", "r"),
 	"sr-latch-inverted": TWO_IN_TWO_OUT("sNot", "rNot"),
 	"d-flip-flop": TWO_IN_TWO_OUT("d", "clk"),

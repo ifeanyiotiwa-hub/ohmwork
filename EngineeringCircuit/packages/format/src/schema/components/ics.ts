@@ -47,4 +47,18 @@ export const ICS = [
 		params: {},
 		defaults: {},
 	}),
+	// The same converters with 8 data pins (0–255): a separate type, since pins never change with a setting (ADR-009).
+	// Prefix B for byte.
+	defineComponent("adc-8bit", {
+		idPrefix: "ADCB",
+		pins: ["in", "vref", "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7"],
+		params: {},
+		defaults: {},
+	}),
+	defineComponent("dac-8bit", {
+		idPrefix: "DACB",
+		pins: ["d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "vref", "out"],
+		params: {},
+		defaults: {},
+	}),
 ] as const

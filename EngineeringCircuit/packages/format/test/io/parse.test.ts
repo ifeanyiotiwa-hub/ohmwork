@@ -67,6 +67,31 @@ describe("older files", () => {
 		])
 	})
 
+	test("a version 7 file's Zeners, transistors and MOSFETs gain datasheet ratings (their electrical values stay)", () => {
+		const at = { position: { x: 0, y: 0 }, rotation: 0 }
+		const transistor = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13 }
+		const mosfet = { thresholdVoltage: 1.5, transconductance: 0.02 }
+		const result = parseCircuit({
+			...createCircuit("Old"),
+			version: 7,
+			components: [
+				{ id: "DZ1", type: "zener-diode", ...at, params: { saturationCurrent: 1e-14, emissionCoefficient: 1, seriesResistance: 0, breakdownVoltage: 5.6 } },
+				{ id: "Q1", type: "npn-transistor", ...at, params: transistor },
+				{ id: "QP1", type: "pnp-transistor", ...at, params: transistor },
+				{ id: "M1", type: "n-mosfet", ...at, params: mosfet },
+				{ id: "MP1", type: "p-mosfet", ...at, params: mosfet },
+			],
+		})
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.circuit.components.map((component) => component.params)).toEqual([
+			{ saturationCurrent: 1e-14, emissionCoefficient: 1, seriesResistance: 0, breakdownVoltage: 5.6, maxCurrent: 0.162 },
+			{ ...transistor, maxCurrent: 0.2, maxPower: 0.625 },
+			{ ...transistor, maxCurrent: 0.2, maxPower: 0.625 },
+			{ ...mosfet, maxCurrent: 0.17, maxPower: 0.37 },
+			{ ...mosfet, maxCurrent: 0.13, maxPower: 0.3 },
+		])
+	})
+
 	test("a version 6 RGB LED keeps its one model for every colour (it behaves as before) and gains the datasheet ratings", () => {
 		const shared = { saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042 }
 		const result = parseCircuit({

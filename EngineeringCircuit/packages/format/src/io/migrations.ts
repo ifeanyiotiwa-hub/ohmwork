@@ -53,6 +53,15 @@ function splitRgbModels(document: JsonObject): JsonObject {
 	}
 }
 
+/** Version 8 rated Zeners, transistors and MOSFETs (datasheet values in semiconductors.ts, frozen here). */
+const V8_ADDED_PARAMS: Readonly<Record<string, JsonObject>> = {
+	"zener-diode": { maxCurrent: 0.162 },
+	"npn-transistor": { maxCurrent: 0.2, maxPower: 0.625 },
+	"pnp-transistor": { maxCurrent: 0.2, maxPower: 0.625 },
+	"n-mosfet": { maxCurrent: 0.17, maxPower: 0.37 },
+	"p-mosfet": { maxCurrent: 0.13, maxPower: 0.3 },
+}
+
 /** Keyed by the version migrated from. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	1: (document) => ({ ...document, simulation: { timeStep: 5e-6, speed: 0.01 } }),
@@ -64,6 +73,7 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	4: (document) => ({ ...document, notes: [] }),
 	5: (document) => addParams(document, V6_ADDED_PARAMS),
 	6: splitRgbModels,
+	7: (document) => addParams(document, V8_ADDED_PARAMS),
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

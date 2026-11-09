@@ -34,6 +34,7 @@ export function valueText(component: Component): string {
 		case "led":
 			return component.params.color
 		case "rgb-led":
+		case "seven-segment-led":
 			return component.params.commonCathode ? "common −" : "common +"
 		case "npn-transistor":
 		case "pnp-transistor":
@@ -41,7 +42,8 @@ export function valueText(component: Component): string {
 		case "n-mosfet":
 		case "p-mosfet":
 			return `Vt ${formatSi(component.params.thresholdVoltage, "V")}`
-		case "transformer": {
+		case "transformer":
+		case "tapped-transformer": {
 			const { primaryInductance, turnsRatio } = component.params
 			return `${formatSi(primaryInductance, "H")} 1:${formatSi(turnsRatio, "")}`
 		}

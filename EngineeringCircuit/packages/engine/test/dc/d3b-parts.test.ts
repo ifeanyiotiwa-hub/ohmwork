@@ -166,3 +166,44 @@ test("at DC a transformer's windings are plain wires, so a battery across one is
 	)
 	expect(result.ok ? "" : result.errors[0]?.message).toContain("Short circuit")
 })
+
+test("a centre-tapped transformer gives each half the same voltage in opposite phase (ngspice K: 9.96175 V peak on each)", () => {
+	const circuit = circuitOf(
+		[
+			{ id: "AC1", type: "ac-source", params: { amplitude: 10, frequency: 1000, offset: 0, phase: 0, delay: 0 } },
+			{ id: "T1", type: "tapped-transformer", params: { primaryInductance: 4, turnsRatio: 2, coupling: 0.999 } },
+			{ id: "RA", type: "resistor", params: { resistance: 1000 } },
+			{ id: "RB", type: "resistor", params: { resistance: 1000 } },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[
+			["AC1.positive", "T1.primaryA"],
+			["T1.primaryB", "GND.terminal"],
+			["AC1.negative", "GND.terminal"],
+			["T1.secondaryTap", "GND.terminal"],
+			["T1.secondaryA", "RA.a"],
+			["T1.secondaryB", "RB.a"],
+			["RA.b", "GND.terminal"],
+			["RB.b", "GND.terminal"],
+		],
+	)
+	let state = initialTransientState()
+	let peakA = 0
+	let peakB = 0
+	let worstSum = 0
+	for (let step = 1; step <= 5000; step++) {
+		const result = stepTransient(circuit, state, { timeStep: 1e-6 })
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		state = result.state
+		if (state.time < 4e-3) continue
+		const a = result.solution.readings.RA?.voltage ?? 0
+		const b = result.solution.readings.RB?.voltage ?? 0
+		peakA = Math.max(peakA, a)
+		peakB = Math.max(peakB, b)
+		worstSum = Math.max(worstSum, Math.abs(a + b))
+	}
+	expect(Math.abs(peakA - 9.96175)).toBeLessThan(9.96175 * 0.01)
+	expect(Math.abs(peakB - 9.96175)).toBeLessThan(9.96175 * 0.01)
+	// Opposite phase: one half is +v while the other is −v.
+	expect(worstSum).toBeLessThan(0.01 * 9.96175)
+})

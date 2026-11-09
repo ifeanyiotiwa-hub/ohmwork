@@ -2,32 +2,43 @@
 import type { LogicMemory } from "./logic"
 import type { Sequential } from "./sequential"
 
-const BITS = 4
-const MAX_CODE = (1 << BITS) - 1
-const DATA_PINS = ["d0", "d1", "d2", "d3"] as const
-const bitsOf = (code: number) => DATA_PINS.map((_, index) => ((code >> index) & 1) === 1)
-const AT_REST: LogicMemory = { outputs: bitsOf(0), state: { value: 0, clock: false } }
+/** A converter's data pins d0…d(n−1) and its largest code, 2ⁿ − 1. */
+export type Converter = { pins: readonly string[]; maxCode: number }
 
-/** Truncates 15 × Vin / Vref to 0–15 (no rounding, as CircuitJS1: rounding would break a half-flash converter). */
-export const ADC_4BIT: Sequential = {
-	initial: () => AT_REST,
+const converter = (bits: number): Converter => ({
+	pins: Array.from({ length: bits }, (_, index) => `d${index}`),
+	maxCode: (1 << bits) - 1,
+})
+export const CONVERTER_4BIT = converter(4)
+export const CONVERTER_8BIT = converter(8)
+
+const bitsOf = ({ pins }: Converter, code: number) => pins.map((_, index) => ((code >> index) & 1) === 1)
+const atRest = (shape: Converter): LogicMemory => ({ outputs: bitsOf(shape, 0), state: { value: 0, clock: false } })
+
+/** Truncates maxCode × Vin / Vref to 0…maxCode (no rounding, as CircuitJS1: rounding would break a half-flash converter). */
+export const adc = (shape: Converter): Sequential => ({
+	initial: () => atRest(shape),
 	next: (_memory, readings) => {
 		const reference = readings.voltage("vref")
-		const code = reference > 0 ? Math.min(MAX_CODE, Math.max(0, Math.trunc((MAX_CODE * readings.voltage("in")) / reference))) : 0
-		return { outputs: bitsOf(code), state: { value: code, clock: false } }
+		const scaled = Math.trunc((shape.maxCode * readings.voltage("in")) / reference)
+		const code = reference > 0 ? Math.min(shape.maxCode, Math.max(0, scaled)) : 0
+		return { outputs: bitsOf(shape, code), state: { value: code, clock: false } }
 	},
-}
+})
 
-/** Reads its data pins as a code; the analog output (code × Vref / 15) is a controlled source in dc/branches.ts. */
-export const DAC_4BIT: Sequential = {
-	initial: () => AT_REST,
+/** Reads its data pins as a code; the analog output (code × Vref / maxCode) is a controlled source in dc/branches.ts. */
+export const dac = (shape: Converter): Sequential => ({
+	initial: () => atRest(shape),
 	next: (_memory, readings, logicHigh) => {
-		const code = DATA_PINS.reduce((sum, pin, index) => sum + (readings.voltage(pin) > logicHigh / 2 ? 1 << index : 0), 0)
-		return { outputs: bitsOf(code), state: { value: code, clock: false } }
+		const code = shape.pins.reduce((sum, pin, index) => sum + (readings.voltage(pin) > logicHigh / 2 ? 1 << index : 0), 0)
+		return { outputs: bitsOf(shape, code), state: { value: code, clock: false } }
 	},
-}
+})
 
-export const DAC_MAX_CODE = MAX_CODE
+export const ADC_4BIT = adc(CONVERTER_4BIT)
+export const DAC_4BIT = dac(CONVERTER_4BIT)
+export const ADC_8BIT = adc(CONVERTER_8BIT)
+export const DAC_8BIT = dac(CONVERTER_8BIT)
 
 /** outputs[0]: pulled in. Above onCurrent it pulls in, below offCurrent it drops out; in between it stays. */
 export const RELAY: Sequential = {

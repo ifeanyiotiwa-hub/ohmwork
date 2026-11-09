@@ -12,7 +12,8 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | EC | Owner's screenshots of the EveryCircuit parts toolbar (`WorkSpaceImage/`, local only, not committed) | Which parts a learning simulator offers. Observed features only (ADR-001). Icon readings marked `?` are my interpretation |
 | CJS | CircuitJS1 `ts/Menus.ts`, `ts/DiodeModel.ts`, `ts/LEDElm.ts`, `ts/TransistorModel.ts` (github.com/pfalstad/circuitjs1, master) | Full parts menu and default models |
 | SPICE | ngspice HTML manual, v47+ (Mar 2026), Table 2.2 element letters, §4.1 source waveforms, §7.2 diode, §7.3 BJT | Standard element set and parameter names/defaults |
-| KB | Kingbright datasheets: 5 mm single-colour LEDs (blue L-7113QBC-D; white L-7113MWC, discontinued listing), and WP154A4SUREQBFZGW full-colour LED (spec DSAJ8688 V.12A, 2024-11-01) | LED forward voltages at 20 mA and maximum DC currents (ADR-023, ADR-027) |
+| KB | Kingbright datasheets: 5 mm single-colour LEDs (blue L-7113QBC-D; white L-7113MWC, discontinued listing), and WP154A4SUREQBFZGW full-colour LED (spec DSAJ8688 V.12A, 2024-11-01), SC56-11EWA 0.56" red 7-segment (spec DSAP6671 V.1A, 2019-03-04) | LED forward voltages at 20 mA and maximum DC currents (ADR-023, ADR-027) |
+| DS | Small-signal datasheets: Vishay 1N4728A–1N4761A (doc 85816 Rev. 2.7, 2024-11-07), onsemi 2N3903/2N3904 (Rev. 9, 2021-08) and 2N3906 (Rev. 4, 2010-02), Diodes Inc. 2N7002 (DS11303 Rev. 33) and BSS84 (DS30149 Rev. 27) | Ratings of the Zener, transistors and MOSFETs (ADR-029) |
 
 ## Reference and sources
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
@@ -39,7 +40,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `potentiometer` | a, b, wiper | resistance (Ω), position (0–1) | two resistors split at the wiper (a wire at an end stop) | EC, CJS | D3 | simulated |
 | `junction` | terminal | – | no model: a dot where wires join; placed by clicking a wire, which splits it in two (`split-wire`) | CJS (wires join anywhere) | D15 | simulated |
 | `transformer` | primaryA, primaryB, secondaryA, secondaryB | primaryInductance (H), turnsRatio, coupling (0–1, exclusive: k = 1 makes the inductance matrix singular) | coupled inductors, SPICE `K`; defaults 4 H, 1, 0.999 as CJS; windings are wires at DC | EC, CJS, SPICE `K` | D3 | simulated |
-| `tapped-transformer` | primaryA, primaryB, secondaryA, secondaryTap, secondaryB | as transformer | coupled inductors, centre tap | EC, CJS | later | planned |
+| `tapped-transformer` | primaryA, primaryB, secondaryA, secondaryTap, secondaryB | as transformer; turnsRatio is the whole secondary | three coupled windings (primary and two halves of n/2 turns), every pair coupled k; vs ngspice K within 1% | EC, CJS | D16 | simulated |
 | `lamp` | a, b | ratedVoltage (V), ratedPower (W) | resistor R = V²/P; brightness from power. Defaults 6 V / 1 W (CJS: 120 V / 100 W mains lamp with a heating filament; ours is fixed-resistance so a 5 V source lights it) | EC, CJS | D3 | simulated |
 | `dc-motor` | a, b | resistance (Ω), inductance (H), back-EMF constant | electrical + simple rotation model | EC, CJS | later | planned |
 
@@ -57,13 +58,13 @@ Diode-family params follow SPICE §7.2 names and meanings (SPICE's own defaults:
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
 | `diode` | anode, cathode | diode-family params, maxCurrent (A, default 1 A as 1N4001–1N4007) | Shockley equation, Newton–Raphson. CJS default: IS 1.714e-7, N 2 (≈0.81 V at 1 A) | EC, CJS, SPICE `D` | D4 | simulated |
-| `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | simulated |
+| `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) + maxCurrent (162 mA, 1N4734A IZM) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | simulated |
 | `led` | anode, cathode | color, diode-family params (per colour, `LED_MODELS`, Kingbright 5 mm Vf at 20 mA), maxCurrent (30 mA, green 25 mA), maxBrightnessCurrent (CJS 10 mA) | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | simulated |
 | `rgb-led` | red, green, blue, common | commonCathode, N and RS (shared), IS per colour, max current per colour | three LEDs sharing one pin, red on the red LED model, green and blue on the InGaN (3.3 V) model; colours mix; burn-out per colour (format v7) | EC, KB | D4, D15c | simulated |
-| `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13) | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | simulated |
-| `pnp-transistor` | collector, base, emitter | as NPN | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | simulated |
-| `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²) | square-law (SPICE level 1, λ = 0); defaults 1.5 V, 0.02 A/V² (CJS MosfetElm) | EC, CJS, SPICE `M` | D4 | simulated |
-| `p-mosfet` | drain, gate, source | as N-MOSFET | square-law | EC, CJS, SPICE `M` | D4 | simulated |
+| `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13), maxCurrent (200 mA) and maxPower (625 mW) as 2N3904 | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | simulated |
+| `pnp-transistor` | collector, base, emitter | as NPN (ratings as 2N3906: 200 mA, 625 mW) | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | simulated |
+| `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²), maxCurrent (170 mA) and maxPower (370 mW) as 2N7002 | square-law (SPICE level 1, λ = 0); defaults 1.5 V, 0.02 A/V² (CJS MosfetElm) | EC, CJS, SPICE `M` | D4 | simulated |
+| `p-mosfet` | drain, gate, source | as N-MOSFET (ratings as BSS84: 130 mA, 300 mW) | square-law | EC, CJS, SPICE `M` | D4 | simulated |
 
 ## Digital logic
 Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chaining. Logic level comes from the logic-family setting (see "Not a component").
@@ -74,6 +75,7 @@ Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chainin
 | `logic-output` (indicator) | in | – | CJS | D5 | simulated |
 | `not-gate` | in, out | – | EC, CJS (Inverter) | D5 | simulated |
 | `and-gate`, `or-gate`, `nand-gate`, `nor-gate`, `xor-gate`, `xnor-gate` | a, b, out | – | EC, CJS | D5 | simulated |
+| `and-gate-3`, `and-gate-4`, `or-gate-3`, `or-gate-4`, `nand-gate-3`, `nand-gate-4`, `nor-gate-3`, `nor-gate-4` | a, b, c (, d), out | – (widths sold as chips: 74HC11/21, 4075/4072, 10/20, 27/4002; id prefixes ANDT/ANDQ…) | CJS (gates with N inputs) | D16 | simulated |
 | `sr-latch` (NOR, active-high) | s, r, q, qNot | – | EC | D5 | simulated |
 | `sr-latch-inverted` (NAND, active-low S̄R̄) | sNot, rNot, q, qNot | – | EC | D5 | simulated |
 | `d-flip-flop` | d, clk, q, qNot | – | EC, CJS | D5 | simulated |
@@ -88,10 +90,12 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 |---|---|---|---|---|---|---|
 | `op-amp` (ideal) | nonInverting, inverting, output | gain, supplyHigh (V), supplyLow (V) | high-gain source with a smooth tanh limit to the rails (ADR-019) | EC, CJS | D9 | simulated |
 | `timer-555` | ground, trigger, output, reset, control, threshold, discharge, vcc | – | comparators + SR latch + discharge transistor | EC, CJS | D9 | simulated |
-| `seven-segment` | a, b, c, d, e, f, g, dp | – | logic display (CJS default): a segment lights at logic 1. LED-accurate version with a common pin: later | EC, CJS | D9 | simulated |
+| `seven-segment` | a, b, c, d, e, f, g, dp | – | logic display (CJS default): a segment lights at logic 1. LED-accurate version: `seven-segment-led` | EC, CJS | D9 | simulated |
 | `bcd-to-seven-segment` | d0, d1, d2, d3, a, b, c, d, e, f, g | – | logic decoder, CJS table incl. A–F | EC, CJS | D9 | simulated |
 | `adc-4bit` | in, vref, d0…d3 | – (fixed 4 bits, ADR-020) | trunc(15·Vin/Vref), as CJS | EC, CJS | D9 | simulated |
 | `dac-4bit` | d0…d3, vref, out | – (fixed 4 bits) | code·Vref/15 | EC, CJS | D9 | simulated |
+| `adc-8bit`, `dac-8bit` | in, vref, d0…d7 / d0…d7, vref, out | – (fixed 8 bits; prefixes ADCB, DACB) | truncating 255·Vin/Vref; code·Vref/255 | CJS (any width) | D16 | simulated |
+| `seven-segment-led` | a…g, dp, common | commonCathode, diode-family (IS fitted to 1.9 V at 10 mA), maxCurrent (30 mA), maxBrightnessCurrent | eight LEDs sharing a pin, as Kingbright SC56-11EWA; burn-out per segment | EC, KB | D16 | simulated |
 
 ## Measurement
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |

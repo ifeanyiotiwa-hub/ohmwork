@@ -39,3 +39,9 @@ test("meters show what they measure", () => {
 test("a meter with no reading (the circuit can't be solved) shows a dash", () => {
 	expect(meterText(part({ id: "VM1", type: "voltmeter", params: {} }), undefined)).toBe("–")
 })
+
+test("the LED 7-segment says which pin is common, and the tapped transformer reads like the plain one", () => {
+	const display = { commonCathode: false, saturationCurrent: 2.811e-11, emissionCoefficient: 3.73, seriesResistance: 0.042, maxCurrent: 0.03, maxBrightnessCurrent: 0.01 }
+	expect(valueText(part({ id: "SEG1", type: "seven-segment-led", params: display }))).toBe("common +")
+	expect(valueText(part({ id: "TT1", type: "tapped-transformer", params: { primaryInductance: 4, turnsRatio: 2, coupling: 0.999 } }))).toBe("4 H 1:2")
+})

@@ -197,3 +197,59 @@ test("an unconnected op-amp input still warns: it is a classic mistake", () => {
 	const result = solveDc(circuitOf([{ id: "U1", type: "op-amp", params: { gain: 100000, supplyHigh: 15, supplyLow: -15 } }], []))
 	expect(result.ok && result.solution.warnings.length).toBeGreaterThan(0)
 })
+
+const BITS_8 = ["d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7"] as const
+
+const adc8Of = (volts: number) => {
+	const pins = voltages(
+		[
+			{ id: "VIN", type: "voltage-source", params: { voltage: volts } },
+			{ id: "VREF", type: "voltage-rail", params: { voltage: 5 } },
+			{ id: "ADC1", type: "adc-8bit", params: {} },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[["VIN.positive", "ADC1.in"], ["VIN.negative", "GND.terminal"], ["VREF.terminal", "ADC1.vref"]],
+	)
+	return BITS_8.reduce((code, bit, index) => code + ((pins[`ADC1:${bit}`] ?? 0) > HIGH / 2 ? 1 << index : 0), 0)
+}
+
+test("the 8-bit ADC truncates 255 × Vin / Vref (steps of 19.6 mV at 5 V)", () => {
+	expect(adc8Of(0)).toBe(0)
+	expect(adc8Of(2.6)).toBe(132)
+	expect(adc8Of(0.0195)).toBe(0)
+	expect(adc8Of(0.0197)).toBe(1)
+	expect(adc8Of(5)).toBe(255)
+	expect(adc8Of(9)).toBe(255)
+})
+
+test("the 8-bit DAC outputs code × Vref / 255, and an 8-bit ADC → DAC round trip lands within one step below", () => {
+	const code = 0b10110101
+	const out = voltages(
+		[
+			...BITS_8.map((_bit, index) => input(`B${index}`, ((code >> index) & 1) === 1)),
+			{ id: "VREF", type: "voltage-rail", params: { voltage: 5 } },
+			{ id: "DAC1", type: "dac-8bit", params: {} },
+		],
+		[...BITS_8.map((bit, index): Wires[number] => [`B${index}.out`, `DAC1.${bit}`]), ["VREF.terminal", "DAC1.vref"]],
+	)["DAC1:out"]
+	expect(out).toBeCloseTo((code * 5) / 255, 9)
+
+	const roundTrip = voltages(
+		[
+			{ id: "VIN", type: "voltage-source", params: { voltage: 2.6 } },
+			{ id: "VREF", type: "voltage-rail", params: { voltage: 5 } },
+			{ id: "ADC1", type: "adc-8bit", params: {} },
+			{ id: "DAC1", type: "dac-8bit", params: {} },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[
+			["VIN.positive", "ADC1.in"],
+			["VIN.negative", "GND.terminal"],
+			["VREF.terminal", "ADC1.vref"],
+			["VREF.terminal", "DAC1.vref"],
+			...BITS_8.map((bit): Wires[number] => [`ADC1.${bit}`, `DAC1.${bit}`]),
+		],
+	)["DAC1:out"]
+	// One step behind (ADR-018): a DC solve settles the logic first, so the result is 132 × 5 / 255.
+	expect(roundTrip).toBeCloseTo((132 * 5) / 255, 9)
+})

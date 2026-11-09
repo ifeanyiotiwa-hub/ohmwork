@@ -11,6 +11,7 @@ import {
 	pinsOf,
 	rotate,
 } from "@engineering-circuit/format"
+import type { DcSolution } from "@engineering-circuit/engine"
 import { CircuitStore } from "../circuit/circuit-store"
 import { glowOf } from "../circuit/glow"
 import { pathThrough, snap } from "../circuit/geometry"
@@ -127,14 +128,7 @@ export class CircuitCanvas {
 				rotation: `rotate(${part.rotation})`,
 				paths: symbol.paths,
 				lever: this.leverOf(part, pressed, solution?.states?.[part.id]),
-				segments:
-					part.type === "seven-segment"
-						? Object.entries(SEVEN_SEGMENT_PATHS).map(([pin, d]) => ({
-								pin,
-								d,
-								lit: (solution?.pinVoltages[`${part.id}:${pin}`] ?? 0) > logicHigh / 2,
-							}))
-						: [],
+				segments: this.segmentsOf(part, solution, logicHigh),
 				label: labelPlacement(symbol, part.rotation, at),
 				readingAt: readingPlacement(symbol, part.rotation, at, isMeter(part)),
 				marks: (symbol.marks ?? []).map((mark) => {
@@ -505,6 +499,16 @@ export class CircuitCanvas {
 			width,
 			height: view.height * scale,
 		})
+	}
+
+	/** A display's segments: the logic display lights on a logic-high pin, the LED one on current through the segment. */
+	private segmentsOf(part: Part, solution: DcSolution | undefined, logicHigh: number): { pin: string; d: string; lit: boolean }[] {
+		if (part.type !== "seven-segment" && part.type !== "seven-segment-led") return []
+		const lit = (pin: string): boolean =>
+			part.type === "seven-segment"
+				? (solution?.pinVoltages[`${part.id}:${pin}`] ?? 0) > logicHigh / 2
+				: Math.abs(solution?.ports[`${part.id}/${pin}`]?.current ?? 0) > part.params.maxBrightnessCurrent * this.config.segmentLitFraction
+		return Object.entries(SEVEN_SEGMENT_PATHS).map(([pin, d]) => ({ pin, d, lit: lit(pin) }))
 	}
 
 	private leverOf(part: Part, pressed: ReadonlySet<string>, state: readonly boolean[] | undefined): string | undefined {

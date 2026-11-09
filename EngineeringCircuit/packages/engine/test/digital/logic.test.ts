@@ -42,6 +42,30 @@ describe("gates", () => {
 		})
 	}
 
+	const WIDE: Record<string, (bits: boolean[]) => boolean> = {
+		and: (bits) => bits.every(Boolean),
+		or: (bits) => bits.some(Boolean),
+		nand: (bits) => !bits.every(Boolean),
+		nor: (bits) => !bits.some(Boolean),
+	}
+	for (const [kind, truth] of Object.entries(WIDE)) {
+		for (const width of [3, 4]) {
+			const type = `${kind}-gate-${width}`
+			test(`${type} truth table (all ${2 ** width} input combinations)`, () => {
+				const pins = ["a", "b", "c", "d"].slice(0, width)
+				for (let code = 0; code < 2 ** width; code++) {
+					const bits = pins.map((_pin, index) => ((code >> index) & 1) === 1)
+					const [out] = levels(
+						[...pins.map((pin, index) => input(`IN_${pin}`, bits[index] ?? false)), { id: "G1", type, params: {} } as Parts[number]],
+						pins.map((pin): Wires[number] => [`IN_${pin}.out`, `G1.${pin}`]),
+						["G1:out"],
+					)
+					expect(out, `${type}(${bits.map(Number).join("")})`).toBe(truth(bits))
+				}
+			})
+		}
+	}
+
 	test("NOT inverts, and outputs the full logic voltage without any ground symbol placed", () => {
 		const result = solveDc(circuitOf([input("A", false), { id: "N1", type: "not-gate", params: {} }], [["A.out", "N1.in"]]))
 		expect(result.ok && result.solution.pinVoltages["N1:out"]).toBe(HIGH)

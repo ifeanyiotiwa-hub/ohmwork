@@ -61,10 +61,10 @@ whatever the app is at that point.
 | AC analysis (Bode plot) | Small-signal analysis around the DC point with complex MNA; a frequency-sweep view; golden tests against ngspice `.ac` |
 | Transistor dynamics | Junction capacitances, Early effect and temperature (Gummel–Poon parameters); ngspice goldens |
 | Op-amp limits | Slew rate and gain-bandwidth as parameters (CircuitJS1 keeps GBW in its format but does not simulate it) |
-| Wider gates | 3- and 4-input gate types (new types, so no format break) |
+| ~~Wider gates~~ (done, D16a) | 3- and 4-input gate types (new types, so no format break) |
 | Tri-state and buses | A tri-state buffer type and bus wires; needs a "high impedance" output state in the logic model |
-| Wider converters | `adc-8bit` / `dac-8bit` as new types (pins stay fixed per type) |
-| LED 7-segment | `seven-segment-led` with a common pin and real LED segments, next to the logic display |
+| ~~Wider converters~~ (done, D16a) | `adc-8bit` / `dac-8bit` as new types (pins stay fixed per type) |
+| ~~LED 7-segment~~ (done, D16a) | `seven-segment-led` with a common pin and real LED segments, next to the logic display |
 | Scope upgrades | Trigger on a rising edge, per-trace scale, X-Y mode, and "watch this part" from the inspector without placing a probe |
 
 ### D17 Building bigger
@@ -99,8 +99,8 @@ whatever the app is at that point.
 ### Assigned by the audit to existing deliverables
 | Item | Deliverable |
 |---|---|
-| Ratings for Zener, transistors, op-amp | D16 |
-| Tapped transformer, DC motor (COMPONENTS.md "planned") | D16 |
+| ~~Ratings for Zener, transistors~~ (done, D16a); op-amp output current limit (D16b) | D16 |
+| ~~Tapped transformer~~ (done, D16a), DC motor (COMPONENTS.md "planned") | D16 |
 | Wiring from the keyboard (pins are not in the Tab order) | D16 |
 | Redo; group rotate; notes in box select and copy/paste; library delete confirmation; manual Reconnect and telling the learner when offline edits are replaced; palette arrow keys; slider label; PWA manifest `id`, separate maskable icons | D16 (app items alongside) |
 | AI from the Android app or the desktop app (deep link, remote MCP) | D14 |

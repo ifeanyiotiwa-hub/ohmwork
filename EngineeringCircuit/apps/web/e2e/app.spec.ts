@@ -412,3 +412,28 @@ test("an LED wired straight to a battery warns that it would burn out", async ({
 	const reading = await ledLabel.locator("xpath=following-sibling::*[1][contains(@class, 'part-reading')]").boundingBox()
 	expect(label && reading && reading.y >= label.y + label.height).toBe(true)
 })
+
+test("an LED 7-segment lights the segment its current flows through, and only that one", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["voltage-source", 150, 200],
+		["resistor", 350, 120],
+		["seven-segment-led", 600, 220],
+		["ground", 300, 420],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "R1:a"],
+		["R1:b", "SEG1:a"],
+		["SEG1:common", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await expect(page.locator('[data-part="SEG1"] [data-segment="a"]')).toHaveClass(/lit/)
+	await expect(page.locator('[data-part="SEG1"] [data-segment="b"]')).not.toHaveClass(/lit/)
+})

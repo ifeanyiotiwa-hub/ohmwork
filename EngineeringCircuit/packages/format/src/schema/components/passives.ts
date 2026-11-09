@@ -61,4 +61,15 @@ export const PASSIVES = [
 		},
 		defaults: { primaryInductance: 4, turnsRatio: 1, coupling: 0.999 },
 	}),
+	// CircuitJS1 TappedTransformerElm: the secondary split at a centre tap (for full-wave rectifiers and ± supplies).
+	defineComponent("tapped-transformer", {
+		idPrefix: "TT",
+		pins: ["primaryA", "primaryB", "secondaryA", "secondaryTap", "secondaryB"],
+		params: {
+			primaryInductance: positive("henries"),
+			turnsRatio: positive("whole-secondary turns per primary turn (each half has half of them)"),
+			coupling: z.number().gt(0).lt(1).describe("coupling coefficient between every pair of windings, between 0 and 1 (1 itself is not allowed)"),
+		},
+		defaults: { primaryInductance: 4, turnsRatio: 2, coupling: 0.999 },
+	}),
 ] as const

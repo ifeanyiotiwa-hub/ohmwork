@@ -47,6 +47,16 @@ const OR_SHAPE = "M-24 -24 Q-10 0 -24 24 Q8 24 22 0 Q8 -24 -24 -24 Z"
 const XOR_EXTRA = "M-31 -24 Q-17 0 -31 24"
 const bubbleAt = (x: number) => `M${x} 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0`
 const gateSymbol = (paths: string[]): SymbolShape => ({ body: GATE_BODY, paths, label: GATE_LABEL, labelAnchor: "middle" })
+// Three inputs fit the two-input body; the middle lead meets the OR curve further in (its back bulges at y = 0).
+const AND_3_LEADS = "M-40 -20 H-20 M-40 0 H-20 M-40 20 H-20"
+const OR_3_LEADS = "M-40 -20 H-19 M-40 0 H-17 M-40 20 H-19"
+// Four inputs: the same shapes stretched to ±44, output one grid step further out (pins.ts GATE_4_LEADS).
+const GATE_4_BODY: Box = { left: -40, top: -44, right: 60, bottom: 44 }
+const AND_4_LEADS = "M-40 -40 H-20 M-40 -20 H-20 M-40 20 H-20 M-40 40 H-20"
+const AND_4_SHAPE = "M-20 -44 H4 A44 44 0 0 1 4 44 H-20 Z"
+const OR_4_LEADS = "M-40 -40 H-22.8 M-40 -20 H-18.4 M-40 20 H-18.4 M-40 40 H-22.8"
+const OR_4_SHAPE = "M-24 -44 Q-10 0 -24 44 Q12 44 46 0 Q12 -44 -24 -44 Z"
+const gate4Symbol = (paths: string[]): SymbolShape => ({ body: GATE_4_BODY, paths, label: { x: 10, y: -54 }, labelAnchor: "middle" })
 
 /** Flip-flops and latches: a box with its pin names inside; a clock input is marked with a triangle. */
 const BOX_BODY: Box = { left: -40, top: -32, right: 40, bottom: 32 }
@@ -78,6 +88,9 @@ export const SEVEN_SEGMENT_PATHS: Readonly<Record<string, string>> = {
 const chipBox = (top: number, bottom: number) => `M-24 ${top} H24 V${bottom} H-24 Z`
 const leadsLeft = (ys: number[]) => ys.map((y) => `M-40 ${y} H-24`).join(" ")
 const leadsRight = (ys: number[]) => ys.map((y) => `M24 ${y} H40`).join(" ")
+/** An 8-bit converter's data pins d0…d7 (pins.ts) and the weight each one carries, 1 to 128. */
+const BYTE_YS = Array.from({ length: 8 }, (_, index) => -70 + index * 20)
+const BYTE_WEIGHTS = BYTE_YS.map((_, index) => String(1 << index))
 const SOURCE_BOX_BODY: Box = { left: -20, top: -16, right: 40, bottom: 16 }
 
 const MOSFET_PATHS = ["M-40 0 H-12 M-12 -14 V14", "M-4 -16 V16", "M-4 -10 H20 V-40 M-4 10 H20 V40"]
@@ -197,6 +210,20 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 0, y: -50 },
 		labelAnchor: "middle",
 	},
+	// The transformer with a lead from the middle of its secondary (between its second and third loops).
+	"tapped-transformer": {
+		body: { left: -40, top: -40, right: 40, bottom: 40 },
+		paths: [
+			"M-40 -40 H-14 V-24 M-40 40 H-14 V24",
+			"M-14 -24 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12 a6 6 0 0 1 0 12",
+			"M40 -40 H14 V-24 M40 40 H14 V24",
+			"M14 -24 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12 a6 6 0 0 0 0 12",
+			"M-3 -26 V26 M3 -26 V26",
+			"M14 0 H40",
+		],
+		label: { x: 0, y: -50 },
+		labelAnchor: "middle",
+	},
 	inductor: {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-24 a6 6 0 0 1 12 0 a6 6 0 0 1 12 0 a6 6 0 0 1 12 0 a6 6 0 0 1 12 0 H40"],
@@ -303,6 +330,14 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 	"nor-gate": gateSymbol([OR_LEADS, OR_SHAPE, bubbleAt(22), "M30 0 H40"]),
 	"xor-gate": gateSymbol([OR_LEADS, OR_SHAPE, XOR_EXTRA, "M22 0 H40"]),
 	"xnor-gate": gateSymbol([OR_LEADS, OR_SHAPE, XOR_EXTRA, bubbleAt(22), "M30 0 H40"]),
+	"and-gate-3": gateSymbol([AND_3_LEADS, AND_SHAPE, "M24 0 H40"]),
+	"nand-gate-3": gateSymbol([AND_3_LEADS, AND_SHAPE, bubbleAt(24), "M32 0 H40"]),
+	"or-gate-3": gateSymbol([OR_3_LEADS, OR_SHAPE, "M22 0 H40"]),
+	"nor-gate-3": gateSymbol([OR_3_LEADS, OR_SHAPE, bubbleAt(22), "M30 0 H40"]),
+	"and-gate-4": gate4Symbol([AND_4_LEADS, AND_4_SHAPE, "M48 0 H60"]),
+	"nand-gate-4": gate4Symbol([AND_4_LEADS, AND_4_SHAPE, bubbleAt(48), "M56 0 H60"]),
+	"or-gate-4": gate4Symbol([OR_4_LEADS, OR_4_SHAPE, "M46 0 H60"]),
+	"nor-gate-4": gate4Symbol([OR_4_LEADS, OR_4_SHAPE, bubbleAt(46), "M54 0 H60"]),
 	"sr-latch": boxSymbol([], [pinMark("S", -14, -20), pinMark("R", -14, 20), ...Q_MARKS]),
 	"sr-latch-inverted": boxSymbol([], [pinMark("S̄", -14, -20), pinMark("R̄", -14, 20), ...Q_MARKS]),
 	"d-flip-flop": boxSymbol([CLOCK_MARK(20)], [pinMark("D", -14, -20), ...Q_MARKS]),
@@ -350,6 +385,16 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 40, y: -46 },
 		labelAnchor: "start",
 	},
+	"seven-segment-led": {
+		body: { left: -40, top: -80, right: 40, bottom: 100 },
+		paths: [leadsLeft([-70, -50, -30, -10, 10, 30, 50, 70]), "M-24 -80 H34 V80 H-24 Z", "M0 80 V100"],
+		marks: [
+			...["a", "b", "c", "d", "e", "f", "g", "·"].map((text, index) => ({ text, at: { x: -18, y: -70 + index * 20 } })),
+			{ text: "com", at: { x: 12, y: 92 } },
+		],
+		label: { x: 0, y: -88 },
+		labelAnchor: "middle",
+	},
 	"seven-segment": {
 		body: { left: -40, top: -80, right: 40, bottom: 80 },
 		paths: [leadsLeft([-70, -50, -30, -10, 10, 30, 50, 70]), "M-24 -80 H34 V80 H-24 Z"],
@@ -387,6 +432,28 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 			{ text: "out", at: { x: 12, y: 0 } },
 		],
 		label: { x: 0, y: -48 },
+		labelAnchor: "middle",
+	},
+	"adc-8bit": {
+		body: { left: -40, top: -80, right: 40, bottom: 80 },
+		paths: [chipBox(-80, 80), leadsLeft([-20, 20]), leadsRight(BYTE_YS)],
+		marks: [
+			{ text: "in", at: { x: -13, y: -20 } },
+			{ text: "ref", at: { x: -11, y: 20 } },
+			...BYTE_WEIGHTS.map((text, index) => ({ text, at: { x: 14, y: -70 + index * 20 } })),
+		],
+		label: { x: 0, y: -88 },
+		labelAnchor: "middle",
+	},
+	"dac-8bit": {
+		body: { left: -40, top: -80, right: 40, bottom: 80 },
+		paths: [chipBox(-80, 80), leadsLeft(BYTE_YS), "M24 0 H40"],
+		marks: [
+			...BYTE_WEIGHTS.map((text, index) => ({ text, at: { x: -14, y: -70 + index * 20 } })),
+			{ text: "ref", at: { x: 4, y: -68 } },
+			{ text: "out", at: { x: 12, y: 0 } },
+		],
+		label: { x: 0, y: -88 },
 		labelAnchor: "middle",
 	},
 	relay: {
@@ -449,6 +516,7 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	potentiometer: "Potentiometer",
 	lamp: "Lamp",
 	transformer: "Transformer",
+	"tapped-transformer": "Centre-tapped transformer",
 	"switch-spdt": "Two-way switch",
 	resistor: "Resistor",
 	junction: "Junction",
@@ -475,6 +543,14 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"nor-gate": "NOR",
 	"xor-gate": "XOR",
 	"xnor-gate": "XNOR",
+	"and-gate-3": "AND (3 inputs)",
+	"and-gate-4": "AND (4 inputs)",
+	"or-gate-3": "OR (3 inputs)",
+	"or-gate-4": "OR (4 inputs)",
+	"nand-gate-3": "NAND (3 inputs)",
+	"nand-gate-4": "NAND (4 inputs)",
+	"nor-gate-3": "NOR (3 inputs)",
+	"nor-gate-4": "NOR (4 inputs)",
 	"sr-latch": "SR latch",
 	"sr-latch-inverted": "S̄R̄ latch",
 	"d-flip-flop": "D flip-flop",
@@ -485,9 +561,12 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"timer-555": "555 timer",
 	"scope-probe": "Scope probe",
 	"seven-segment": "7-segment display",
+	"seven-segment-led": "LED 7-segment",
 	"bcd-to-seven-segment": "BCD to 7-segment",
 	"adc-4bit": "4-bit ADC",
 	"dac-4bit": "4-bit DAC",
+	"adc-8bit": "8-bit ADC",
+	"dac-8bit": "8-bit DAC",
 	relay: "Relay",
 	voltmeter: "Voltmeter",
 	ammeter: "Ammeter",
