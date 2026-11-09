@@ -334,6 +334,9 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	junction: () => [],
 	// Joins its node to every same-named label (buildNets); it carries nothing itself.
 	"net-label": () => [],
+	// Bus connectors join by name too (format namedPins).
+	"bus-4": () => [],
+	"bus-8": () => [],
 	// At DC a capacitor is an open gap and an inductor a plain wire; over time they follow i = C dv/dt, v = L di/dt.
 	capacitor: ({ id, params }, { transient }) => capacitorModel(id, params.capacitance, ["a", "b"], transient),
 	"polarized-capacitor": ({ id, params }, { transient }) =>

@@ -79,6 +79,9 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"voltage-rail": { terminal: { x: 0, y: 40 } },
 	junction: { terminal: { x: 0, y: 0 } },
 	"net-label": { terminal: { x: -20, y: 0 } },
+	// Members on the left, 20 apart as on the counters and converters; the bus leaves the right side.
+	"bus-4": Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: -20, y: -30 + index * 20 }])),
+	"bus-8": Object.fromEntries(EIGHT_BITS.map((pin, index) => [pin, { x: -20, y: -70 + index * 20 }])),
 	"scope-probe": POLARISED_LEADS,
 	"seven-segment": Object.fromEntries(["a", "b", "c", "d", "e", "f", "g", "dp"].map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
 	"seven-segment-led": {

@@ -228,3 +228,9 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - Wire currents follow a node through its wires; a labelled node is several groups of wires with no wire between them, so same-named labels are linked by an unseen edge in that walk. Without it, the wires behind the second label showed 0 A (found by a test).
 - Parameters can now be text: `ParamField` kind "text" (a string in the schema), a text box in the inspector; an empty name is put back rather than sent.
 - The canvas shows a label by its name only; its id (NL1) would be clutter. The ground part stays the way to mark 0 V: a label named "GND" or "0" is an ordinary name.
+
+## ADR-041: Buses (D17)
+- A bus is a connector part, `bus-4` or `bus-8` (members d0…), with a `name`. A part's pins never change with a setting (ADR-009), so the widths are fixed: 4 and 8, those of the counters and converters. Connectors of one name join pin by pin; member n of bus "D" is also the node of a net label named "D<n>" ("D3"), so one signal is tapped with a label, as in KiCad.
+- The joining is by name, like net labels: format's `namedPins` lists every pin joined by name (a label under its name, a bus member under its bus name and number), and both `buildNets` and the wire-current walk use it (this was the third copy of that loop, so it became one function).
+- The thick line between same-named connectors (`busLines`, routed like a wire from bus side to bus side, in circuit order) is only a picture: it cannot be selected or deleted, and renaming a connector moves it to another bus.
+- Label and bus pins are read-only for the ground check, so an unused member (or a label wired to nothing) is no "floating circuit" warning; node readings sit on a real part's pin and skip nodes made of label or bus pins alone.

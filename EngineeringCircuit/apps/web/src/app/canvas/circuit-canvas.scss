@@ -29,6 +29,16 @@
 	cursor: pointer;
 }
 
+/* A bus: one thick line standing for all its members (joined by name, not by this line). */
+.bus-line {
+	fill: none;
+	stroke: var(--wire-idle);
+	stroke-width: 6;
+	stroke-linejoin: round;
+	opacity: 0.7;
+	pointer-events: none;
+}
+
 .wire-line {
 	fill: none;
 	stroke: var(--wire-idle);

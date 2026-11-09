@@ -1,7 +1,7 @@
-import { type Circuit, type Net, buildNets, netLabelKey, pinKey, pinsOf } from "@engineering-circuit/format"
+import { type Circuit, type Net, buildNets, namedPins, pinKey, pinsOf } from "@engineering-circuit/format"
 import type { DcSolution } from "./solve-dc"
 
-/** `wireId` undefined: the unseen link between two net labels of one name, which carries current but is no wire. */
+/** `wireId` undefined: the unseen link between two pins joined by name, which carries current but is no wire. */
 type Edge = { id: string; wireId: string | undefined; neighbour: string; forward: boolean }
 
 export function wireCurrents(circuit: Circuit, solution: DcSolution): Record<string, number> {
@@ -46,15 +46,14 @@ function adjacency(circuit: Circuit): Map<string, Edge[]> {
 		link(from, { id: wire.id, wireId: wire.id, neighbour: to, forward: true })
 		link(to, { id: wire.id, wireId: wire.id, neighbour: from, forward: false })
 	}
-	// Each net label is linked to the first label of its name, so the current can be followed from one to the other.
-	const firstLabelOf = new Map<string, string>()
-	for (const component of circuit.components) {
-		if (component.type !== "net-label") continue
-		const name = netLabelKey(component.params.name)
-		const pin = pinKey({ componentId: component.id, pin: "terminal" })
-		const first = firstLabelOf.get(name)
+	// Each pin joined by name (net labels, bus members) is linked to the first of its name, so the current can be
+	// followed from one to the other.
+	const firstOf = new Map<string, string>()
+	for (const { ref, key: name } of namedPins(circuit)) {
+		const pin = pinKey(ref)
+		const first = firstOf.get(name)
 		if (first === undefined) {
-			firstLabelOf.set(name, pin)
+			firstOf.set(name, pin)
 			continue
 		}
 		const id = `label:${pin}`

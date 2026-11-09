@@ -1,8 +1,24 @@
 import * as z from "zod"
 import { defineComponent, positive } from "./define"
 
-/** Characters in a net label's name. */
+/** Characters in a net label's or a bus's name. */
 export const NET_LABEL_MAX_LENGTH = 24
+
+const nameSchema = (description: string) =>
+	z.string().max(NET_LABEL_MAX_LENGTH).regex(/\S/, "needs a name").describe(description)
+
+/**
+ * A bus connector: its pins d0… are the members of the bus named `name`, so connectors of one name join pin by pin
+ * (d3 to d3), and a net label named after a member ("D3") taps it. Fixed widths, as a part's pins never change with a
+ * setting (ADR-009): 4 and 8, the widths of the counters and converters.
+ */
+const busConnector = <Type extends string>(type: Type, pins: readonly [string, ...string[]], idPrefix: string) =>
+	defineComponent(type, {
+		idPrefix,
+		pins,
+		params: { name: nameSchema("bus name: connectors with the same name join pin by pin; a net label named <name><n> taps member n") },
+		defaults: { name: "D" },
+	})
 
 export const PASSIVES = [
 	defineComponent("resistor", {
@@ -21,15 +37,12 @@ export const PASSIVES = [
 	defineComponent("net-label", {
 		idPrefix: "NL",
 		pins: ["terminal"],
-		params: {
-			name: z
-				.string()
-				.max(NET_LABEL_MAX_LENGTH)
-				.regex(/\S/, "needs a name")
-				.describe("labels with the same name are connected (spaces and capitals don't matter)"),
-		},
+		params: { name: nameSchema("labels with the same name are connected (spaces and capitals don't matter)") },
 		defaults: { name: "A" },
 	}),
+	// Prefixes as the wide gates: Q for quad, O for octal.
+	busConnector("bus-4", ["d0", "d1", "d2", "d3"], "BUSQ"),
+	busConnector("bus-8", ["d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7"], "BUSO"),
 	defineComponent("capacitor", {
 		idPrefix: "C",
 		pins: ["a", "b"],

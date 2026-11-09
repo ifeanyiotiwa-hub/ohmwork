@@ -19,6 +19,8 @@ export function valueText(component: Component): string {
 			return `${formatSi(amplitude, "V")} ${formatSi(frequency, "Hz")}${shifted}`
 		}
 		case "net-label":
+		case "bus-4":
+		case "bus-8":
 			return component.params.name
 		case "resistor":
 			// The power rating is in the inspector; the label stays the resistance.

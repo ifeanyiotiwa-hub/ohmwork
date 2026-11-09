@@ -21,6 +21,10 @@
 	</defs>
 	<rect class="grid" x="-20000" y="-20000" width="40000" height="40000" fill="url(#grid-dots)" />
 
+	@for (bus of buses(); track bus.key) {
+		<path class="bus-line" data-bus [attr.data-bus-name]="bus.name" [attr.d]="bus.d" />
+	}
+
 	@for (wire of wires(); track wire.id) {
 		<g
 			class="wire"
@@ -112,8 +116,8 @@
 			<text class="polarity" [attr.x]="mark.x" [attr.y]="mark.y">{{ mark.text }}</text>
 		}
 		<text class="part-label" [attr.x]="item.label.x" [attr.y]="item.label.y" [attr.text-anchor]="item.label.anchor">
-			@if (item.part.type === "net-label") {
-				<!-- A label is known by its name; its id (NL1) would only be clutter. -->
+			@if (item.namedByValue) {
+				<!-- A label or bus is known by its name; its id (NL1) would only be clutter. -->
 				<tspan class="part-name">{{ item.value }}</tspan>
 			} @else {
 				<tspan class="part-name">{{ item.part.id }}</tspan> {{ item.value }}

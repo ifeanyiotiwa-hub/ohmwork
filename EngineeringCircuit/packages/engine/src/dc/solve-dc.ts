@@ -418,6 +418,10 @@ const READ_ONLY_PINS: Partial<Record<ComponentType, readonly string[]>> = {
 	"dac-4bit": ["d0", "d1", "d2", "d3", "vref"],
 	"scope-probe": ["positive", "negative"],
 	"tri-state-buffer": ["in", "enable"],
+	// Joined by name, carrying nothing: a label or bus member with nothing else on it is no floating circuit.
+	"net-label": ["terminal"],
+	"bus-4": ["d0", "d1", "d2", "d3"],
+	"bus-8": ["d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7"],
 	voltmeter: ["positive", "negative"],
 }
 

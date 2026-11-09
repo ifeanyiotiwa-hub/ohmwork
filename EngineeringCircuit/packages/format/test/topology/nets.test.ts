@@ -1,7 +1,7 @@
 import { expect, test } from "vitest"
 import { createCircuit } from "../../src/schema/circuit"
 import { voltageDivider } from "../fixtures/voltage-divider"
-import { buildNets, pinKey } from "../../src/topology/nets"
+import { buildNets, namedPins, pinKey } from "../../src/topology/nets"
 
 const netKeys = (circuit = voltageDivider()) =>
 	buildNets(circuit).map((net) => ({ pins: net.pins.map(pinKey), isGround: net.isGround }))
@@ -44,4 +44,28 @@ test("net labels with the same name are one net, though no wire joins them; spac
 	expect(nets).toContainEqual(["NL1:terminal", "NL2:terminal", "R1:a", "R2:a"])
 	expect(nets).toContainEqual(["NL3:terminal", "R2:b"])
 	expect(nets).toContainEqual(["R1:b"])
+})
+
+const bus = (id: string, type: "bus-4" | "bus-8", name: string) => ({ id, type, ...at, params: { name } })
+
+test("bus connectors of one name join pin by pin, and a net label named after a member taps it", () => {
+	const circuit = createCircuit("Bus")
+	circuit.components.push(bus("BUS1", "bus-8", "D"), bus("BUS2", "bus-8", "d"), bus("BUS3", "bus-4", "D"), label("NL1", "D3"))
+	const nets = netKeys(circuit).map((net) => [...net.pins].sort())
+	expect(nets).toContainEqual(["BUS1:d0", "BUS2:d0", "BUS3:d0"])
+	expect(nets).toContainEqual(["BUS1:d3", "BUS2:d3", "BUS3:d3", "NL1:terminal"])
+	expect(nets).toContainEqual(["BUS1:d7", "BUS2:d7"])
+	expect(nets.filter((net) => net.some((pin) => pin.startsWith("BUS1:")))).toHaveLength(8)
+})
+
+test("named pins: each label, and each bus member as its bus name and number", () => {
+	const circuit = createCircuit("Named")
+	circuit.components.push(label("NL1", " Vcc "), bus("BUS1", "bus-4", "DATA"))
+	expect(namedPins(circuit).map(({ ref, key }) => `${pinKey(ref)}=${key}`)).toEqual([
+		"NL1:terminal=vcc",
+		"BUS1:d0=data0",
+		"BUS1:d1=data1",
+		"BUS1:d2=data2",
+		"BUS1:d3=data3",
+	])
 })

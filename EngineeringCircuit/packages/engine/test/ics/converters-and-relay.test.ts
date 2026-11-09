@@ -253,3 +253,42 @@ test("the 8-bit DAC outputs code × Vref / 255, and an 8-bit ADC → DAC round t
 	// One step behind (ADR-018): a DC solve settles the logic first, so the result is 132 × 5 / 255.
 	expect(roundTrip).toBeCloseTo((132 * 5) / 255, 9)
 })
+
+test("an ADC → DAC round trip over a bus: two 8-bit bus connectors named D carry all eight bits without a wire between", () => {
+	const result = solveDc(
+		circuitOf(
+			[
+				{ id: "VIN", type: "voltage-source", params: { voltage: 2.6 } },
+				{ id: "VREF", type: "voltage-rail", params: { voltage: 5 } },
+				{ id: "ADC1", type: "adc-8bit", params: {} },
+				{ id: "BUSO1", type: "bus-8", params: { name: "D" } },
+				{ id: "BUSO2", type: "bus-8", params: { name: "D" } },
+				{ id: "DAC1", type: "dac-8bit", params: {} },
+				{ id: "GND", type: "ground", params: {} },
+			],
+			[
+				["VIN.positive", "ADC1.in"],
+				["VIN.negative", "GND.terminal"],
+				["VREF.terminal", "ADC1.vref"],
+				["VREF.terminal", "DAC1.vref"],
+				...BITS_8.map((bit): Wires[number] => [`ADC1.${bit}`, `BUSO1.${bit}`]),
+				...BITS_8.map((bit): Wires[number] => [`BUSO2.${bit}`, `DAC1.${bit}`]),
+			],
+		),
+	)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	expect(result.solution.pinVoltages["DAC1:out"]).toBeCloseTo((132 * 5) / 255, 9)
+	expect(result.solution.warnings).toEqual([])
+})
+
+test("a 4-bit bus with nothing on some members raises no warning", () => {
+	const result = solveDc(
+		circuitOf(
+			[input("B0", true), { id: "BUSQ1", type: "bus-4", params: { name: "Q" } }, { id: "NL1", type: "net-label", params: { name: "q0" } }, { id: "OUT1", type: "logic-output", params: {} }],
+			[["B0.out", "BUSQ1.d0"], ["NL1.terminal", "OUT1.in"]],
+		),
+	)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	expect(result.solution.pinVoltages["OUT1:in"]).toBeCloseTo(5, 9)
+	expect(result.solution.warnings).toEqual([])
+})

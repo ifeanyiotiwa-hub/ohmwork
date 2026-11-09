@@ -181,3 +181,45 @@ test("net labels with the same name connect without a wire; renaming one disconn
 	await name.press("Enter")
 	await expect(page.locator(".part-reading", { hasText: "5 mA" }).first()).toBeVisible()
 })
+
+test("a bus carries several signals as one drawn line between connectors of one name", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	for (const [type, x, y] of [
+		["logic-input", 100, 180],
+		["logic-input", 100, 320],
+		["bus-4", 280, 250],
+		["bus-4", 520, 250],
+		["logic-output", 680, 180],
+		["logic-output", 680, 320],
+	] as const) {
+		await choosePart(page, type)
+		await canvas(page).click({ position: { x, y } })
+	}
+	// The second connector faces the first, so its members are on the right, toward the outputs.
+	await page.locator('[data-part="BUSQ2"]').click()
+	await page.keyboard.press("r")
+	await page.keyboard.press("r")
+	for (const [from, to] of [
+		["IN1:out", "BUSQ1:d0"],
+		["IN2:out", "BUSQ1:d1"],
+		["BUSQ2:d0", "OUT1:in"],
+		["BUSQ2:d1", "OUT2:in"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	await expect(page.locator("[data-bus]")).toHaveCount(1)
+
+	const lit = (id: string) => async () => Number(await page.locator(`[data-part="${id}"] .glow`).getAttribute("opacity"))
+	await page.locator('[data-part="IN2"]').click()
+	await expect.poll(lit("OUT2")).toBe(1)
+	await expect.poll(lit("OUT1")).toBe(0)
+
+	await page.locator('[data-part="BUSQ2"]').click()
+	const name = page.locator('[data-field="name"]')
+	await name.fill("E")
+	await name.press("Enter")
+	await expect(page.locator("[data-bus]")).toHaveCount(0)
+	await expect.poll(lit("OUT2")).toBe(0)
+})

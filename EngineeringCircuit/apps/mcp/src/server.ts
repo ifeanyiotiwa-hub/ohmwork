@@ -51,6 +51,7 @@ Push buttons are released unless you list them in simulate/probe "pressed"; in t
 Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style.
 Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
 Net labels (net-label, params.name) connect every pin wired to a label of the same name, with no wire between: use them for supplies (VCC) and long or crossing runs.
+Buses (bus-4, bus-8, params.name): connectors of one name join pin by pin (d3 to d3) and are drawn as one thick line; a net label named <bus name><n> (e.g. "D3") taps member n.
 Filters and amplifiers: frequency_response sweeps an ac-source's frequency and gives gain (dB) and phase at a pin or across a part.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 

@@ -12,6 +12,18 @@ export type SymbolShape = {
 }
 
 const LABEL_ABOVE = { x: 0, y: -24 }
+
+/** Members 20 apart from the top, centred on the part (as `PIN_OFFSETS` for bus-4 and bus-8). */
+function busConnectorSymbol(width: number): SymbolShape {
+	const half = (width - 1) * 10
+	const stubs = Array.from({ length: width }, (_, index) => `M-20 ${index * 20 - half} H-8`).join(" ")
+	return {
+		body: { left: -20, top: -half - 10, right: 20, bottom: half + 10 },
+		paths: [stubs, `M-8 ${-half - 8} H-2 V${half + 8} H-8 Z`, "M-2 0 H20"],
+		label: { x: 0, y: -half - 18 },
+		labelAnchor: "middle",
+	}
+}
 const TWO_PIN_BODY: Box = { left: -40, top: -20, right: 40, bottom: 20 }
 const METER_PATHS = ["M-40 0 H-16 M16 0 H40", "M-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0"]
 const POSITIVE_LEAD_MARK = { text: "+", at: { x: -26, y: -10 } }
@@ -174,6 +186,9 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 12, y: -16 },
 		labelAnchor: "middle",
 	},
+	// Bus connectors: each member's stub into a bar; the bus leaves the bar on the right (BUS_EXIT), drawn by the canvas.
+	"bus-4": busConnectorSymbol(4),
+	"bus-8": busConnectorSymbol(8),
 	junction: {
 		body: { left: -6, top: -6, right: 6, bottom: 6 },
 		paths: ["M-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0"],
@@ -569,6 +584,8 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	resistor: "Resistor",
 	junction: "Junction",
 	"net-label": "Net label",
+	"bus-4": "Bus (4 lines)",
+	"bus-8": "Bus (8 lines)",
 	capacitor: "Capacitor",
 	inductor: "Inductor",
 	switch: "Switch",

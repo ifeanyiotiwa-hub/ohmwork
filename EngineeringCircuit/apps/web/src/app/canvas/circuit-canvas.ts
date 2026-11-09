@@ -14,6 +14,7 @@ import {
 import type { DcSolution } from "@engineering-circuit/engine"
 import { CircuitStore } from "../circuit/circuit-store"
 import { glowOf } from "../circuit/glow"
+import { busLines } from "../circuit/buses"
 import { pathThrough, snap } from "../circuit/geometry"
 import { placeBox, routeAround } from "../circuit/routing"
 import { labelPlacement, readingPlacement } from "../circuit/labels"
@@ -58,6 +59,9 @@ const ARROW_STEPS: Readonly<Record<string, Point>> = {
 	ArrowUp: { x: 0, y: -1 },
 	ArrowDown: { x: 0, y: 1 },
 }
+/** Parts shown by their name (a net label, a bus) instead of their id. */
+const NAMED_BY_VALUE: ReadonlySet<ComponentType> = new Set(["net-label", "bus-4", "bus-8"])
+
 /** Keys that act on a focused part, wire or note as a click would. */
 const ACTIVATE_KEYS: ReadonlySet<string> = new Set(["Enter", " "])
 
@@ -196,6 +200,15 @@ export class CircuitCanvas {
 		return preview?.ids.has(part.id) ? { x: part.position.x + preview.delta.x, y: part.position.y + preview.delta.y } : part.position
 	}
 
+	/** Lines drawn between bus connectors of one name (they follow a drag, as wires do). */
+	protected readonly buses = computed(() =>
+		busLines(this.store.circuit(), (part) => this.positionOf(part), this.config.gridSize).map((line) => ({
+			key: `${line.from}-${line.to}`,
+			name: line.name,
+			d: pathThrough(line.points),
+		})),
+	)
+
 	protected readonly parts = computed(() => {
 		const solution = this.store.solution()
 		const selection = this.store.selection()
@@ -232,6 +245,7 @@ export class CircuitCanvas {
 					return { text: mark.text, x: at.x + offset.x, y: at.y + offset.y }
 				}),
 				value: valueText(part),
+				namedByValue: NAMED_BY_VALUE.has(part.type),
 				reading:
 					speedText(solution?.readings[part.id]) ??
 					meterText(part, solution?.readings[part.id]) ??
@@ -303,7 +317,11 @@ export class CircuitCanvas {
 		const circuit = this.store.circuit()
 		const partsById = new Map(circuit.components.map((part) => [part.id, part]))
 		return buildNets(circuit).flatMap((net) => {
-			const [first] = net.pins
+			// Shown on a real part's pin; a node of label or bus pins alone (an unused bus member) has nothing to read.
+			const first = net.pins.find((pin) => {
+				const type = partsById.get(pin.componentId)?.type
+				return type !== undefined && !NAMED_BY_VALUE.has(type)
+			})
 			const part = first ? partsById.get(first.componentId) : undefined
 			if (!first || !part || net.pins.length < 2) return []
 			const at = pinPosition(part, first.pin, this.positionOf(part))
