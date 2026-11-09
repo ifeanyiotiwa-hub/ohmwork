@@ -31,6 +31,8 @@
 			[attr.data-wire]="wire.id"
 			[attr.aria-label]="wire.label"
 			(pointerdown)="onWireDown($event, wire.id)"
+			(pointerenter)="$event.pointerType === 'mouse' && hover({ kind: 'wire', id: wire.id })"
+			(pointerleave)="$event.pointerType === 'mouse' && hover(undefined)"
 			(keydown)="onWireKey($event, wire.id)"
 		>
 			<path class="wire-hit" [attr.d]="wire.path" />
@@ -49,6 +51,7 @@
 			[class.selected]="item.selected"
 			[class.agent-changed]="item.agentChanged"
 			[class.junction]="item.part.type === 'junction'"
+			[class.overheated]="item.overheated"
 			[attr.data-part]="item.part.id"
 			[attr.aria-label]="item.part.id + ' ' + item.value"
 			[attr.transform]="item.transform"
@@ -74,10 +77,25 @@
 				@if (item.lever; as lever) {
 					<path class="symbol" [attr.d]="lever" />
 				}
+				@for (plate of item.plates; track plate.pin) {
+					<path class="plate" [attr.data-plate]="plate.pin" [attr.d]="plate.d" [style.stroke]="plate.colour" />
+				}
+				@if (item.wiper; as wiper) {
+					<path class="symbol" [attr.d]="wiper.d" />
+					<circle class="wiper-hit" data-wiper r="9" [attr.cx]="wiper.x" [attr.cy]="wiper.y" (pointerdown)="onWiperDown($event, item.part.id)" />
+				}
 				@for (segment of item.segments; track segment.pin) {
 					<path class="segment" [class.lit]="segment.lit" [attr.d]="segment.d" [attr.data-segment]="segment.pin" />
 				}
 			</g>
+			@if (item.overheated) {
+				<!-- Too much current or heat: a puff of smoke rises from the part. -->
+				<g class="smoke" data-smoke>
+					<circle class="puff" cx="-6" cy="-20" r="5" />
+					<circle class="puff" cx="4" cy="-24" r="6" />
+					<circle class="puff" cx="0" cy="-30" r="4" />
+				</g>
+			}
 		</g>
 		@for (mark of item.marks; track $index) {
 			<text class="polarity" [attr.x]="mark.x" [attr.y]="mark.y">{{ mark.text }}</text>
@@ -117,7 +135,15 @@
 
 	@for (item of parts(); track item.part.id) {
 		@for (pin of item.pins; track pin.key) {
-			<circle class="pin-hit" [attr.r]="pinHitRadius" [attr.cx]="pin.at.x" [attr.cy]="pin.at.y" (pointerdown)="onPinDown($event, pin.ref)" />
+			<circle
+				class="pin-hit"
+				[attr.r]="pinHitRadius"
+				[attr.cx]="pin.at.x"
+				[attr.cy]="pin.at.y"
+				(pointerdown)="onPinDown($event, pin.ref)"
+				(pointerenter)="$event.pointerType === 'mouse' && hover({ kind: 'pin', ref: pin.ref })"
+				(pointerleave)="$event.pointerType === 'mouse' && hover(undefined)"
+			/>
 			<circle
 				class="pin"
 				[attr.r]="config.pinRadius"
@@ -126,8 +152,52 @@
 				[attr.cy]="pin.at.y"
 				[attr.data-pin]="pin.key"
 				(pointerdown)="onPinDown($event, pin.ref)"
+				(pointerenter)="$event.pointerType === 'mouse' && hover({ kind: 'pin', ref: pin.ref })"
+				(pointerleave)="$event.pointerType === 'mouse' && hover(undefined)"
 			/>
 		}
+	}
+
+	@if (readout(); as info) {
+		<g class="readout" data-readout [attr.transform]="info.transform">
+			<rect class="readout-box" [attr.width]="info.width" [attr.height]="info.height" rx="4" />
+			<text class="readout-text" [attr.x]="info.padding" [attr.y]="info.height / 2" dominant-baseline="central">{{ info.text }}</text>
+		</g>
+	}
+
+	@if (dial(); as knob) {
+		<g class="dial" data-dial [attr.transform]="knob.transform">
+			<g class="dial-knob" data-dial-knob (pointerdown)="onDialDown($event, knob.componentId)" (wheel)="onDialWheel($event, knob.componentId)">
+				<circle class="dial-face" r="16" />
+				<line class="dial-pointer" x1="0" y1="-3" x2="0" y2="-13" [attr.transform]="knob.pointer" />
+			</g>
+			<g
+				class="dial-button"
+				role="button"
+				tabindex="0"
+				transform="translate(-14 32)"
+				[attr.aria-label]="'Decrease ' + knob.componentId + ' ' + knob.param"
+				(pointerdown)="$event.stopPropagation()"
+				(click)="nudge(knob.componentId, -1)"
+				(keydown.enter)="nudge(knob.componentId, -1)"
+			>
+				<circle r="10" />
+				<text text-anchor="middle" dominant-baseline="central">−</text>
+			</g>
+			<g
+				class="dial-button"
+				role="button"
+				tabindex="0"
+				transform="translate(14 32)"
+				[attr.aria-label]="'Increase ' + knob.componentId + ' ' + knob.param"
+				(pointerdown)="$event.stopPropagation()"
+				(click)="nudge(knob.componentId, 1)"
+				(keydown.enter)="nudge(knob.componentId, 1)"
+			>
+				<circle r="10" />
+				<text text-anchor="middle" dominant-baseline="central">+</text>
+			</g>
+		</g>
 	}
 
 	@if (selectionBox(); as box) {

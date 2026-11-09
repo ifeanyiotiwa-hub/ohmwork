@@ -14,6 +14,7 @@ import { LiveLink } from "../live/live-link"
 import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
 import { type Copied, copyParts, pasteCommand } from "./clipboard"
+import { dialOf, stepValue } from "./dial"
 import { kvlExample } from "./examples"
 import { UI_CONFIG } from "./ui-config"
 
@@ -128,6 +129,8 @@ export class CircuitStore {
 	})
 	private readonly clipboard = signal<Copied | undefined>(undefined)
 	readonly canPaste = computed(() => this.clipboard() !== undefined)
+	/** The last dial step from a click, wheel or key, to tell whether the next one continues the same turn. */
+	private lastNudge: { componentId: string; gesture: string; at: number } | undefined
 
 	readonly placing = signal<ComponentType | undefined>(undefined)
 	readonly wiringFrom = signal<PinRef | undefined>(undefined)
@@ -148,8 +151,11 @@ export class CircuitStore {
 		this.clock.restart()
 	}
 
-	/** Applies an edit; returns the resulting circuit, or undefined (with editError set) if it was refused. */
-	apply(command: EditCommand): Circuit | undefined {
+	/**
+	 * Applies an edit; returns the resulting circuit, or undefined (with editError set) if it was refused. Edits sharing a
+	 * `gesture` (one turn of a value dial) are one undo step.
+	 */
+	apply(command: EditCommand, { gesture }: { gesture?: string } = {}): Circuit | undefined {
 		const result = applyCommand(this.circuit(), command)
 		if (!result.ok) {
 			this.editError.set(result.errors.map((error) => error.message).join("\n"))
@@ -158,14 +164,38 @@ export class CircuitStore {
 		this.editError.set(undefined)
 		if (this.shared()) {
 			this.predicted.set(result.circuit)
-			this.live.send({ type: "edit", command })
+			this.live.send({ type: "edit", command, ...(gesture === undefined ? {} : { gesture }) })
 		} else {
-			this.local.replace(result.circuit, "learner", result.summary)
+			this.local.replace(result.circuit, "learner", result.summary, gesture === undefined ? {} : { gesture })
 			this.localRevision.update((revision) => revision + 1)
 		}
 		return result.circuit
 	}
 
+	/** Turns a part's value dial one step up or down; all the steps of one turn (`gesture`) are one undo step. */
+	turnDial(componentId: string, direction: 1 | -1, gesture: string): void {
+		const part = this.circuit().components.find((component) => component.id === componentId)
+		const dial = part ? dialOf(part.type) : undefined
+		if (!part || !dial) return
+		const value = (part.params as Readonly<Record<string, unknown>>)[dial.param]
+		if (typeof value !== "number") return
+		const next = stepValue(dial, value, direction)
+		if (next === value) return
+		this.apply({ type: "set-parameter", componentId, name: dial.param, value: next }, { gesture })
+	}
+
+	/**
+	 * One step of the dial from a click, a wheel notch or a key. Steps on the same part closer together than
+	 * `dial.turnIdleMs` count as one turn, so a burst of clicks is one undo step.
+	 */
+	nudgeDial(componentId: string, direction: 1 | -1): void {
+		const now = Date.now()
+		const last = this.lastNudge
+		const sameTurn = last?.componentId === componentId && now - last.at < this.config.dial.turnIdleMs
+		const gesture = sameTurn ? last.gesture : `nudge-${componentId}-${now}`
+		this.lastNudge = { componentId, gesture, at: now }
+		this.turnDial(componentId, direction, gesture)
+	}
 	undo(): void {
 		if (this.shared()) {
 			this.live.send({ type: "undo" })

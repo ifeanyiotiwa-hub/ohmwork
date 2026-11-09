@@ -148,6 +148,123 @@
 	font-weight: 600;
 }
 
+/* The live readout beside the pointer: never in the way of a click. */
+.readout {
+	pointer-events: none;
+}
+
+.readout-box {
+	fill: var(--surface);
+	stroke: var(--accent);
+	stroke-width: 1;
+}
+
+.readout-text {
+	fill: var(--text);
+	font-size: 12px;
+	font-weight: 600;
+}
+
+/* A capacitor's plates, coloured by their pins' voltages (set inline, like the wires). */
+.plate {
+	fill: none;
+	stroke-width: 3;
+	stroke-linecap: round;
+}
+
+.wiper-hit {
+	fill: transparent;
+	cursor: ew-resize;
+}
+
+/* A part over its rating: it glows red and smoke rises from it. */
+.part.overheated .symbol {
+	stroke: var(--danger);
+	animation: overheat 0.7s ease-in-out infinite alternate;
+}
+
+.puff {
+	fill: var(--text-muted);
+	opacity: 0;
+	pointer-events: none;
+	animation: smoke 1.8s ease-out infinite;
+
+	&:nth-child(2) {
+		animation-delay: 0.6s;
+	}
+
+	&:nth-child(3) {
+		animation-delay: 1.2s;
+	}
+}
+
+@keyframes overheat {
+	from {
+		filter: drop-shadow(0 0 1px var(--danger));
+	}
+	to {
+		filter: drop-shadow(0 0 6px var(--danger));
+	}
+}
+
+@keyframes smoke {
+	from {
+		opacity: 0.55;
+		transform: translateY(0) scale(0.6);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-26px) scale(1.6);
+	}
+}
+
+/* Without motion: a steady red glow and a still wisp, so the state still shows. */
+@media (prefers-reduced-motion: reduce) {
+	.part.overheated .symbol {
+		animation: none;
+		filter: drop-shadow(0 0 4px var(--danger));
+	}
+
+	.puff {
+		animation: none;
+		opacity: 0.4;
+	}
+}
+
+/* The value dial: a knob to drag or scroll, and − / + buttons beneath it. */
+.dial-face {
+	fill: var(--surface);
+	stroke: var(--accent);
+	stroke-width: 2;
+	cursor: ns-resize;
+}
+
+.dial-pointer {
+	stroke: var(--accent);
+	stroke-width: 3;
+	stroke-linecap: round;
+	pointer-events: none;
+}
+
+.dial-button {
+	cursor: pointer;
+
+	circle {
+		fill: var(--surface-hover);
+		stroke: var(--border);
+	}
+
+	text {
+		fill: var(--text);
+		font-size: 14px;
+		pointer-events: none;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--accent);
+	}
+}
+
 /* The invisible, larger target around each pin (transparent fill still receives taps and clicks). */
 .pin-hit {
 	fill: transparent;

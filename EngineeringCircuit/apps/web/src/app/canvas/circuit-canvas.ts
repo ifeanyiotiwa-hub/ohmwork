@@ -20,7 +20,10 @@ import { labelPlacement, readingPlacement } from "../circuit/labels"
 import { isMeter, meterText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
 import {
+	CAPACITOR_PLATES,
 	SEVEN_SEGMENT_PATHS,
+	WIPER_TRACK,
+	potentiometerWiper,
 	SYMBOLS,
 	type SymbolShape,
 	pushButtonPath,
@@ -31,6 +34,21 @@ import {
 import { UI_CONFIG } from "../circuit/ui-config"
 import { flowOf, voltageColour } from "../circuit/visuals"
 import { type View, pinchView } from "./gestures"
+import { dialOf } from "../circuit/dial"
+
+/** The value dial sits this far to the right of the part's body, level with its top. */
+const DIAL_GAP = 30
+const DIAL_DROP = 16
+/** The live readout sits this far right of and above the pointer, and is sized from its text. */
+const READOUT_OFFSET = { x: 14, y: -26 }
+const READOUT_CHAR_WIDTH = 7
+const READOUT_PADDING = 8
+const READOUT_HEIGHT = 20
+/** An upright part's name and value are written beside it (labels.ts): the dial goes past them. */
+const SIDE_LABEL_ROOM = 80
+
+/** A wire or pin under the pointer (or last tapped), whose live values the readout shows. */
+type Hovered = { kind: "wire"; id: string } | { kind: "pin"; ref: PinRef }
 
 /** Keys that move a focused part one grid step. */
 const ARROW_STEPS: Readonly<Record<string, Point>> = {
@@ -49,6 +67,8 @@ type Interaction =
 	| { kind: "box"; start: Point }
 	| { kind: "drag-note"; noteId: string; startPoint: Point; startPosition: Point; moved: boolean }
 	| { kind: "pinch"; from: readonly [Point, Point]; startView: View }
+	| { kind: "dial"; componentId: string; gesture: string; startY: number; steps: number }
+	| { kind: "wiper"; componentId: string; gesture: string }
 
 /** Note boxes: text size and padding, in canvas units (a monospace-like estimate of the text width). */
 const NOTE_LINE_HEIGHT = 16
@@ -95,6 +115,64 @@ export class CircuitCanvas {
 			}
 		})
 	})
+	/** What the pointer (or a tap) is on, for the live readout. */
+	private readonly hovered = signal<Hovered | undefined>(undefined)
+
+	/** The live voltage (and, on a wire, current) of what is under the pointer, beside it. */
+	protected readonly readout = computed(() => {
+		const hovered = this.hovered()
+		if (!hovered) return undefined
+		const solution = this.store.solution()
+		const at = this.pointer()
+		let text: string
+		if (hovered.kind === "pin") {
+			const voltage = solution?.pinVoltages[pinKey(hovered.ref)]
+			text = `${hovered.ref.componentId} ${hovered.ref.pin} · ${voltage === undefined ? "no reading" : formatSi(voltage, "V")}`
+		} else {
+			const wire = this.store.circuit().wires.find((candidate) => candidate.id === hovered.id)
+			if (!wire) return undefined
+			const voltage = solution?.pinVoltages[pinKey(wire.from)]
+			const current = this.store.wireCurrents()[wire.id]
+			text =
+				voltage === undefined || current === undefined
+					? "no reading"
+					: `${formatSi(voltage, "V")} · ${formatSi(Math.abs(current), "A")}`
+		}
+		return {
+			text,
+			width: text.length * READOUT_CHAR_WIDTH + 2 * READOUT_PADDING,
+			height: READOUT_HEIGHT,
+			padding: READOUT_PADDING,
+			transform: `translate(${at.x + READOUT_OFFSET.x} ${at.y + READOUT_OFFSET.y})`,
+		}
+	})
+
+	protected hover(target: Hovered | undefined): void {
+		this.hovered.set(target)
+	}
+
+	/** Turns the knob drawing as the value steps, so a turn is visible (the value has no fixed range to show). */
+	private readonly dialAngle = signal(0)
+
+	/** The value dial beside the one selected part whose main value can be turned. */
+	protected readonly dial = computed(() => {
+		const part = this.store.selectedComponent()
+		const dial = part && this.store.multiSelection().size === 0 ? dialOf(part.type) : undefined
+		if (!part || !dial) return undefined
+		const { body } = SYMBOLS[part.type]
+		const corners = [
+			{ x: body.left, y: body.top },
+			{ x: body.right, y: body.top },
+			{ x: body.left, y: body.bottom },
+			{ x: body.right, y: body.bottom },
+		].map((corner) => rotate(corner, part.rotation))
+		const at = this.positionOf(part)
+		const upright = part.rotation === 90 || part.rotation === 270
+		const x = at.x + Math.max(...corners.map((corner) => corner.x)) + DIAL_GAP + (upright ? SIDE_LABEL_ROOM : 0)
+		const y = at.y + Math.min(...corners.map((corner) => corner.y)) + DIAL_DROP
+		return { componentId: part.id, param: dial.param, transform: `translate(${x} ${y})`, pointer: `rotate(${this.dialAngle()})` }
+	})
+
 	/** Half a grid step: the largest tap target that never overlaps the next pin. */
 	protected readonly pinHitRadius = this.config.gridSize / 2
 	protected readonly noteLineHeight = NOTE_LINE_HEIGHT
@@ -118,6 +196,8 @@ export class CircuitCanvas {
 		const pressed = this.store.pressed()
 		const group = this.store.multiSelection()
 		const { logicHigh } = this.store.circuit().simulation
+		const largest = Math.max(0, ...Object.values(solution?.pinVoltages ?? {}).map(Math.abs))
+		const overheated = new Set(this.store.warnings().flatMap((warning) => (warning.kind === "burn-out" ? warning.componentIds : [])))
 		return this.store.circuit().components.map((part) => {
 			const at = this.positionOf(part)
 			const symbol = SYMBOLS[part.type]
@@ -129,6 +209,13 @@ export class CircuitCanvas {
 				paths: symbol.paths,
 				lever: this.leverOf(part, pressed, solution?.states?.[part.id]),
 				segments: this.segmentsOf(part, solution, logicHigh),
+				// A capacitor's plates in their pins' voltage colours (as the wires), so its charging shows.
+				plates: (CAPACITOR_PLATES[part.type] ?? []).map(({ pin, d }) => {
+					const voltage = solution?.pinVoltages[`${part.id}:${pin}`]
+					return { pin, d, colour: voltage === undefined ? null : voltageColour(voltage, largest) }
+				}),
+				wiper: part.type === "potentiometer" ? potentiometerWiper(part.params.position) : undefined,
+				overheated: overheated.has(part.id),
 				label: labelPlacement(symbol, part.rotation, at),
 				readingAt: readingPlacement(symbol, part.rotation, at, isMeter(part)),
 				marks: (symbol.marks ?? []).map((mark) => {
@@ -226,6 +313,7 @@ export class CircuitCanvas {
 
 	protected onBackgroundDown(event: PointerEvent): void {
 		if (this.startsPinch(event)) return
+		this.hovered.set(undefined)
 		const placing = this.store.placing()
 		if (placing) {
 			this.place(placing, this.toCircuitPoint(event))
@@ -321,6 +409,11 @@ export class CircuitCanvas {
 			return
 		}
 		this.store.selection.set({ kind: "wire", id: wireId })
+		// A tap has no hover: show the wire's readout where the finger is, until the next tap elsewhere.
+		if (event.pointerType === "touch") {
+			this.pointer.set(this.toCircuitPoint(event))
+			this.hovered.set({ kind: "wire", id: wireId })
+		}
 	}
 
 	protected onPointerMove(event: PointerEvent): void {
@@ -333,6 +426,26 @@ export class CircuitCanvas {
 			if (Math.hypot(now.x - held.start.x, now.y - held.start.y) > this.config.longPressSlopPx) this.cancelLongPress()
 		}
 		const interaction = this.interaction
+		if (interaction.kind === "wiper") {
+			const part = this.store.circuit().components.find((candidate) => candidate.id === interaction.componentId)
+			if (part?.type !== "potentiometer") return
+			const position = this.wiperPositionAt(part, point)
+			if (position !== part.params.position) {
+				this.store.apply({ type: "set-parameter", componentId: part.id, name: "position", value: position }, { gesture: interaction.gesture })
+			}
+			return
+		}
+		if (interaction.kind === "dial") {
+			// Up is more: one step per `pixelsPerStep` dragged since the press, applied as they are crossed.
+			const target = Math.trunc((interaction.startY - event.clientY) / this.config.dial.pixelsPerStep)
+			while (interaction.steps !== target) {
+				const direction = target > interaction.steps ? 1 : -1
+				this.store.turnDial(interaction.componentId, direction, interaction.gesture)
+				this.dialAngle.update((angle) => angle + direction * this.config.dial.degreesPerStep)
+				interaction.steps += direction
+			}
+			return
+		}
 		if (interaction.kind === "pinch") {
 			const [first, second] = [...this.touches.values()]
 			if (!first || !second) return
@@ -484,6 +597,41 @@ export class CircuitCanvas {
 			const position = part.params.position === "a" ? "b" : "a"
 			this.store.apply({ type: "set-parameter", componentId: part.id, name: "position", value: position })
 		}
+	}
+
+	/** Grabbing the wiper also selects its potentiometer, so its value shows while it moves. */
+	protected onWiperDown(event: PointerEvent, componentId: string): void {
+		event.stopPropagation()
+		this.store.multiSelection.set(new Set())
+		this.store.selection.set({ kind: "component", id: componentId })
+		this.interaction = { kind: "wiper", componentId, gesture: `wiper-${componentId}-${Date.now()}` }
+		this.capture(event)
+	}
+
+	/** Where along its track the pointer is, from 0 (end a) to 1 (end b), in steps of 1%. */
+	private wiperPositionAt(part: Part, point: Point): number {
+		const at = this.positionOf(part)
+		const local = rotate({ x: point.x - at.x, y: point.y - at.y }, ((360 - part.rotation) % 360) as Part["rotation"])
+		const fraction = (local.x - WIPER_TRACK.start) / WIPER_TRACK.length
+		return Math.round(Math.min(1, Math.max(0, fraction)) * 100) / 100
+	}
+
+	protected onDialDown(event: PointerEvent, componentId: string): void {
+		event.stopPropagation()
+		this.interaction = { kind: "dial", componentId, gesture: `dial-${componentId}-${Date.now()}`, startY: event.clientY, steps: 0 }
+		this.capture(event)
+	}
+
+	/** The wheel over the knob turns it (one step per notch) instead of zooming. */
+	protected onDialWheel(event: WheelEvent, componentId: string): void {
+		event.preventDefault()
+		event.stopPropagation()
+		this.nudge(componentId, event.deltaY < 0 ? 1 : -1)
+	}
+
+	protected nudge(componentId: string, direction: 1 | -1): void {
+		this.store.nudgeDial(componentId, direction)
+		this.dialAngle.update((angle) => angle + direction * this.config.dial.degreesPerStep)
 	}
 
 	protected onWheel(event: WheelEvent): void {

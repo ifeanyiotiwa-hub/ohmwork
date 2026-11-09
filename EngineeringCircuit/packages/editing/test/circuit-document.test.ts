@@ -1,5 +1,5 @@
 import { createCircuit } from "@engineering-circuit/format"
-import { expect, test } from "vitest"
+import { describe, expect, test } from "vitest"
 import { CircuitDocument } from "../src/circuit-document"
 
 const addResistor = { type: "add-component", component: { type: "resistor", params: { resistance: 100 } } } as const
@@ -83,4 +83,40 @@ test("history keeps only the last `historyLimit` changes; undo stops there", () 
 	expect(document.undo("learner").ok).toBe(true)
 	expect(document.undo("learner")).toEqual({ ok: false, message: "Nothing to undo" })
 	expect(document.circuit.components.map((component) => component.id)).toEqual(["R1"])
+})
+
+describe("a gesture (turning a value dial) is one history step", () => {
+	const setR = (value: number) => ({ type: "set-parameter", componentId: "R1", name: "resistance", value }) as const
+	const withResistor = () => {
+		const document = new CircuitDocument(createCircuit("t"))
+		document.apply({ type: "add-component", component: { type: "resistor", params: { resistance: 1000 } } }, "learner")
+		return document
+	}
+
+	test("edits with the same gesture merge into one entry; one undo goes back to before the gesture", () => {
+		const document = withResistor()
+		for (const value of [1200, 1500, 1800]) document.apply(setR(value), "learner", { gesture: "dial-1" })
+		expect(document.history).toHaveLength(2)
+		expect(document.history.at(-1)?.summary).toContain("1800")
+		document.undo("learner")
+		expect(document.circuit.components[0]?.params).toMatchObject({ resistance: 1000 })
+	})
+
+	test("a new gesture, another author's edit in between, or no gesture each start a new entry", () => {
+		const document = withResistor()
+		document.apply(setR(1200), "learner", { gesture: "dial-1" })
+		document.apply(setR(1500), "learner", { gesture: "dial-2" })
+		document.apply(setR(1800), "agent", { gesture: "dial-2" })
+		document.apply(setR(2200), "learner", { gesture: "dial-2" })
+		document.apply(setR(2700), "learner")
+		expect(document.history).toHaveLength(6)
+	})
+
+	test("every merged edit still counts as a change for listeners (the app and the agent see each step)", () => {
+		const document = withResistor()
+		const revisions: number[] = []
+		document.subscribe((change) => revisions.push(change.revision))
+		for (const value of [1200, 1500]) document.apply(setR(value), "learner", { gesture: "dial-1" })
+		expect(revisions).toEqual([2, 3])
+	})
 })

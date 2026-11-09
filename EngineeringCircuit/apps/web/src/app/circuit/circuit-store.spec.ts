@@ -51,6 +51,23 @@ test("a note can be added, selected and removed", () => {
 	expect(store.selection()).toBeUndefined()
 })
 
+test("turning the value dial steps a part's value; one turn of several steps is undone at once", () => {
+	const resistance = () => store.circuit().components.find((component) => component.id === "R2")?.params
+	expect(resistance()).toMatchObject({ resistance: 2 })
+	store.turnDial("R2", 1, "turn-1")
+	store.turnDial("R2", 1, "turn-1")
+	store.turnDial("R2", 1, "turn-1")
+	expect(resistance()).toMatchObject({ resistance: 3.3 })
+	store.undo()
+	expect(resistance()).toMatchObject({ resistance: 2 })
+})
+
+test("a part without a dial is left as it is", () => {
+	const before = store.circuit()
+	store.turnDial("GND1", 1, "turn-2")
+	expect(store.circuit()).toBe(before)
+})
+
 test("Paste is only offered once something has been copied", () => {
 	expect(store.canPaste()).toBe(false)
 	store.toggleInSelection("R1")
@@ -228,6 +245,13 @@ describe("joined to the live link", () => {
 
 		expect(live.sent.at(-1)).toMatchObject({ type: "replace", circuit: { components: [{ id: "C1" }] } })
 		expect(store.circuit().components.map((component) => component.id)).toEqual(["C1"])
+	})
+
+	test("turning the dial while linked sends edits marked with the turn, so the server keeps it as one undo step", () => {
+		store.apply({ type: "add-component", component: { type: "resistor", params: { resistance: 1000 } } })
+		serverSends({ revision: 1, circuit: { ...sharedCircuit, components: store.circuit().components }, history: [] })
+		store.turnDial("R1", 1, "turn-9")
+		expect(live.sent.at(-1)).toMatchObject({ type: "edit", gesture: "turn-9", command: { type: "set-parameter", componentId: "R1", value: 1200 } })
 	})
 
 	test("reconnecting to a server that has its own work shows the server's circuit", () => {

@@ -82,7 +82,7 @@ whatever the app is at that point.
 | Several learners on one circuit | D14 | The shared document moves to the server |
 | Cross-device sync | D14 | Library entries stored per account |
 
-### D18 Release (new, from the audit)
+### D18 Release (new, from the audit; signing, Android release and iOS set aside by the owner, 2026-11-09)
 | Item | How |
 |---|---|
 | Public repo and hosting | A git remote (GitHub), the PWA hosted (static hosting), the licence and contribution notes |

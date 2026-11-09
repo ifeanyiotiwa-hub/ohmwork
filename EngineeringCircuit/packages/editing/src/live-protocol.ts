@@ -10,7 +10,8 @@ export const LIVE_TOKEN_PARAM = "token"
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"])
 
 export const clientMessageSchema = z.discriminatedUnion("type", [
-	z.strictObject({ type: z.literal("edit"), command: editCommandSchema }),
+	// `gesture`: edits of one continuous action (a value dial) share it and are one undo step (CircuitDocument.apply).
+	z.strictObject({ type: z.literal("edit"), command: editCommandSchema, gesture: z.string().min(1).max(64).optional() }),
 	z.strictObject({ type: z.literal("undo") }),
 	z.strictObject({ type: z.literal("replace"), circuit: z.unknown(), summary: z.string().min(1) }),
 ])

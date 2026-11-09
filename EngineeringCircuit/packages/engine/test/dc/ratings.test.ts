@@ -288,3 +288,19 @@ describe("LED 7-segment display (Kingbright SC56-11EWA: 1.9 V at 10 mA per segme
 		expect(messages).toContainEqual(expect.stringMatching(/^SEG1 segment a carries 6\d(\.\d+)? mA, but it is rated for 30 mA: a real one would burn out\./))
 	})
 })
+
+test("burn-out warnings are marked as such, so the app can show the part overheating", () => {
+	const result = solveDc(
+		circuitOf(
+			[
+				{ id: "V1", type: "voltage-source", params: { voltage: 5 } },
+				{ id: "LED1", type: "led", params: {} },
+				{ id: "GND", type: "ground", params: {} },
+			],
+			[["V1.positive", "LED1.anode"], ["LED1.cathode", "GND.terminal"], ["V1.negative", "GND.terminal"]],
+		),
+	)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	expect(result.solution.warnings).toContainEqual(expect.objectContaining({ componentIds: ["LED1"], kind: "burn-out" }))
+	expect(result.solution.warnings.filter((warning) => warning.kind === "burn-out").every((warning) => warning.message.includes("burn out"))).toBe(true)
+})

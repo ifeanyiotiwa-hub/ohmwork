@@ -182,3 +182,16 @@ test("a message larger than the limit closes the connection and changes nothing"
 	expect(await closed).toBe(1009)
 	expect(document.revision).toBe(0)
 })
+
+test("edits sent with the same gesture (a value dial turned) are one undo step on the server", async () => {
+	const peer = await join()
+	await peer.next()
+	peer.socket.send(JSON.stringify(addResistor))
+	await peer.next()
+	for (const resistance of [1200, 1500, 1800]) {
+		peer.socket.send(JSON.stringify({ type: "edit", command: { type: "set-parameter", componentId: "R1", name: "resistance", value: resistance }, gesture: "dial-7" }))
+		await peer.next()
+	}
+	expect(document.history).toHaveLength(2)
+	expect(document.circuit.components[0]?.params).toMatchObject({ resistance: 1800 })
+})

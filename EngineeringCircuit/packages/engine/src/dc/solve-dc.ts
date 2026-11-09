@@ -255,6 +255,7 @@ function overRatings(
 	const issue = (actual: string, limit: string): SimIssue => ({
 		componentIds: [id],
 		message: `${id} ${actual}, but it is rated for ${limit}: a real one would burn out.${advice}`,
+		kind: "burn-out",
 	})
 	return [
 		...(current > rating.maxCurrent ? [issue(`carries ${formatSi(current, "A")} into its ${pin}`, formatSi(rating.maxCurrent, "A"))] : []),
@@ -270,6 +271,7 @@ function burnOutWarnings(
 	const burnsOut = (id: string, actual: string, rating: string, advice: string): SimIssue => ({
 		componentIds: [id],
 		message: `${id} ${actual}, but it is rated for ${rating}: a real one would burn out.${advice}`,
+		kind: "burn-out",
 	})
 	return circuit.components.flatMap((component): SimIssue[] => {
 		if (component.type === "rgb-led") {

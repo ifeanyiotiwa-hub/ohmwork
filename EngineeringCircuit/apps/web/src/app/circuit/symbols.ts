@@ -188,7 +188,8 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 	},
 	potentiometer: {
 		body: TWO_PIN_BODY,
-		paths: ["M-40 0 H-24 L-20 -8 L-12 8 L-4 -8 L4 8 L12 -8 L20 8 L24 0 H40", "M0 -40 V-12 M-5 -18 L0 -11 L5 -18"],
+		// The wiper is drawn at its position by potentiometerWiper.
+		paths: ["M-40 0 H-24 L-20 -8 L-12 8 L-4 -8 L4 8 L12 -8 L20 8 L24 0 H40"],
 		label: { x: 26, y: -30 },
 		labelAnchor: "start",
 	},
@@ -495,6 +496,26 @@ export const switchLeverPath = (closed: boolean) => (closed ? "M-16 0 L16 0" : "
 
 /** The two-way switch's lever, from the common contact to the selected one. */
 export const spdtLeverPath = (position: "a" | "b") => (position === "a" ? "M-16 -1 L16 -18" : "M-16 1 L16 18")
+
+/** The potentiometer's track runs from x = −24 (position 0, end a) to 24 (position 1, end b); the arrow tip touches it. */
+export const WIPER_TRACK = { start: -24, length: 48, tipY: -11 }
+/** The wiper: down from its pin, across to its position on the track, ending in an arrow. */
+export function potentiometerWiper(position: number): { d: string; x: number; y: number } {
+	const x = WIPER_TRACK.start + WIPER_TRACK.length * position
+	return { d: `M0 -40 V-26 H${x} V-12 M${x - 5} -18 L${x} ${WIPER_TRACK.tipY} L${x + 5} -18`, x, y: WIPER_TRACK.tipY - 6 }
+}
+
+/** Each capacitor plate, by the pin it belongs to, so it can be coloured with that pin's voltage. */
+export const CAPACITOR_PLATES: Partial<Record<ComponentType, { pin: string; d: string }[]>> = {
+	capacitor: [
+		{ pin: "a", d: "M-5 -14 V14" },
+		{ pin: "b", d: "M5 -14 V14" },
+	],
+	"polarized-capacitor": [
+		{ pin: "positive", d: "M-5 -14 V14" },
+		{ pin: "negative", d: "M9 -14 Q1 0 9 14" },
+	],
+}
 
 /** A relay's contact arm: from common to normally open when pulled in, else to normally closed. */
 export const relayLeverPath = (pulledIn: boolean) => (pulledIn ? "M14 0 L18 -18" : "M14 0 L18 18")

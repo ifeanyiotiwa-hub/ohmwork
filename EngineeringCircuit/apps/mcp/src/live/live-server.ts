@@ -102,7 +102,7 @@ export class LiveServer {
 	private perform(message: ClientMessage): string | undefined {
 		switch (message.type) {
 			case "edit": {
-				const result = this.document.apply(message.command, "learner")
+				const result = this.document.apply(message.command, "learner", message.gesture ? { gesture: message.gesture } : {})
 				return result.ok ? undefined : result.errors.map((error) => error.message).join("\n")
 			}
 			case "undo": {

@@ -138,6 +138,14 @@ export class App {
 			case "R":
 				this.store.rotateSelected()
 				break
+			case "+":
+			case "=":
+			case "-":
+			case "_": {
+				const part = this.store.selectedComponent()
+				if (part) this.store.nudgeDial(part.id, event.key === "+" || event.key === "=" ? 1 : -1)
+				break
+			}
 		}
 	}
 }

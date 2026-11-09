@@ -11,6 +11,8 @@ export type UiConfig = {
 	longPressMs: number
 	/** How far (screen pixels) a finger may drift during a long press: fingers are not as still as a mouse. */
 	longPressSlopPx: number
+	/** Value dial: pixels of drag per step, how far the knob turns per step, and the pause that ends one turn of clicks, wheel notches or keys. */
+	dial: { pixelsPerStep: number; degreesPerStep: number; turnIdleMs: number }
 	/** An LED 7-segment's segment shows lit above this share of its full-brightness current. */
 	segmentLitFraction: number
 	/** Drawn pin radius, canvas units. The click/tap target is half a grid step, the most that never overlaps a neighbour. */
@@ -65,6 +67,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	longPressSlopPx: 10,
 	pinRadius: 5,
 	segmentLitFraction: 0.1,
+	dial: { pixelsPerStep: 10, degreesPerStep: 30, turnIdleMs: 1000 },
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	scope: { windowRealSeconds: 4, maxSamples: 8000 },
