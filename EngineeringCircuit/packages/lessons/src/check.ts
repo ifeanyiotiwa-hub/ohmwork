@@ -1,4 +1,4 @@
-import { type DcSolution, initialTransientState, solveDc, stepTransient } from "@engineering-circuit/engine"
+import { type DcSolution, advanceTransient, initialTransientState, solveDc } from "@engineering-circuit/engine"
 import { type Circuit, type ComponentType, formatSi } from "@engineering-circuit/format"
 import type { Check, Lesson } from "./schema"
 
@@ -54,18 +54,10 @@ function run(circuit: Circuit, check: Check): Omit<CheckResult, "description"> {
 			}
 		}
 		case "reading-at": {
-			const steps = Math.ceil(check.at / circuit.simulation.timeStep)
-			if (steps > MAX_STEPS) return { passed: false, found: `Checking needs ${steps} time steps; raise the time step.` }
-			let state = initialTransientState()
-			let solution: DcSolution | undefined
-			for (let step = 0; step < steps; step++) {
-				const result = stepTransient(circuit, state, { timeStep: circuit.simulation.timeStep })
-				if (!result.ok) return { passed: false, found: errorsOf(result) }
-				state = result.state
-				solution = result.solution
-			}
-			if (!solution) return { passed: false, found: "Nothing ran." }
-			return judgeReadings(circuit, solution, check, ` after ${formatSi(state.time, "s")}`)
+			const result = advanceTransient(circuit, initialTransientState(), check.at, { maxStep: circuit.simulation.timeStep, maxSteps: MAX_STEPS })
+			if (!result.ok) return { passed: false, found: errorsOf(result) }
+			if (!result.reachedUntil) return { passed: false, found: `Checking needs more than ${MAX_STEPS} time steps; raise the time step.` }
+			return judgeReadings(circuit, result.solution, check, ` after ${formatSi(result.state.time, "s")}`)
 		}
 		case "truth-table":
 			return truthTable(circuit, check)

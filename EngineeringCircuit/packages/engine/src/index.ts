@@ -9,3 +9,4 @@ export {
 	stepTransient,
 } from "./transient/step"
 export { wireCurrents } from "./dc/wire-currents"
+export { type AdvanceOptions, type AdvanceResult, advanceTransient, usesFixedSteps } from "./transient/adaptive"

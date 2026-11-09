@@ -35,6 +35,7 @@ const singleCommandSchema = z.discriminatedUnion("type", [
 		speed: z.number().optional(),
 		logicHigh: z.number().optional(),
 		temperature: z.number().optional(),
+		stepping: z.enum(["fixed", "adaptive"]).optional(),
 	}),
 	z.strictObject({
 		type: z.literal("rotate-component"),

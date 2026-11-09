@@ -57,7 +57,7 @@ whatever the app is at that point.
 ### D16 Engine depth
 | Item | How |
 |---|---|
-| Adaptive time step | Local truncation error control as in SPICE; keep the fixed step as an option; golden tests must still pass |
+| ~~Adaptive time step~~ (done, D16c: step doubling; logic circuits stay fixed) | Local truncation error control as in SPICE; keep the fixed step as an option; golden tests must still pass |
 | AC analysis (Bode plot) | Small-signal analysis around the DC point with complex MNA; a frequency-sweep view; golden tests against ngspice `.ac` |
 | ~~Transistor dynamics~~ (done, D16b; capacitances held constant, LEDs/β/Zener voltage not temperature-dependent) | Junction capacitances, Early effect and temperature (Gummel–Poon parameters); ngspice goldens |
 | ~~Op-amp limits~~ (done, D16b, with the output current limit) | Slew rate and gain-bandwidth as parameters (CircuitJS1 keeps GBW in its format but does not simulate it) |

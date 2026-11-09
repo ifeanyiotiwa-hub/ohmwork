@@ -169,3 +169,9 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - A part's own working that the next time step needs (stored charge, the op-amp's drive, internal capacitors) is `internal` state: kept between steps, never shown as a reading (the AI's probe showed a transistor's charge as volts until this).
 - Old files (v8 and earlier) keep their behaviour: ideal op-amps (GBW, slew 1e15, 1e6 A), transistors with no Early effect or charge, 27 °C.
 
+## ADR-032: Adaptive time steps (D16c)
+- `advanceTransient(circuit, state, until, { maxStep, … })` moves a circuit on in time. Adaptive (format v10 `simulation.stepping`, the default for new circuits): each step is taken whole and as two halves; the difference over 3 (Richardson, second order) is the error, held to RELTOL 0.1%, 1 µV, 1 nA on every stored state. Kept steps use the halves; the next step is 0.9·(1/ratio)^(1/3) times larger, between 0.2× and 2×. Step-doubling was chosen over SPICE's divided-difference estimate because it needs no extra history and works for any companion model, at three solves per step.
+- The circuit's time step is the largest step (SPICE TMAX). Steps land exactly on square-wave edges and on times asked for (an agent's sample times): breakpoints. RC charging takes under 150 steps for 5 ms to 0.1% (a fixed 10 µs step takes 500); the RLC goldens still pass within 1%.
+- Circuits with logic, clocks, the 555, converters or relays keep fixed steps: their timing is one step per change (ADR-018), so a varying step would change it. Old files keep fixed steps (migration 9→10); fixed stepping is the old behaviour exactly.
+- The app's worker, the agent's `simulate_over_time` (which now also reports the stepping and the steps taken) and the lesson checker all go through it; the step size carries over from frame to frame. The least steps a run can take is duration ÷ time step, so the agent's step limit is still checked up front.
+

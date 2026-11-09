@@ -376,7 +376,7 @@ describe("over time", () => {
 	})
 
 	test("set_simulation changes the time step and speed, and period is accepted for frequency", async () => {
-		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001, logic high 5 V, 27 °C")
+		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001, logic high 5 V, 27 °C, adaptive steps")
 		await call("add_component", { type: "ac-source" })
 		expect((await call("set_parameter", { componentId: "AC1", name: "period", value: 0.01 })).text).toBe("Set AC1 frequency to 100")
 	})

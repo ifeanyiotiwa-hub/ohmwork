@@ -53,6 +53,13 @@ test("Pause stops simulated time and says so; Resume goes on", async ({ page }) 
 	await page.getByRole("button", { name: "Resume" }).click()
 	await expect(time).not.toHaveText(frozen ?? "")
 	await expect(time).toContainText("Simulating")
+
+	// A new circuit steps adaptively; it can be set to fixed steps (the circuit's settings show with nothing selected).
+	await page.keyboard.press("Escape")
+	const stepping = page.locator('[data-field="stepping"]')
+	await expect(stepping).toHaveValue("adaptive")
+	await stepping.selectOption("fixed")
+	await expect(stepping).toHaveValue("fixed")
 })
 
 test("Ctrl/⌘+A selects every part, Escape clears; the group panel copies, pastes and clears", async ({ page }) => {

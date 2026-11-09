@@ -2,10 +2,10 @@ import type { Circuit } from "../../src/schema/circuit"
 
 export const voltageDivider = (): Circuit => ({
 	format: "engineering-circuit",
-	version: 9,
+	version: 10,
 	name: "Voltage divider",
 	description: "10 V split by two equal resistors",
-	simulation: { timeStep: 5e-6, speed: 0.01, logicHigh: 5, temperature: 27 },
+	simulation: { timeStep: 5e-6, speed: 0.01, logicHigh: 5, temperature: 27, stepping: "adaptive" },
 	notes: [],
 	components: [
 		{ id: "V1", type: "voltage-source", position: { x: 0, y: 0 }, rotation: 0, params: { voltage: 10 } },

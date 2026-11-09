@@ -27,10 +27,13 @@ describe("valid circuits", () => {
 })
 
 describe("older files", () => {
-	test("a version 1 file opens with the default simulation settings", () => {
+	/** Today's divider as an old file becomes: the same, but stepping fixed (version 10 keeps old files' stepping). */
+	const migratedDivider = () => ({ ...voltageDivider(), simulation: { ...voltageDivider().simulation, stepping: "fixed" } })
+
+	test("a version 1 file opens with the default simulation settings (and fixed steps, as it was made with)", () => {
 		const { simulation: _settings, notes: _notes, ...circuit } = voltageDivider()
 		const result = parseCircuit({ ...circuit, version: 1, components: withoutRatings(circuit.components) })
-		expect(result).toEqual({ ok: true, circuit: voltageDivider() })
+		expect(result).toEqual({ ok: true, circuit: migratedDivider() })
 	})
 
 	test("a version 3 file gains the 5 V logic level", () => {
@@ -38,13 +41,13 @@ describe("older files", () => {
 		const { logicHigh: _level, ...older } = simulation
 		expect(parseCircuit({ ...circuit, version: 3, simulation: older, components: withoutRatings(circuit.components) })).toEqual({
 			ok: true,
-			circuit: voltageDivider(),
+			circuit: migratedDivider(),
 		})
 	})
 
 	test("a version 4 file gains an empty list of notes", () => {
 		const { notes: _notes, ...circuit } = voltageDivider()
-		expect(parseCircuit({ ...circuit, version: 4, components: withoutRatings(circuit.components) })).toEqual({ ok: true, circuit: voltageDivider() })
+		expect(parseCircuit({ ...circuit, version: 4, components: withoutRatings(circuit.components) })).toEqual({ ok: true, circuit: migratedDivider() })
 	})
 
 	test("a version 5 file gains ratings: ¼ W resistors, 1 A diodes, 30 mA LEDs (their electrical values stay)", () => {
@@ -155,7 +158,7 @@ describe("older files", () => {
 
 describe("simulation settings", () => {
 	test("time step and speed must be positive", () => {
-		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1, logicHigh: 5, temperature: 27 } })
+		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1, logicHigh: 5, temperature: 27, stepping: "adaptive" } })
 		expect(errors.map((error) => error.path)).toEqual(["simulation.timeStep", "simulation.speed"])
 	})
 })

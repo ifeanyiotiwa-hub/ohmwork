@@ -83,6 +83,7 @@ test("the circuit downloads as an SVG and a PNG picture", async ({ page }) => {
 
 test("the picture frames everything drawn: a note's whole box and a part's label, not just their anchor points", async ({ page }) => {
 	await page.locator("[data-add-note]").click()
+	await expect(page.locator("[data-note]")).toBeVisible()
 	const inCircuitUnits = (selector: string) =>
 		page.evaluate((target) => {
 			const canvas = document.querySelector<SVGSVGElement>('svg[aria-label="Circuit canvas"]')

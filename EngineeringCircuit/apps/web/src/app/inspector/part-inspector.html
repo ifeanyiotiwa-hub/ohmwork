@@ -128,6 +128,14 @@
 				<input type="text" inputmode="decimal" data-field="speed" [value]="settings().speed" (change)="setSimulation('speed', $event)" />
 				<span class="field-hint">simulated seconds per real second</span>
 			</label>
+			<label class="field">
+				<span class="field-name">stepping</span>
+				<select data-field="stepping" (change)="setStepping($event)">
+					<option value="adaptive" [selected]="store.circuit().simulation.stepping === 'adaptive'">adaptive: as small as accuracy needs</option>
+					<option value="fixed" [selected]="store.circuit().simulation.stepping === 'fixed'">fixed: always the time step</option>
+				</select>
+				<span class="field-hint">circuits with logic always step fixed</span>
+			</label>
 		}
 		<label class="field">
 			<span class="field-name">temperature</span>

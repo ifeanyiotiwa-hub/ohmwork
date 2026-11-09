@@ -92,6 +92,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 		...addParams(document, V9_ADDED_PARAMS),
 		simulation: { ...(isObject(document.simulation) ? document.simulation : {}), temperature: 27 },
 	}),
+	// Version 10 chose the stepping: old circuits keep the fixed step they were made with.
+	9: (document) => ({ ...document, simulation: { ...(isObject(document.simulation) ? document.simulation : {}), stepping: "fixed" } }),
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

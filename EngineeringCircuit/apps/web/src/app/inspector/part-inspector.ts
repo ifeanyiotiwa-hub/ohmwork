@@ -121,6 +121,11 @@ export class PartInspector {
 		this.store.apply({ type: "set-simulation", [name]: value })
 	}
 
+	protected setStepping(event: Event): void {
+		const value = (event.target as HTMLSelectElement).value
+		if (value === "fixed" || value === "adaptive") this.store.apply({ type: "set-simulation", stepping: value })
+	}
+
 	protected setNoteText(noteId: string, event: Event): void {
 		const text = (event.target as HTMLTextAreaElement).value
 		this.store.apply({ type: "edit-note", noteId, text })

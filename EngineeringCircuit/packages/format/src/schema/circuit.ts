@@ -3,7 +3,7 @@ import { componentSchema } from "./components/catalog"
 import { pointSchema } from "./geometry"
 
 export const FORMAT_ID = "engineering-circuit"
-export const CURRENT_VERSION = 9
+export const CURRENT_VERSION = 10
 
 export const pinRefSchema = z.strictObject({
 	componentId: z.string().min(1),
@@ -25,11 +25,14 @@ export const simulationSchema = z.strictObject({
 	speed: z.number().positive().describe("simulated seconds per real second"),
 	logicHigh: z.number().positive().describe("volts for logic 1; inputs read 1 above half of it"),
 	temperature: z.number().gt(-273.15).describe("degrees Celsius of every part (diodes and transistors change with it; SPICE nominal is 27)"),
+	stepping: z
+		.enum(["fixed", "adaptive"])
+		.describe("adaptive: steps as small as accuracy needs, up to the time step; fixed: always the time step (circuits with logic always step fixed)"),
 })
 export type SimulationSettings = z.infer<typeof simulationSchema>
 
 /** CircuitJS1's default time step and 5 V logic; speed shows a 40 Hz wave at 0.4 cycles per second. */
-export const DEFAULT_SIMULATION: SimulationSettings = { timeStep: 5e-6, speed: 0.01, logicHigh: 5, temperature: 27 }
+export const DEFAULT_SIMULATION: SimulationSettings = { timeStep: 5e-6, speed: 0.01, logicHigh: 5, temperature: 27, stepping: "adaptive" }
 
 /** Longest text a note may hold. */
 export const MAX_NOTE_LENGTH = 1000

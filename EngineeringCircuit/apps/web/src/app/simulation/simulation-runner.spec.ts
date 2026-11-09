@@ -20,12 +20,15 @@ const rc = () => ({
 	],
 }) satisfies ReturnType<typeof createCircuit>
 
+/** The same circuit stepping fixed (as an old file, or one with logic). */
+const fixedRc = (): Circuit => ({ ...rc(), simulation: { ...rc().simulation, stepping: "fixed" } })
+
 const voltageOf = (frame: ReturnType<SimulationRunner["handle"]>) =>
 	frame?.result.ok ? (frame.result.solution.readings["C1"]?.voltage ?? Number.NaN) : Number.NaN
 
-test("advancing runs whole time steps and carries the remainder to the next frame", () => {
+test("fixed stepping runs whole time steps and carries the remainder to the next frame", () => {
 	const runner = new SimulationRunner()
-	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
+	runner.handle({ type: "load", circuit: fixedRc(), circuitId: 1 })
 	const first = runner.handle({ type: "advance", seconds: 12e-6, maxSteps: 1000 })
 	expect(first).toMatchObject({ type: "frame", circuitId: 1, slowed: false })
 	expect(first?.time).toBeCloseTo(10e-6, 12)
@@ -41,10 +44,25 @@ test("one millisecond in, the capacitor holds 63% of the supply", () => {
 
 test("too many steps for one frame are capped and reported as slowed", () => {
 	const runner = new SimulationRunner()
-	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
+	runner.handle({ type: "load", circuit: fixedRc(), circuitId: 1 })
 	const frame = runner.handle({ type: "advance", seconds: 1, maxSteps: 10 })
 	expect(frame?.slowed).toBe(true)
 	expect(frame?.time).toBeCloseTo(50e-6, 12)
+})
+
+test("adaptive stepping lands each frame exactly on the time asked for, in fewer steps", () => {
+	const runner = new SimulationRunner()
+	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
+	expect(runner.handle({ type: "advance", seconds: 12e-6, maxSteps: 1000 })?.time).toBeCloseTo(12e-6, 15)
+	expect(runner.handle({ type: "advance", seconds: 3e-6, maxSteps: 1000 })?.time).toBeCloseTo(15e-6, 15)
+})
+
+test("adaptive stepping is capped by the frame's step budget too", () => {
+	const runner = new SimulationRunner()
+	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
+	const frame = runner.handle({ type: "advance", seconds: 1, maxSteps: 10 })
+	expect(frame?.slowed).toBe(true)
+	expect(frame?.time).toBeLessThan(1)
 })
 
 test("restart empties the capacitor and resets the clock", () => {

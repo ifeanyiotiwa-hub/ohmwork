@@ -1,7 +1,7 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
 import { isAbsolute, relative, resolve, sep } from "node:path"
 import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
-import { type TransientState, initialTransientState, solveDc, stepTransient } from "@engineering-circuit/engine"
+import { advanceTransient, initialTransientState, solveDc, usesFixedSteps } from "@engineering-circuit/engine"
 import {
 	COMPONENT_DEFINITIONS,
 	type ComponentType,
@@ -271,6 +271,8 @@ export function createServer(
 			if (unknown.length > 0) return failure(unknown.join("\n"))
 
 			const { timeStep } = circuit.simulation
+			const fixed = usesFixedSteps(circuit)
+			// Steps are never larger than the time step, so this many is the least either way of stepping takes.
 			const steps = Math.round(duration / timeStep)
 			if (steps > options.maxTransientSteps) {
 				return failure(
@@ -278,20 +280,28 @@ export function createServer(
 				)
 			}
 
-			const sampleSteps = new Set(Array.from({ length: samples }, (_, index) => Math.round(((index + 1) * steps) / samples)))
+			// Record at the first step at or after each of `samples` evenly spaced times (adaptive steps vary in size).
 			const recorded: { time: number; values: Record<string, unknown> }[] = []
-			let state: TransientState = initialTransientState()
-			for (let step = 1; step <= steps; step++) {
-				const result = stepTransient(circuit, state, { timeStep, ...inputsOf(pressed) })
-				if (!result.ok) return failure(result.errors)
-				state = result.state
-				if (!sampleSteps.has(step)) continue
-				const values = Object.fromEntries(
-					targets.flatMap(({ probe, found }) => ("error" in found ? [] : [[probe, probeValues(result.solution, found)]])),
-				)
-				recorded.push({ time: Number(state.time.toPrecision(6)), values })
+			const sampleTimes = Array.from({ length: samples }, (_, index) => ((index + 1) * duration) / samples)
+			const result = advanceTransient(circuit, initialTransientState(), duration, {
+				maxStep: timeStep,
+				maxSteps: options.maxTransientSteps,
+				landOn: sampleTimes,
+				...inputsOf(pressed),
+				onStep: (state, solution) => {
+					const due = sampleTimes[recorded.length]
+					if (due === undefined || state.time < due * (1 - 1e-9)) return
+					const values = Object.fromEntries(
+						targets.flatMap(({ probe, found }) => ("error" in found ? [] : [[probe, probeValues(solution, found)]])),
+					)
+					recorded.push({ time: Number(state.time.toPrecision(6)), values })
+				},
+			})
+			if (!result.ok) return failure(result.errors)
+			if (!result.reachedUntil) {
+				return failure(`That needed more than ${options.maxTransientSteps} steps. Use a shorter duration or a larger time step (set_simulation).`)
 			}
-			return text({ timeStep, samples: recorded })
+			return text({ timeStep, stepping: fixed ? "fixed" : "adaptive", steps: result.steps, samples: recorded })
 		},
 	)
 
@@ -299,15 +309,16 @@ export function createServer(
 		"set_simulation",
 		{
 			description:
-				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower), speed (simulated seconds per real second in the app), logicHigh (volts for logic 1; logic inputs read 1 above half of it), and temperature (°C of every part; diodes and transistors change with it; 27 is SPICE's nominal).",
+				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower), speed (simulated seconds per real second in the app), logicHigh (volts for logic 1; logic inputs read 1 above half of it), temperature (°C of every part; diodes and transistors change with it; 27 is SPICE's nominal), and stepping (adaptive: steps as small as accuracy needs, up to timeStep; fixed: always timeStep; circuits with logic always step fixed).",
 			inputSchema: z.object({
 				timeStep: z.number().positive().optional(),
 				speed: z.number().positive().optional(),
 				logicHigh: z.number().positive().optional(),
 				temperature: z.number().gt(-273.15).optional(),
+				stepping: z.enum(["fixed", "adaptive"]).optional(),
 			}),
 		},
-		({ timeStep, speed, logicHigh, temperature }) => edit({ type: "set-simulation", timeStep, speed, logicHigh, temperature }),
+		({ timeStep, speed, logicHigh, temperature, stepping }) => edit({ type: "set-simulation", timeStep, speed, logicHigh, temperature, stepping }),
 	)
 
 	server.registerTool(
