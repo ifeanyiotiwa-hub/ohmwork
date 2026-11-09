@@ -9,13 +9,14 @@ import {
 	stepTransient,
 	wireCurrents,
 } from "@engineering-circuit/engine"
-import { type Circuit, type ComponentType, type PinRef, type Point, createCircuit, pinsOf } from "@engineering-circuit/format"
+import { type Circuit, type Component, type ComponentType, type Note, type PinRef, type Point, createCircuit, pinsOf } from "@engineering-circuit/format"
 import { LiveLink } from "../live/live-link"
 import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
-import { type Copied, copyParts, pasteCommand } from "./clipboard"
+import { type Copied, copyParts, groupText, pasteCommand } from "./clipboard"
 import { dialOf, stepValue } from "./dial"
 import { kvlExample } from "./examples"
+import { snap } from "./geometry"
 import { UI_CONFIG } from "./ui-config"
 
 /** How far below the lowest part a new note goes, in canvas units. */
@@ -43,6 +44,11 @@ export class CircuitStore {
 	private readonly shared = signal<LiveState | undefined>(undefined)
 	/** Our edit as we expect the server to apply it, shown until the server answers. */
 	private readonly predicted = signal<Circuit | undefined>(undefined)
+	/**
+	 * The learner's own copy, edited while the live link was down, which the shared circuit replaced when it came back.
+	 * Offered back ("Use my version") until used or dismissed.
+	 */
+	readonly offlineCopy = signal<Circuit | undefined>(undefined)
 	private highlightTimer: ReturnType<typeof setTimeout> | undefined
 
 	readonly circuit = computed<Circuit>(() => {
@@ -133,6 +139,8 @@ export class CircuitStore {
 
 	/** Parts chosen together (Shift-click, box or Ctrl/⌘+A), acted on as a group. */
 	readonly multiSelection = signal<ReadonlySet<string>>(new Set())
+	/** Notes in the group (box select, select all, paste), moved, copied and deleted with its parts. */
+	readonly multiNotes = signal<ReadonlySet<string>>(new Set())
 	/** The group to delete, copy or move: the multi-selection, else the one selected part. */
 	readonly selectedParts = computed<ReadonlySet<string>>(() => {
 		const group = this.multiSelection()
@@ -232,6 +240,16 @@ export class CircuitStore {
 		this.localRevision.update((revision) => revision + 1)
 	}
 
+	redo(): void {
+		if (this.shared()) {
+			this.live.send({ type: "redo" })
+			return
+		}
+		const result = this.local.redo("learner")
+		this.editError.set(result.ok ? undefined : result.message)
+		this.localRevision.update((revision) => revision + 1)
+	}
+
 	replace(circuit: Circuit, summary: string): void {
 		this.clock.restart()
 		this.selection.set(undefined)
@@ -294,16 +312,25 @@ export class CircuitStore {
 
 	selectAll(): void {
 		this.multiSelection.set(new Set(this.circuit().components.map((component) => component.id)))
+		this.multiNotes.set(new Set(this.circuit().notes.map((note) => note.id)))
 		this.selection.set(undefined)
 	}
 
 	clearSelection(): void {
 		this.multiSelection.set(new Set())
+		this.multiNotes.set(new Set())
 		this.selection.set(undefined)
 	}
 
+	/** The notes to copy: the group's, else the one selected note. */
+	private selectedNoteIds(): ReadonlySet<string> {
+		if (this.multiNotes().size > 0) return this.multiNotes()
+		const selection = this.selection()
+		return new Set(selection?.kind === "note" ? [selection.id] : [])
+	}
+
 	copySelection(): void {
-		this.clipboard.set(copyParts(this.circuit(), this.selectedParts()))
+		this.clipboard.set(copyParts(this.circuit(), this.selectedParts(), this.selectedNoteIds()))
 	}
 
 	/** Pastes the copied parts two grid squares down and right, and selects them. */
@@ -315,31 +342,38 @@ export class CircuitStore {
 		if (!command) return
 		const result = this.apply(command)
 		if (!result) return
-		const added = new Set(result.components.slice(-copied.components.length).map((component) => component.id))
+		const added = new Set(copied.components.length === 0 ? [] : result.components.slice(-copied.components.length).map((component) => component.id))
+		const addedNotes = new Set(copied.notes.length === 0 ? [] : result.notes.slice(-copied.notes.length).map((note) => note.id))
 		this.multiSelection.set(added)
+		this.multiNotes.set(addedNotes)
 		this.selection.set(undefined)
 		// Pasting again goes further along, not on top of this copy.
-		this.clipboard.set(copyParts(result, added))
+		this.clipboard.set(copyParts(result, added, addedNotes))
 	}
 
-	/** Moves several parts by the same amount, as one change. */
-	moveParts(ids: ReadonlySet<string>, delta: Point): void {
-		const moves: EditCommand[] = this.circuit()
+	/** Moves several parts (and notes) by the same amount, as one change. */
+	moveParts(ids: ReadonlySet<string>, delta: Point, noteIds: ReadonlySet<string> = new Set()): void {
+		const shifted = (at: Point) => ({ x: at.x + delta.x, y: at.y + delta.y })
+		const parts: EditCommand[] = this.circuit()
 			.components.filter((component) => ids.has(component.id))
-			.map((component) => ({
-				type: "move-component",
-				componentId: component.id,
-				position: { x: component.position.x + delta.x, y: component.position.y + delta.y },
-			}))
+			.map((component) => ({ type: "move-component", componentId: component.id, position: shifted(component.position) }))
+		const notes: EditCommand[] = this.circuit()
+			.notes.filter((note) => noteIds.has(note.id))
+			.map((note) => ({ type: "move-note", noteId: note.id, position: shifted(note.position) }))
+		const moves = [...parts, ...notes]
 		if (moves.length === 1 && moves[0]) this.apply(moves[0])
-		else if (moves.length > 1) this.apply({ type: "batch", summary: `Moved ${moves.length} parts`, commands: moves })
+		else if (moves.length > 1) this.apply({ type: "batch", summary: `Moved ${groupText(parts.length, notes.length)}`, commands: moves })
 	}
 
 	removeSelected(): void {
 		const group = this.multiSelection()
-		if (group.size > 0) {
-			const removals: EditCommand[] = [...group].map((componentId) => ({ type: "remove-component", componentId }))
-			if (this.apply({ type: "batch", summary: `Removed ${group.size} parts`, commands: removals })) this.clearSelection()
+		const notes = this.multiNotes()
+		if (group.size > 0 || notes.size > 0) {
+			const removals: EditCommand[] = [
+				...[...group].map((componentId): EditCommand => ({ type: "remove-component", componentId })),
+				...[...notes].map((noteId): EditCommand => ({ type: "remove-note", noteId })),
+			]
+			if (this.apply({ type: "batch", summary: `Removed ${groupText(group.size, notes.size)}`, commands: removals })) this.clearSelection()
 			return
 		}
 		const selection = this.selection()
@@ -353,9 +387,38 @@ export class CircuitStore {
 		if (removed) this.selection.set(undefined)
 	}
 
+	/** R: the selected part turns a quarter turn clockwise; a group turns about its middle. */
 	rotateSelected(): void {
-		const component = this.selectedComponent()
+		const parts = this.circuit().components.filter((component) => this.multiSelection().has(component.id))
+		const notes = this.circuit().notes.filter((note) => this.multiNotes().has(note.id))
+		if (parts.length + notes.length > 1) {
+			this.rotateGroup(parts, notes)
+			return
+		}
+		const component = this.selectedComponent() ?? parts[0]
 		if (component) this.apply({ type: "rotate-component", componentId: component.id })
+	}
+
+	/**
+	 * Each part moves a quarter turn clockwise about the group's middle (on the grid, so parts stay on grid points) and
+	 * turns itself; notes move but stay upright.
+	 */
+	private rotateGroup(parts: readonly Component[], notes: readonly Note[]): void {
+		const positions = [...parts.map((part) => part.position), ...notes.map((note) => note.position)]
+		const grid = this.config.gridSize
+		const xs = positions.map((point) => point.x)
+		const ys = positions.map((point) => point.y)
+		const middle = { x: snap((Math.min(...xs) + Math.max(...xs)) / 2, grid), y: snap((Math.min(...ys) + Math.max(...ys)) / 2, grid) }
+		// Clockwise on screen (y grows down): (dx, dy) → (−dy, dx).
+		const turned = ({ x, y }: Point) => ({ x: middle.x - (y - middle.y), y: middle.y + (x - middle.x) })
+		const commands: EditCommand[] = [
+			...parts.flatMap((part): EditCommand[] => [
+				{ type: "move-component", componentId: part.id, position: turned(part.position) },
+				{ type: "rotate-component", componentId: part.id },
+			]),
+			...notes.map((note): EditCommand => ({ type: "move-note", noteId: note.id, position: turned(note.position) })),
+		]
+		this.apply({ type: "batch", summary: `Rotated ${groupText(parts.length, notes.length)}`, commands })
 	}
 
 	press(componentId: string): void {
@@ -364,6 +427,24 @@ export class CircuitStore {
 
 	releaseButtons(): void {
 		if (this.pressed().size > 0) this.pressed.set(new Set())
+	}
+
+	/** Sends the learner's offline copy to the shared circuit, replacing it (one change the agent sees and can undo). */
+	useOfflineCopy(): void {
+		const mine = this.offlineCopy()
+		this.offlineCopy.set(undefined)
+		if (!mine || !this.shared()) return
+		this.predicted.set(mine)
+		this.live.send({ type: "replace", circuit: mine, summary: "Used the learner's offline changes" })
+	}
+
+	dismissOfflineCopy(): void {
+		this.offlineCopy.set(undefined)
+	}
+
+	/** Tries the live link again now, instead of waiting for the next retry (or after it gave up). */
+	reconnectLive(): void {
+		this.live.reconnectNow()
 	}
 
 	/** Joins the MCP server's circuit. If the link closes, the app keeps the last shared circuit and works alone. */
@@ -387,6 +468,8 @@ export class CircuitStore {
 						this.live.send({ type: "replace", circuit: mine, summary: "Kept the learner's circuit after reconnecting" })
 						return
 					}
+					// Otherwise the shared circuit wins; if the learner's copy differs, say so and keep it on offer.
+					if (JSON.stringify(mine) !== JSON.stringify(state.circuit)) this.offlineCopy.set(mine)
 				}
 				const before = this.shared()?.circuit
 				this.predicted.set(undefined)

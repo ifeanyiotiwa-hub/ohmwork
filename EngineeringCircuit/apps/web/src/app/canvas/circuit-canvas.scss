@@ -302,6 +302,13 @@
 		fill: var(--accent);
 		stroke: var(--accent);
 	}
+
+	/* A pin reached from the keyboard: a ring, so it is clear which one Enter will pick. */
+	&:focus-visible {
+		outline: none;
+		stroke: var(--accent);
+		stroke-width: 4;
+	}
 }
 
 .rubber-band {

@@ -3,6 +3,7 @@
 	<app-part-palette [active]="store.placing()" (choose)="choosePart($event)" />
 	<div class="actions">
 		<button type="button" (click)="store.undo()" title="Undo (Ctrl/⌘+Z)">Undo</button>
+		<button type="button" (click)="store.redo()" title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)">Redo</button>
 		<button type="button" [attr.aria-pressed]="store.paused()" (click)="store.paused.set(!store.paused())">
 			{{ store.paused() ? "Resume" : "Pause" }}
 		</button>

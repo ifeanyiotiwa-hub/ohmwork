@@ -27,3 +27,17 @@ test("nothing copied pastes nothing", () => {
 	const circuit = kvlExample()
 	expect(pasteCommand(circuit, copyParts(circuit, new Set()), { x: 40, y: 40 })).toBeUndefined()
 })
+
+test("notes are copied and pasted with the parts, shifted the same", () => {
+	const circuit = { ...kvlExample(), notes: [{ id: "note1", position: { x: 0, y: 300 }, text: "Ohm's law" }] }
+	const copied = copyParts(circuit, new Set(["R1"]), new Set(["note1"]))
+	expect(copied.notes.map((note) => note.id)).toEqual(["note1"])
+	const command = pasteCommand(circuit, copied, { x: 40, y: 40 })
+	if (!command) throw new Error("expected a paste command")
+	const result = applyCommand(circuit, command)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	expect(result.summary).toBe("Pasted 1 part and 1 note")
+	expect(result.circuit.notes.at(-1)).toMatchObject({ text: "Ohm's law", position: { x: 40, y: 340 } })
+	const notesOnly = pasteCommand(circuit, copyParts(circuit, new Set(), new Set(["note1"])), { x: 40, y: 40 })
+	expect(notesOnly?.summary).toBe("Pasted 1 note")
+})

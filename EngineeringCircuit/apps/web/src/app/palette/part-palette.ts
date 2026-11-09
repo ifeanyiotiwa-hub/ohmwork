@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from "@angular/core"
+import { Component, ElementRef, Injector, afterNextRender, computed, inject, input, output, signal } from "@angular/core"
 import { isDcSimulated } from "@engineering-circuit/engine"
 import { COMPONENT_CATEGORIES, type ComponentType, PIN_OFFSETS } from "@engineering-circuit/format"
 import { PART_NAMES, SYMBOLS } from "../circuit/symbols"
@@ -42,4 +42,44 @@ export class PartPalette {
 	protected readonly categories = CATEGORIES
 	protected readonly currentCategory = signal(CATEGORIES[0]?.name ?? "")
 	protected readonly items = computed(() => CATEGORIES.find((category) => category.name === this.currentCategory())?.items ?? [])
+	private readonly host: ElementRef<HTMLElement> = inject(ElementRef)
+	private readonly injector = inject(Injector)
+
+	/** Tabs keys (WAI-ARIA tabs): Left / Right go to the next category round, Home / End to the first or last. */
+	protected onCategoryKey(event: KeyboardEvent, index: number): void {
+		const next = steppedIndex(event.key, index, CATEGORIES.length)
+		const category = next === undefined ? undefined : CATEGORIES[next]
+		if (!category) return
+		event.preventDefault()
+		this.currentCategory.set(category.name)
+		// After the tabs re-render, so the focused tab is already the one in the Tab order (and its parts are shown).
+		afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-category="${category.name}"]`)?.focus(), {
+			injector: this.injector,
+		})
+	}
+
+	/** Left / Right (Home / End) move between the parts of the category. */
+	protected onPartKey(event: KeyboardEvent, index: number): void {
+		const next = steppedIndex(event.key, index, this.items().length)
+		const item = next === undefined ? undefined : this.items()[next]
+		if (!item) return
+		event.preventDefault()
+		this.host.nativeElement.querySelector<HTMLElement>(`[data-palette="${item.type}"]`)?.focus()
+	}
+}
+
+/** Where an arrow, Home or End key goes from `index` in a row of `count`, wrapping round; undefined for other keys. */
+export function steppedIndex(key: string, index: number, count: number): number | undefined {
+	switch (key) {
+		case "ArrowRight":
+			return (index + 1) % count
+		case "ArrowLeft":
+			return (index - 1 + count) % count
+		case "Home":
+			return 0
+		case "End":
+			return count - 1
+		default:
+			return undefined
+	}
 }

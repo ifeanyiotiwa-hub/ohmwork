@@ -106,7 +106,9 @@ export class App {
 		if (event.metaKey || event.ctrlKey) {
 			// Ctrl/⌘ + key.
 			const shortcuts: Readonly<Record<string, () => void>> = {
-				z: () => this.store.undo(),
+				// Ctrl/⌘+Shift+Z redoes (macOS and most apps); Ctrl+Y too (Windows).
+				z: () => (event.shiftKey ? this.store.redo() : this.store.undo()),
+				y: () => this.store.redo(),
 				s: () => this.openLibrary(),
 				a: () => this.store.selectAll(),
 				c: () => this.store.copySelection(),

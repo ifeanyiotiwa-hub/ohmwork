@@ -22,6 +22,8 @@ export class CircuitDocument {
 	private current: Circuit
 	private currentRevision = 0
 	private readonly entries: Entry[] = []
+	/** Undone changes, newest last, with the circuit each one led to; any new change clears them. */
+	private readonly undone: (Entry & { after: Circuit })[] = []
 	private readonly listeners = new Set<ChangeListener>()
 	private readonly historyLimit: number
 
@@ -52,11 +54,27 @@ export class CircuitDocument {
 		this.record(circuit, author, summary, options)
 	}
 
+	get canRedo(): boolean {
+		return this.undone.length > 0
+	}
+
 	undo(author: Author): UndoResult {
 		const last = this.entries.pop()
 		if (!last) return { ok: false, message: "Nothing to undo" }
+		this.undone.push({ author: last.author, summary: last.summary, before: last.before, after: this.current })
 		this.current = last.before
 		const summary = `Undid: ${last.summary} (by ${last.author})`
+		this.notify(author, summary)
+		return { ok: true, summary }
+	}
+
+	/** Puts back the most recently undone change, as its own author made it. */
+	redo(author: Author): UndoResult {
+		const next = this.undone.pop()
+		if (!next) return { ok: false, message: "Nothing to redo" }
+		this.entries.push({ author: next.author, summary: next.summary, before: next.before })
+		this.current = next.after
+		const summary = `Redid: ${next.summary} (by ${next.author})`
 		this.notify(author, summary)
 		return { ok: true, summary }
 	}
@@ -67,6 +85,7 @@ export class CircuitDocument {
 	}
 
 	private record(circuit: Circuit, author: Author, summary: string, { gesture }: ApplyOptions): void {
+		this.undone.length = 0
 		const last = this.entries.at(-1)
 		if (gesture !== undefined && last?.gesture === gesture && last.author === author) {
 			last.summary = summary

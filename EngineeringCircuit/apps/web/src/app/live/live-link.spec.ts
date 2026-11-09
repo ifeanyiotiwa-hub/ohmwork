@@ -92,3 +92,27 @@ test("after too many tries it gives up and says so", () => {
 	vi.advanceTimersByTime(60_000)
 	expect(sockets).toHaveLength(tried)
 })
+
+test("Reconnect tries at once, even after giving up, with a fresh count of tries", () => {
+	sockets[0]?.drop()
+	for (let attempt = 0; attempt < DEFAULT_UI_CONFIG.live.maxReconnectAttempts; attempt++) {
+		vi.advanceTimersByTime(Math.max(...DEFAULT_UI_CONFIG.live.reconnectDelaysMs))
+		sockets.at(-1)?.drop()
+	}
+	expect(link.status()).toBe("closed")
+	const tried = sockets.length
+	link.reconnectNow()
+	expect(link.status()).toBe("connecting")
+	expect(sockets).toHaveLength(tried + 1)
+	sockets.at(-1)?.receive(state)
+	expect(link.status()).toBe("connected")
+})
+
+test("Reconnect while a retry is waiting replaces it, without a second socket later", () => {
+	sockets[0]?.drop()
+	link.reconnectNow()
+	expect(sockets).toHaveLength(2)
+	vi.advanceTimersByTime(60_000)
+	expect(sockets).toHaveLength(2)
+	expect(listener.closed).toHaveBeenCalledTimes(1)
+})

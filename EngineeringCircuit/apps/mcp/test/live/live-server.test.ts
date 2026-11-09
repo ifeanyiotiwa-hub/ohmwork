@@ -113,6 +113,10 @@ test("undo and replace from the app go through the shared history", async () => 
 
 	peer.socket.send(JSON.stringify({ type: "undo" }))
 	expect(await peer.next()).toMatchObject({ change: { author: "learner", summary: 'Undid: Added resistor "R1" (by learner)' } })
+	peer.socket.send(JSON.stringify({ type: "redo" }))
+	expect(await peer.next()).toMatchObject({ change: { author: "learner", summary: 'Redid: Added resistor "R1" (by learner)' } })
+	peer.socket.send(JSON.stringify({ type: "redo" }))
+	expect(await peer.next()).toEqual({ type: "rejected", message: "Nothing to redo" })
 
 	peer.socket.send(JSON.stringify({ type: "replace", circuit: createCircuit("Fresh"), summary: "New circuit" }))
 	expect(await peer.next()).toMatchObject({ circuit: { name: "Fresh" }, change: { summary: "New circuit" } })

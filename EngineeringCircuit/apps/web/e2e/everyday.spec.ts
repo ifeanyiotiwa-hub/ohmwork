@@ -117,12 +117,20 @@ test("the circuit's temperature can be set; it is kept with the circuit", async 
 	await expect(temperature).toHaveValue("27 °C")
 })
 
-test("a circuit deleted from the library is gone from the list", async ({ page }) => {
+test("deleting from the library asks first: Keep leaves it, Delete removes it", async ({ page }) => {
 	await page.getByRole("button", { name: "Library" }).click()
 	const library = page.getByRole("dialog", { name: "Your circuits" })
 	await library.locator("[data-library-name]").fill("To delete")
 	await library.locator("[data-library-save]").click()
 	await expect(library.locator('[data-library-entry="To delete"]')).toBeVisible()
+	const entry = library.locator('[data-library-entry="To delete"]')
 	await library.getByRole("button", { name: "Delete To delete" }).click()
-	await expect(library.locator('[data-library-entry="To delete"]')).toHaveCount(0)
+	await expect(entry).toContainText("Delete for good?")
+	await entry.getByRole("button", { name: "Keep" }).click()
+	await expect(entry).toBeVisible()
+	await expect(entry.getByRole("button", { name: "Keep" })).toHaveCount(0)
+
+	await library.getByRole("button", { name: "Delete To delete" }).click()
+	await entry.getByRole("button", { name: "Yes, delete To delete" }).click()
+	await expect(entry).toHaveCount(0)
 })

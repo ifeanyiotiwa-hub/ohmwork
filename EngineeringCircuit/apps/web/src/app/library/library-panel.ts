@@ -25,12 +25,15 @@ export class LibraryPanel {
 
 	protected readonly name = linkedSignal(() => this.store.circuit().name)
 	protected readonly message = signal<string | undefined>(undefined)
+	/** The entry whose Delete was pressed: it asks before deleting, since the library has no undo. */
+	protected readonly confirmingDelete = signal<string | undefined>(undefined)
 	/** The file on disk the circuit was last opened from or saved to. */
 	protected readonly file = signal<DiskFile | undefined>(undefined)
 	protected readonly dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" })
 
 	async show(): Promise<void> {
 		this.message.set(undefined)
+		this.confirmingDelete.set(undefined)
 		this.dialog().nativeElement.showModal()
 		await this.attempt(() => this.library.refresh())
 	}
@@ -65,6 +68,7 @@ export class LibraryPanel {
 	}
 
 	protected async remove(id: string): Promise<void> {
+		this.confirmingDelete.set(undefined)
 		await this.attempt(() => this.library.remove(id))
 	}
 

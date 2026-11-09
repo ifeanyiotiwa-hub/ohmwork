@@ -226,6 +226,11 @@ export function createServer(
 		return result.ok ? text(result.summary) : failure(result.message)
 	})
 
+	server.registerTool("redo", { description: "Put back the change most recently undone (until a new change is made)." }, () => {
+		const result = document.redo("agent")
+		return result.ok ? text(result.summary) : failure(result.message)
+	})
+
 	server.registerTool(
 		"get_circuit",
 		{

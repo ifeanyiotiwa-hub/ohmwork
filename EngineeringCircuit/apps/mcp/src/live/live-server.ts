@@ -109,6 +109,10 @@ export class LiveServer {
 				const result = this.document.undo("learner")
 				return result.ok ? undefined : result.message
 			}
+			case "redo": {
+				const result = this.document.redo("learner")
+				return result.ok ? undefined : result.message
+			}
 			case "replace": {
 				const parsed = parseCircuit(message.circuit)
 				if (!parsed.ok) return parsed.errors.map((error) => `${error.path}: ${error.message}`).join("\n")

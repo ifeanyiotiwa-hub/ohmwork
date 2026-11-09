@@ -42,6 +42,19 @@ export class LiveLink {
 		this.open()
 	}
 
+	/** Tries again at once, with a fresh count of attempts (the learner pressed Reconnect). */
+	reconnectNow(): void {
+		if (!this.url || !this.listener || this.status() === "connected") return
+		clearTimeout(this.retry)
+		// A socket still trying is let go first, so its close is not taken for a drop.
+		const pending = this.socket
+		this.socket = undefined
+		pending?.close()
+		this.attempts = 0
+		this.status.set("connecting")
+		this.open()
+	}
+
 	send(message: ClientMessage): void {
 		if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify(message))
 	}

@@ -155,14 +155,19 @@
 				(pointerenter)="$event.pointerType === 'mouse' && hover({ kind: 'pin', ref: pin.ref })"
 				(pointerleave)="$event.pointerType === 'mouse' && hover(undefined)"
 			/>
+			<!-- Reached from its part with P (not Tab: every pin a tab stop would bury the parts), then arrows; Enter wires. -->
 			<circle
 				class="pin"
+				role="button"
+				tabindex="-1"
+				[attr.aria-label]="pin.ref.componentId + ' pin ' + pin.ref.pin"
 				[attr.r]="config.pinRadius"
 				[class.pending]="pin.pending"
 				[attr.cx]="pin.at.x"
 				[attr.cy]="pin.at.y"
 				[attr.data-pin]="pin.key"
 				(pointerdown)="onPinDown($event, pin.ref)"
+				(keydown)="onPinKey($event, item.part.id, item.pins, $index)"
 				(pointerenter)="$event.pointerType === 'mouse' && hover({ kind: 'pin', ref: pin.ref })"
 				(pointerleave)="$event.pointerType === 'mouse' && hover(undefined)"
 			/>

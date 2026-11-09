@@ -93,8 +93,10 @@ test("after the agent restarts, the app reconnects and the new agent gets the le
 
 	await agent.close()
 	await expect(status).toContainText("Reconnecting")
+	await expect(status.getByRole("button", { name: "Reconnect now" })).toBeVisible()
 	agent = await startAgent(env)
 	await expect(status).toContainText("Live with agent", { timeout: RECONNECT_WAIT_MS })
+	await expect(status.getByRole("button", { name: "Reconnect now" })).toHaveCount(0)
 	await expect.poll(async () => call("get_circuit")).toContain('"R1"')
 	await expect(page.locator('[data-part="R1"]')).toBeVisible()
 })

@@ -23,8 +23,14 @@
 				<li [attr.data-library-entry]="entry.name">
 					<span class="entry-name">{{ entry.name }}</span>
 					<span class="entry-date">{{ dateFormat.format(entry.savedAt) }}</span>
-					<button type="button" (click)="open(entry.id)">Open</button>
-					<button type="button" class="danger" [attr.aria-label]="'Delete ' + entry.name" (click)="remove(entry.id)">Delete</button>
+					@if (confirmingDelete() === entry.id) {
+						<span class="confirm" role="alert">Delete for good?</span>
+						<button type="button" class="danger" [attr.aria-label]="'Yes, delete ' + entry.name" (click)="remove(entry.id)">Delete</button>
+						<button type="button" (click)="confirmingDelete.set(undefined)">Keep</button>
+					} @else {
+						<button type="button" (click)="open(entry.id)">Open</button>
+						<button type="button" class="danger" [attr.aria-label]="'Delete ' + entry.name" (click)="confirmingDelete.set(entry.id)">Delete</button>
+					}
 				</li>
 			}
 		</ul>

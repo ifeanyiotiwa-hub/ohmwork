@@ -1,25 +1,30 @@
 <nav class="palette" aria-label="Parts">
 	<div class="categories" role="tablist" aria-label="Part categories">
-		@for (category of categories; track category.name) {
+		@for (category of categories; track category.name; let index = $index) {
 			<button
 				type="button"
 				role="tab"
 				class="category"
+				[id]="'palette-tab-' + category.name"
+				aria-controls="palette-parts"
 				[class.current]="category.name === currentCategory()"
 				[attr.aria-selected]="category.name === currentCategory()"
+				[attr.tabindex]="category.name === currentCategory() ? 0 : -1"
 				[attr.data-category]="category.name"
 				[attr.data-types]="category.typeList"
 				(click)="currentCategory.set(category.name)"
+				(keydown)="onCategoryKey($event, index)"
 			>
 				{{ category.name }}
 			</button>
 		}
 	</div>
-	<div class="parts" role="tabpanel">
-		@for (item of items(); track item.type) {
+	<div class="parts" role="tabpanel" id="palette-parts" [attr.aria-labelledby]="'palette-tab-' + currentCategory()">
+		@for (item of items(); track item.type; let index = $index) {
 			<button
 				type="button"
 				class="part-button"
+				(keydown)="onPartKey($event, index)"
 				[class.active]="active() === item.type"
 				[attr.aria-pressed]="active() === item.type"
 				[attr.data-palette]="item.type"

@@ -120,3 +120,24 @@ describe("a gesture (turning a value dial) is one history step", () => {
 		expect(revisions).toEqual([2, 3])
 	})
 })
+
+test("redo puts back what undo took away, in order; a new change ends the chance", () => {
+	const document = new CircuitDocument(createCircuit("t"))
+	document.apply(addResistor, "learner")
+	document.apply({ type: "set-parameter", componentId: "R1", name: "resistance", value: 220 }, "agent")
+	const changed = document.circuit
+	document.undo("learner")
+	document.undo("learner")
+	expect(document.circuit.components).toEqual([])
+
+	expect(document.redo("learner")).toEqual({ ok: true, summary: 'Redid: Added resistor "R1" (by learner)' })
+	expect(document.redo("agent")).toEqual({ ok: true, summary: "Redid: Set R1 resistance to 220 (by agent)" })
+	expect(document.circuit).toBe(changed)
+	expect(document.history).toHaveLength(2)
+	expect(document.redo("learner")).toEqual({ ok: false, message: "Nothing to redo" })
+
+	document.undo("learner")
+	document.apply({ type: "set-parameter", componentId: "R1", name: "resistance", value: 330 }, "learner")
+	expect(document.redo("learner")).toEqual({ ok: false, message: "Nothing to redo" })
+	expect(document.canRedo).toBe(false)
+})

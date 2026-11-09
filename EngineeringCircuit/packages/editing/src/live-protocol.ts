@@ -13,6 +13,7 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
 	// `gesture`: edits of one continuous action (a value dial) share it and are one undo step (CircuitDocument.apply).
 	z.strictObject({ type: z.literal("edit"), command: editCommandSchema, gesture: z.string().min(1).max(64).optional() }),
 	z.strictObject({ type: z.literal("undo") }),
+	z.strictObject({ type: z.literal("redo") }),
 	z.strictObject({ type: z.literal("replace"), circuit: z.unknown(), summary: z.string().min(1) }),
 ])
 export type ClientMessage = z.infer<typeof clientMessageSchema>

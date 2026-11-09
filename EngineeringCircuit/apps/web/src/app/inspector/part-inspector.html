@@ -34,6 +34,8 @@
 							type="range"
 							step="0.01"
 							[attr.data-slider]="field.name"
+							[attr.aria-label]="field.name + ' slider'"
+							[attr.aria-valuetext]="field.text"
 							[min]="slider.min"
 							[max]="slider.max"
 							[value]="slider.value"

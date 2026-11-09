@@ -11,6 +11,9 @@
 		</p>
 	}
 	<div class="announced" role="status" aria-live="polite">
+		@if (store.wiringFrom(); as from) {
+			<p class="issue ok" data-wiring>Wiring from {{ from.componentId }} pin {{ from.pin }}: pick the other pin (Esc cancels)</p>
+		}
 		@if (store.editError(); as message) {
 			<p class="issue error">{{ message }}</p>
 		}
@@ -44,11 +47,24 @@
 				</p>
 			}
 			@case ("reconnecting") {
-				<p class="live closed" data-live>Reconnecting to the agent… · working on your own copy</p>
+				<p class="live closed" data-live>
+					Reconnecting to the agent… · working on your own copy
+					<button type="button" class="link-action" data-reconnect (click)="store.reconnectLive()">Reconnect now</button>
+				</p>
 			}
 			@case ("closed") {
-				<p class="live closed" data-live>Live link closed · working on your own copy</p>
+				<p class="live closed" data-live>
+					Live link closed · working on your own copy
+					<button type="button" class="link-action" data-reconnect (click)="store.reconnectLive()">Reconnect</button>
+				</p>
 			}
+		}
+		@if (store.offlineCopy()) {
+			<p class="issue warning" role="alert" data-offline-copy>
+				Back with the agent: the changes you made while the link was down were replaced by the shared circuit.
+				<button type="button" class="link-action" (click)="store.useOfflineCopy()">Use my version</button>
+				<button type="button" class="link-action" (click)="store.dismissOfflineCopy()">Dismiss</button>
+			</p>
 		}
 	</div>
 </footer>

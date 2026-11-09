@@ -101,8 +101,8 @@ whatever the app is at that point.
 |---|---|
 | ~~Ratings for Zener, transistors~~ (done, D16a); op-amp output current limit (D16b) | D16 |
 | ~~Tapped transformer~~ (done, D16a), ~~DC motor~~ (done, D16e) | D16 |
-| Wiring from the keyboard (pins are not in the Tab order) | D16 |
-| Redo; group rotate; notes in box select and copy/paste; library delete confirmation; manual Reconnect and telling the learner when offline edits are replaced; palette arrow keys; slider label; PWA manifest `id`, separate maskable icons | D16 (app items alongside) |
+| ~~Wiring from the keyboard (pins are not in the Tab order)~~ (done, D16f: P on a part, arrows, Enter) | D16 |
+| ~~Redo; group rotate; notes in box select and copy/paste; library delete confirmation; manual Reconnect and telling the learner when offline edits are replaced; palette arrow keys; slider label; PWA manifest `id`, separate maskable icons~~ (done, D16f) | D16 (app items alongside) |
 | AI from the Android app or the desktop app (deep link, remote MCP) | D14 |
 | Accessibility audit with a screen reader; other languages | D18 |
 

@@ -64,7 +64,7 @@ const ACTIVATE_KEYS: ReadonlySet<string> = new Set(["Enter", " "])
 type Interaction =
 	| { kind: "idle" }
 	| { kind: "pan"; startScreen: Point; startView: View }
-	| { kind: "drag"; componentId: string; group: ReadonlySet<string>; startPoint: Point; moved: boolean }
+	| { kind: "drag"; componentId: string; group: ReadonlySet<string>; notes: ReadonlySet<string>; startPoint: Point; moved: boolean }
 	| { kind: "box"; start: Point }
 	| { kind: "drag-note"; noteId: string; startPoint: Point; startPosition: Point; moved: boolean }
 	| { kind: "pinch"; from: readonly [Point, Point]; startView: View }
@@ -95,24 +95,31 @@ export class CircuitCanvas {
 	})
 
 	/** Parts being dragged and how far (snapped to the grid). */
-	private readonly dragPreview = signal<{ ids: ReadonlySet<string>; delta: Point } | undefined>(undefined)
+	private readonly dragPreview = signal<{ ids: ReadonlySet<string>; noteIds: ReadonlySet<string>; delta: Point } | undefined>(undefined)
 	/** The Shift-drag selection box, in circuit coordinates. */
 	protected readonly selectionBox = signal<{ x: number; y: number; width: number; height: number } | undefined>(undefined)
 	private readonly notePreview = signal<{ noteId: string; position: Point } | undefined>(undefined)
 
 	protected readonly notes = computed(() => {
 		const preview = this.notePreview()
+		const groupPreview = this.dragPreview()
 		const selection = this.store.selection()
+		const group = this.store.multiNotes()
 		return this.store.circuit().notes.map((note) => {
 			const lines = note.text.split("\n")
-			const at = preview?.noteId === note.id ? preview.position : note.position
+			const at =
+				preview?.noteId === note.id
+					? preview.position
+					: groupPreview?.noteIds.has(note.id)
+						? { x: note.position.x + groupPreview.delta.x, y: note.position.y + groupPreview.delta.y }
+						: note.position
 			return {
 				id: note.id,
 				transform: `translate(${at.x} ${at.y})`,
 				lines,
 				width: Math.max(...lines.map((line) => line.length)) * NOTE_CHARACTER_WIDTH + 2 * NOTE_PADDING,
 				height: lines.length * NOTE_LINE_HEIGHT + NOTE_PADDING,
-				selected: selection?.kind === "note" && selection.id === note.id,
+				selected: (selection?.kind === "note" && selection.id === note.id) || group.has(note.id),
 			}
 		})
 	})
@@ -353,7 +360,7 @@ export class CircuitCanvas {
 		const before = { group: this.store.multiSelection(), single: this.store.selection() }
 		const inGroup = this.store.multiSelection().has(part.id)
 		if (!inGroup) {
-			this.store.multiSelection.set(new Set())
+			this.store.clearSelection()
 			this.store.selection.set({ kind: "component", id: part.id })
 		}
 		if (part.type === "push-button") this.store.press(part.id)
@@ -361,6 +368,7 @@ export class CircuitCanvas {
 			kind: "drag",
 			componentId: part.id,
 			group: inGroup ? this.store.multiSelection() : new Set([part.id]),
+			notes: inGroup ? this.store.multiNotes() : new Set<string>(),
 			startPoint: this.toCircuitPoint(event),
 			moved: false,
 		}
@@ -381,6 +389,7 @@ export class CircuitCanvas {
 		if (this.startsPinch(event)) return
 		const note = this.store.circuit().notes.find((candidate) => candidate.id === noteId)
 		if (!note) return
+		this.store.clearSelection()
 		this.store.selection.set({ kind: "note", id: noteId })
 		this.interaction = { kind: "drag-note", noteId, startPoint: this.toCircuitPoint(event), startPosition: note.position, moved: false }
 		this.capture(event)
@@ -389,10 +398,34 @@ export class CircuitCanvas {
 	protected onPinDown(event: PointerEvent, ref: PinRef): void {
 		event.stopPropagation()
 		if (this.startsPinch(event)) return
+		this.pointer.set(this.toCircuitPoint(event))
+		this.pickPin(ref)
+	}
+
+	/** On a pin: arrows go round its part's pins, Enter or Space picks it (as a click), then focus goes back to the part. */
+	protected onPinKey(event: KeyboardEvent, partId: string, pins: readonly { key: string; ref: PinRef }[], index: number): void {
+		const step = ARROW_STEPS[event.key]
+		if (step) {
+			event.preventDefault()
+			const next = pins[(index + step.x + step.y + pins.length) % pins.length]
+			if (next) this.focusPin(next.key)
+			return
+		}
+		if (!ACTIVATE_KEYS.has(event.key)) return
+		event.preventDefault()
+		const pin = pins[index]
+		if (!pin) return
+		const at = this.store.circuit().components.find((part) => part.id === partId)
+		if (at) this.pointer.set(this.positionOf(at))
+		this.pickPin(pin.ref)
+		this.svg().nativeElement.querySelector<SVGElement>(`[data-part="${partId}"]`)?.focus()
+	}
+
+	/** The first pin picked starts a wire; the second ends it there (the same pin again cancels). */
+	private pickPin(ref: PinRef): void {
 		const from = this.store.wiringFrom()
 		if (!from) {
 			this.store.wiringFrom.set(ref)
-			this.pointer.set(this.toCircuitPoint(event))
 			return
 		}
 		this.store.wiringFrom.set(undefined)
@@ -499,7 +532,7 @@ export class CircuitCanvas {
 			interaction.moved = true
 			this.store.releaseButtons()
 			const grid = this.config.gridSize
-			this.dragPreview.set({ ids: interaction.group, delta: { x: snap(dx, grid), y: snap(dy, grid) } })
+			this.dragPreview.set({ ids: interaction.group, noteIds: interaction.notes, delta: { x: snap(dx, grid), y: snap(dy, grid) } })
 		}
 	}
 
@@ -523,11 +556,10 @@ export class CircuitCanvas {
 			const box = this.selectionBox()
 			this.selectionBox.set(undefined)
 			if (!box) return
-			const inside = this.store
-				.circuit()
-				.components.filter(({ position: { x, y } }) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height)
-				.map((component) => component.id)
-			this.store.multiSelection.set(new Set(inside))
+			const within = ({ x, y }: Point) => x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height
+			const circuit = this.store.circuit()
+			this.store.multiSelection.set(new Set(circuit.components.filter((part) => within(part.position)).map((part) => part.id)))
+			this.store.multiNotes.set(new Set(circuit.notes.filter((note) => within(note.position)).map((note) => note.id)))
 			this.store.selection.set(undefined)
 			return
 		}
@@ -536,7 +568,7 @@ export class CircuitCanvas {
 		const preview = this.dragPreview()
 		this.dragPreview.set(undefined)
 		if (interaction.moved && preview) {
-			this.store.moveParts(preview.ids, preview.delta)
+			this.store.moveParts(preview.ids, preview.delta, preview.noteIds)
 			return
 		}
 
@@ -555,6 +587,14 @@ export class CircuitCanvas {
 			this.selectFromKeyboard(part)
 			const grid = this.config.gridSize
 			this.store.moveParts(this.store.selectedParts(), { x: step.x * grid, y: step.y * grid })
+			return
+		}
+		if (event.key === "p" || event.key === "P") {
+			// To its pins, for wiring from the keyboard.
+			const [first] = pinsOf(part.type)
+			if (!first) return
+			event.preventDefault()
+			this.focusPin(pinKey({ componentId: part.id, pin: first }))
 			return
 		}
 		if (!ACTIVATE_KEYS.has(event.key)) return
@@ -583,9 +623,13 @@ export class CircuitCanvas {
 		this.store.selection.set({ kind: "note", id: noteId })
 	}
 
+	private focusPin(key: string): void {
+		this.svg().nativeElement.querySelector<SVGElement>(`[data-pin="${key}"]`)?.focus()
+	}
+
 	private selectFromKeyboard(part: Part): void {
 		if (this.store.multiSelection().has(part.id)) return
-		this.store.multiSelection.set(new Set())
+		this.store.clearSelection()
 		this.store.selection.set({ kind: "component", id: part.id })
 	}
 
@@ -606,7 +650,7 @@ export class CircuitCanvas {
 	/** Grabbing the wiper also selects its potentiometer, so its value shows while it moves. */
 	protected onWiperDown(event: PointerEvent, componentId: string): void {
 		event.stopPropagation()
-		this.store.multiSelection.set(new Set())
+		this.store.clearSelection()
 		this.store.selection.set({ kind: "component", id: componentId })
 		this.interaction = { kind: "wiper", componentId, gesture: `wiper-${componentId}-${Date.now()}` }
 		this.capture(event)

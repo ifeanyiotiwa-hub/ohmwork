@@ -146,6 +146,11 @@ describe("joined to the live link", () => {
 		send(message: ClientMessage): void {
 			this.sent.push(message)
 		}
+
+		reconnects = 0
+		reconnectNow(): void {
+			this.reconnects += 1
+		}
 	}
 
 	let live: FakeLiveLink
@@ -263,6 +268,36 @@ describe("joined to the live link", () => {
 		expect(store.circuit().components.map((component) => component.id)).toEqual(["R1"])
 	})
 
+	test("edits made while the link was down and then replaced are announced, and can be sent instead", () => {
+		live.listener?.closed()
+		store.apply({ type: "add-component", component: { type: "ground" } })
+		const agentBuilt = applyCommand(sharedCircuit, { type: "add-component", component: { type: "resistor" } })
+		if (!agentBuilt.ok) throw new Error("setup failed")
+		serverSends({ revision: 3, circuit: agentBuilt.circuit, history: [] })
+		expect(store.offlineCopy()?.components.map((component) => component.id)).toEqual(["GND1"])
+
+		store.useOfflineCopy()
+		expect(live.sent.at(-1)).toMatchObject({ type: "replace", circuit: { components: [{ id: "GND1" }] }, summary: "Used the learner's offline changes" })
+		expect(store.offlineCopy()).toBeUndefined()
+	})
+
+	test("nothing is announced when nothing changed while the link was down, or when dismissed", () => {
+		live.listener?.closed()
+		serverSends({ revision: 1, circuit: sharedCircuit, history: [] })
+		expect(store.offlineCopy()).toBeUndefined()
+
+		live.listener?.closed()
+		store.apply({ type: "add-component", component: { type: "ground" } })
+		serverSends({ revision: 2, circuit: sharedCircuit, history: [] })
+		store.dismissOfflineCopy()
+		expect(store.offlineCopy()).toBeUndefined()
+	})
+
+	test("Reconnect tries the link again at once", () => {
+		store.reconnectLive()
+		expect(live.reconnects).toBe(1)
+	})
+
 	test("when the link closes, the app keeps the shared circuit and works alone", () => {
 		live.listener?.closed()
 		expect(store.circuit().name).toBe("Shared")
@@ -284,4 +319,48 @@ test("a part can be watched on the oscilloscope without a probe, and leaves it w
 	store.selection.set({ kind: "component", id: "R2" })
 	store.removeSelected()
 	expect(store.scopeTraces()).toEqual([])
+})
+
+test("redo puts back what undo took away", () => {
+	store.apply({ type: "set-parameter", componentId: "R2", name: "resistance", value: 4 })
+	store.undo()
+	expect(store.circuit().components.find((part) => part.id === "R2")?.params).toMatchObject({ resistance: 2 })
+	store.redo()
+	expect(store.circuit().components.find((part) => part.id === "R2")?.params).toMatchObject({ resistance: 4 })
+	store.redo()
+	expect(store.editError()).toBe("Nothing to redo")
+})
+
+test("notes join a group: select all, move, copy, paste and delete take them along", () => {
+	store.addNote("Ohm's law")
+	const [note] = store.circuit().notes
+	store.selectAll()
+	expect([...store.multiNotes()]).toEqual([note?.id])
+	store.moveParts(store.selectedParts(), { x: 20, y: 40 }, store.multiNotes())
+	expect(store.circuit().notes[0]?.position).toEqual({ x: (note?.position.x ?? 0) + 20, y: (note?.position.y ?? 0) + 40 })
+	expect(store.history().at(-1)?.summary).toBe("Moved 4 parts and 1 note")
+
+	store.copySelection()
+	store.paste()
+	expect(store.circuit().notes).toHaveLength(2)
+	expect(store.multiNotes().size).toBe(1)
+	expect(store.multiNotes().has(note?.id ?? "")).toBe(false)
+	store.removeSelected()
+	expect(store.circuit().notes).toHaveLength(1)
+	expect(store.circuit().components).toHaveLength(4)
+	store.clearSelection()
+	expect(store.multiNotes().size).toBe(0)
+})
+
+test("a group turns a quarter turn clockwise about its middle, as one change", () => {
+	// R1 at (160, 0) and R2 at (320, 100): the middle (240, 50) on the grid is (240, 60).
+	store.toggleInSelection("R1")
+	store.toggleInSelection("R2")
+	store.rotateSelected()
+	const part = (id: string) => store.circuit().components.find((component) => component.id === id)
+	expect(part("R1")).toMatchObject({ position: { x: 300, y: -20 }, rotation: 90 })
+	expect(part("R2")).toMatchObject({ position: { x: 200, y: 140 }, rotation: 180 })
+	expect(store.history().at(-1)?.summary).toBe("Rotated 2 parts")
+	store.undo()
+	expect(part("R1")).toMatchObject({ position: { x: 160, y: 0 }, rotation: 0 })
 })

@@ -76,6 +76,7 @@ test("offers the build, inspect and file tools", async () => {
 		"open_in_app",
 		"probe",
 		"recent_changes",
+		"redo",
 		"remove_component",
 		"remove_note",
 		"rename_circuit",
@@ -165,6 +166,9 @@ describe("a voltage divider built through the tools", () => {
 
 		expect((await call("undo")).text).toBe("Undid: Set R2 resistance to 3000 (by agent)")
 		expect((await call("probe", { target: "R1.b" })).data).toMatchObject({ voltage: 5 })
+		expect((await call("redo")).text).toBe("Redid: Set R2 resistance to 3000 (by agent)")
+		expect((await call("probe", { target: "R1.b" })).data).toMatchObject({ voltage: 7.5 })
+		expect((await call("redo")).isError).toBe(true)
 	})
 })
 

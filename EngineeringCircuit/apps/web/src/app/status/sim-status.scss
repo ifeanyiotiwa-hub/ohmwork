@@ -59,3 +59,10 @@ button.issue {
 		color: var(--warning);
 	}
 }
+
+/* Small actions inside a status line (Reconnect, Use my version). */
+.link-action {
+	margin-left: 6px;
+	padding: 1px 8px;
+	font-size: 12px;
+}

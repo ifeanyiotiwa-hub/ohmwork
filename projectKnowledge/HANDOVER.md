@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- D16f done (ADR-037): editing `CircuitDocument.redo` / `canRedo`, live `redo` message, MCP `redo`; web store `redo`, `multiNotes`, `rotateGroup`, `offlineCopy` / `useOfflineCopy` / `dismissOfflineCopy`, `reconnectLive`; `LiveLink.reconnectNow`; clipboard `notes` + `groupText`; canvas `onPinKey` / `pickPin` / `focusPin` (P on a part), status `data-wiring`, `data-reconnect`, `data-offline-copy`; palette `steppedIndex`; library inline delete confirm; manifest `id`, maskable icons, `scripts/render-icon.mjs`. D16 is complete.
 - D16e parts 2–3 (ADR-035, ADR-036): format `tri-state-buffer` (SN74HC125 values); engine `TRI_STATE` sequential (outputs [level, enabled]), Norton output / `OFF_STATE_RESISTANCE`, burn-out on port `output`, inputs read-only. App: `scopePlot(…, { trigger, separateScales })`, `xyPlot`, store `scopeTraces` / `toggleWatch` / `isWatched` (`ScopeTraceSource`), worker `watch` message, `UI_CONFIG.scope.historyWindows`, inspector "Show on scope" (`data-watch`), oscilloscope Trigger / Own scales / X-Y.
 - D16e part 1, DC motor (ADR-034): format `dc-motor` (FAULHABER 2224U012SR defaults), engine `nonlinear/dc-motor.ts` (`dcMotorDevice`, state in `MOT1/motion`), reading `speed` (rad/s); MCP `speedRpm`; app `MOTOR_ROTOR`, `spinOf` + `UI_CONFIG.spin`, `speedText`, inspector Speed. Golden `dc-motor.cir`.
 - D16d done (ADR-033): engine `ac/solve-ac.ts` (`solveAc(circuit, { start, stop, pointsPerDecade } | { frequencies })`, `sweepFrequencies`, `gainAndPhase`), `linear/complex.ts` (`ComplexMatrix`, `solveComplex`, `complexMatrix`), `operatingPoint` split out of `dc/solve-dc.ts`, `Device.acAdmittance` (BJT charges, op-amp pole). MCP `frequency_response`. Web `scope/bode-plot.ts`, oscilloscope Time / Frequency (`UI_CONFIG.bode`); workspace/stage rows fixed so the oscilloscope stays on screen. Goldens `ac-rc-lowpass`, `ac-rlc-bandpass`, `ac-op-amp`, `ac-common-emitter`.
@@ -64,7 +65,7 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries the hands-on features (select a part and turn its dial; hover wires; overload an LED). Next: D16f (app items), D17, D19, D18 (public repo + hosted web app; signing and iOS set aside). Optional: D13, D14.
+Owner tries the hands-on features (select a part and turn its dial; hover wires; overload an LED). Next: D17, D19, D18 (public repo + hosted web app; signing and iOS set aside). Optional: D13, D14.
 
 ## Blockers / open questions
 - None.
@@ -84,6 +85,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-09 | Claude (Opus) | D16f: redo (app, live link, agent), groups take notes and turn with R, inline library delete confirm, Reconnect and offline-changes offer, keyboard wiring (P on a part) and palette arrows, slider name, manifest id and maskable icons; ADR-037. D16 done. 589 core + 151 web + 80 e2e (1 opt-in skip) + 2 production-build | D17 |
 | 2026-11-09 | Claude (Opus) | D16e parts 2–3: tri-state buffer (SN74HC125; shared bus lines, contention burns out); oscilloscope trigger, own scales, X-Y, watch a part without a probe; ADR-035, ADR-036. 588 core + 141 web + 75 e2e (1 opt-in skip) + 2 production-build | D16f |
 | 2026-11-09 | Claude (Opus) | D16e part 1: DC motor (FAULHABER 2224U012SR, vs ngspice analogue: DC, spin-up, AC), speed reading in rpm, rotor turning at simulated speed; ADR-034. 580 core + 135 web + 73 e2e (1 opt-in skip) | D16e: tri-state, scope |
 | 2026-11-09 | Claude (Opus) | D16d: AC analysis (`solveAc`, complex MNA, BJT charge and op-amp pole), MCP `frequency_response`, oscilloscope Frequency view; oscilloscope kept on screen; ADR-033. 572 core + 133 web + 72 e2e (1 opt-in skip) + 2 production-build | D16e |
