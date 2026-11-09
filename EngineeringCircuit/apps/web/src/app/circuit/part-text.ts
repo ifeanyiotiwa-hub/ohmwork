@@ -22,6 +22,7 @@ export function valueText(component: Component): string {
 			// The power rating is in the inspector; the label stays the resistance.
 			return formatSi(component.params.resistance, "Ω")
 		case "diode":
+		case "dc-motor":
 			return ""
 		case "logic-input":
 			return component.params.high ? "1" : "0"
@@ -69,6 +70,15 @@ function paramText(component: Component): string {
 			return String(value)
 		})
 		.join(" ")
+}
+
+const RPM_PER_RADIAN_PER_SECOND = 60 / (2 * Math.PI)
+
+/** A motor's speed (the reading's `speed`, rad/s) in whole rpm; undefined for parts without one. */
+export function speedText(reading: ComponentReading | undefined): string | undefined {
+	if (reading?.speed === undefined) return undefined
+	const rpm = Math.round(reading.speed * RPM_PER_RADIAN_PER_SECOND)
+	return rpm < 0 ? `−${-rpm} rpm` : `${rpm} rpm`
 }
 
 const METER_TYPES: ReadonlySet<ComponentType> = new Set(["voltmeter", "ammeter", "ohmmeter"])

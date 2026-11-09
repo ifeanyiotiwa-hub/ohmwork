@@ -193,6 +193,14 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 26, y: -30 },
 		labelAnchor: "start",
 	},
+	// A circle marked M, as IEC 60617; its rotor tick (MOTOR_ROTOR) turns as it runs.
+	"dc-motor": {
+		body: TWO_PIN_BODY,
+		paths: METER_PATHS,
+		marks: [{ text: "M", at: { x: 0, y: 0 } }, POSITIVE_LEAD_MARK],
+		label: LABEL_ABOVE,
+		labelAnchor: "middle",
+	},
 	lamp: {
 		body: TWO_PIN_BODY,
 		paths: ["M-40 0 H-14 M14 0 H40", "M-14 0 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0", "M-10 -10 L10 10 M-10 10 L10 -10"],
@@ -498,6 +506,9 @@ export const switchLeverPath = (closed: boolean) => (closed ? "M-16 0 L16 0" : "
 export const spdtLeverPath = (position: "a" | "b") => (position === "a" ? "M-16 -1 L16 -18" : "M-16 1 L16 18")
 
 /** The potentiometer's track runs from x = −24 (position 0, end a) to 24 (position 1, end b); the arrow tip touches it. */
+/** A tick inside a motor's rim, turned about its centre at the motor's speed. */
+export const MOTOR_ROTOR = "M0 -15 V-10"
+
 export const WIPER_TRACK = { start: -24, length: 48, tipY: -11 }
 /** The wiper: down from its pin, across to its position on the track, ending in an arrow. */
 export function potentiometerWiper(position: number): { d: string; x: number; y: number } {
@@ -536,6 +547,7 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"polarized-capacitor": "Polarized capacitor",
 	potentiometer: "Potentiometer",
 	lamp: "Lamp",
+	"dc-motor": "DC motor",
 	transformer: "Transformer",
 	"tapped-transformer": "Centre-tapped transformer",
 	"switch-spdt": "Two-way switch",

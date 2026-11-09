@@ -63,6 +63,10 @@
 				<dd>{{ values.current }}</dd>
 				<dt>Power</dt>
 				<dd>{{ values.power }}</dd>
+				@if (values.speed) {
+					<dt>Speed</dt>
+					<dd data-speed>{{ values.speed }}</dd>
+				}
 			</dl>
 		}
 

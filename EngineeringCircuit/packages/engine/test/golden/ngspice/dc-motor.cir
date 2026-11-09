@@ -1,0 +1,31 @@
+* DC motor, FAULHABER 2224U012SR (datasheet "Series 2224 ... SR", 012 SR column): R 8.77 Ohm, L 203 uH, kM 14.6 mNm/A
+* (also the back-EMF constant in V.s/rad), rotor inertia J 2.7 g.cm2, friction as viscous damping b = friction torque /
+* no-load speed = 0.2 mNm / (7810 rpm) = 2.44544e-7 N.m.s. Mechanical analogue: node w is the speed (1 V = 1 rad/s),
+* a capacitor J is the inertia, a conductance b the friction, a current Kt.i the torque. 12 V switched on at t = 0.
+* Results (ngspice 47): op v(w) 8.137307e+02 rad/s, i(Vsense) 1.362965e-02 A; tran (uic, 5 us steps) v(w) at 5 ms
+* 2.96669e+02, 11 ms 5.14426e+02, 40 ms 7.92423e+02; ac current per volt (mag, rad) 10 Hz 6.487287e-02, 0.9512294;
+* 1 kHz 1.130573e-01, -0.130366; 100 kHz 7.821754e-03, -1.50215
+Vin in 0 DC 12 AC 1 PULSE(0 12 0 1n 1n 1 2)
+R1 in x 8.77
+L1 x y 203u
+Vsense y z 0
+E1 z 0 w 0 0.0146
+F1 0 w Vsense 0.0146
+Cj w 0 2.7e-7
+Rb w 0 {1/2.44544e-7}
+.control
+op
+print v(w) i(Vsense)
+tran 5u 40m 0 5u uic
+print v(w)[1000] v(w)[2200] v(w)[8000]
+meas tran w5 find v(w) at=5m
+meas tran w11 find v(w) at=11m
+meas tran w40 find v(w) at=40m
+ac lin 1 10 10
+print mag(i(Vsense)) ph(i(Vsense))
+ac lin 1 1k 1k
+print mag(i(Vsense)) ph(i(Vsense))
+ac lin 1 100k 100k
+print mag(i(Vsense)) ph(i(Vsense))
+.endc
+.end

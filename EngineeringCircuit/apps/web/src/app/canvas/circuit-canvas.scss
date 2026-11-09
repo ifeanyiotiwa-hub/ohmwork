@@ -56,8 +56,27 @@
 	}
 }
 
-.paused .wire-flow {
+.paused .wire-flow,
+.paused .rotor {
 	animation-play-state: paused;
+}
+
+/* A running motor's rotor turns about the part's centre (its local origin). */
+.rotor.spinning {
+	animation: spin linear infinite;
+
+	&.reverse {
+		animation-direction: reverse;
+	}
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 @keyframes flow {
@@ -88,6 +107,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.wire-flow,
+	.rotor.spinning,
 	.part.agent-changed,
 	.wire.agent-changed {
 		animation: none;

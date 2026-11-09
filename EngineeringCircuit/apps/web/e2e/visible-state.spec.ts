@@ -61,3 +61,26 @@ test("dragging a potentiometer's wiper moves it along the track, and Undo puts i
 	await page.getByRole("button", { name: "Undo" }).click()
 	await expect(position).toHaveValue("0.5")
 })
+
+test("a motor spins up and shows its speed; a reversed supply turns it backwards", async ({ page }) => {
+	test.setTimeout(60_000)
+	await build(
+		page,
+		[["voltage-source", 200, 300], ["dc-motor", 500, 300], ["ground", 350, 450]],
+		[["V1:positive", "MOT1:a"], ["MOT1:b", "GND1:terminal"], ["V1:negative", "GND1:terminal"]],
+	)
+	// 5 V on the FAULHABER 2224U012SR: 5 / (Ke + R·b/Kt) = 339 rad/s, 3238 rpm, after its ~11 ms spin-up.
+	const motor = page.locator('[data-part="MOT1"]')
+	await expect(page.locator(".part-reading", { hasText: "3238 rpm" })).toBeVisible({ timeout: 30_000 })
+	await expect(motor.locator("[data-rotor]")).toHaveClass(/spinning/)
+	await expect(motor.locator("[data-rotor]")).not.toHaveClass(/reverse/)
+	await motor.click()
+	await expect(page.locator("[data-speed]")).toHaveText("3238 rpm")
+
+	await page.locator('[data-part="V1"]').click()
+	const voltage = page.locator('[data-field="voltage"]')
+	await voltage.fill("-5")
+	await voltage.press("Enter")
+	await expect(page.locator(".part-reading", { hasText: "−3238 rpm" })).toBeVisible({ timeout: 30_000 })
+	await expect(motor.locator("[data-rotor]")).toHaveClass(/reverse/)
+})

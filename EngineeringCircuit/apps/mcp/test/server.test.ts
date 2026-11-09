@@ -120,6 +120,17 @@ describe("a voltage divider built through the tools", () => {
 		})
 	})
 
+	test("a motor's speed is reported in rpm (FAULHABER 2224U012SR at 12 V: 7770 rpm, ngspice 813.73 rad/s)", async () => {
+		await call("add_component", { type: "voltage-source", params: { voltage: 12 } })
+		await call("add_component", { type: "dc-motor" })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "V1.positive", to: "MOT1.a" })
+		await call("connect", { from: "MOT1.b", to: "GND1.terminal" })
+		await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+		const { data } = await call("simulate_over_time", { duration: 0.1, probes: ["MOT1"], samples: 1 })
+		expect(data).toMatchObject({ samples: [{ values: { MOT1: { speedRpm: expect.closeTo(7770, -1), current: expect.closeTo(0.0136, 3) } } }] })
+	})
+
 	test("probe reads a part or a single pin", async () => {
 		await buildVoltageDivider()
 

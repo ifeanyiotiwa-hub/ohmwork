@@ -84,6 +84,17 @@
 					<path class="symbol" [attr.d]="wiper.d" />
 					<circle class="wiper-hit" data-wiper r="9" [attr.cx]="wiper.x" [attr.cy]="wiper.y" (pointerdown)="onWiperDown($event, item.part.id)" />
 				}
+				@if (item.rotor; as rotor) {
+					<g
+						class="rotor"
+						data-rotor
+						[class.spinning]="rotor.spin"
+						[class.reverse]="rotor.spin?.reverse"
+						[style.animation-duration.s]="rotor.spin?.seconds"
+					>
+						<path class="symbol" [attr.d]="rotor.d" />
+					</g>
+				}
 				@for (segment of item.segments; track segment.pin) {
 					<path class="segment" [class.lit]="segment.lit" [attr.d]="segment.d" [attr.data-segment]="segment.pin" />
 				}

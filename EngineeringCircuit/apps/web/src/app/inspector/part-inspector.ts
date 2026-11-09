@@ -1,6 +1,7 @@
 import { Component, computed, inject } from "@angular/core"
 import { type ComponentType, paramFieldsOf } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
+import { speedText } from "../circuit/part-text"
 import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
 import { PART_NAMES } from "../circuit/symbols"
 import { LessonCard } from "../lessons/lesson-card"
@@ -71,6 +72,7 @@ export class PartInspector {
 			voltage: formatSi(reading.voltage, "V"),
 			current: formatSi(reading.current, "A"),
 			power: formatSi(reading.voltage * reading.current, "W"),
+			speed: speedText(reading),
 		}
 	})
 

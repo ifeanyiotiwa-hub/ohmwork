@@ -10,6 +10,21 @@ export function flowOf(current: number, config: UiConfig["flow"]): Flow | undefi
 	return { seconds: config.dashPeriod / pixelsPerSecond, reverse: current < 0 }
 }
 
+export type Spin = { seconds: number; reverse: boolean }
+
+/**
+ * How a motor's rotor turns on screen: at its simulated speed (rad/s) played at the simulation's speed, so it matches
+ * the clock, but no faster than one turn per `minSecondsPerTurn` (faster would strobe) and not at all when a turn
+ * would take longer than `maxSecondsPerTurn`.
+ */
+export function spinOf(speed: number, simulationSpeed: number, config: UiConfig["spin"]): Spin | undefined {
+	const radiansPerSecond = Math.abs(speed) * simulationSpeed
+	if (radiansPerSecond === 0) return undefined
+	const seconds = (2 * Math.PI) / radiansPerSecond
+	if (seconds > config.maxSecondsPerTurn) return undefined
+	return { seconds: Math.max(config.minSecondsPerTurn, seconds), reverse: speed < 0 }
+}
+
 const NEUTRAL = { hue: 220, saturation: 8, lightness: 55 }
 const POSITIVE_HUE = 145
 const NEGATIVE_HUE = 0

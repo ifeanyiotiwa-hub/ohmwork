@@ -44,7 +44,7 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | `transformer` | primaryA, primaryB, secondaryA, secondaryB | primaryInductance (H), turnsRatio, coupling (0–1, exclusive: k = 1 makes the inductance matrix singular) | coupled inductors, SPICE `K`; defaults 4 H, 1, 0.999 as CJS; windings are wires at DC | EC, CJS, SPICE `K` | D3 | simulated |
 | `tapped-transformer` | primaryA, primaryB, secondaryA, secondaryTap, secondaryB | as transformer; turnsRatio is the whole secondary | three coupled windings (primary and two halves of n/2 turns), every pair coupled k; vs ngspice K within 1% | EC, CJS | D16 | simulated |
 | `lamp` | a, b | ratedVoltage (V), ratedPower (W) | resistor R = V²/P; brightness from power. Defaults 6 V / 1 W (CJS: 120 V / 100 W mains lamp with a heating filament; ours is fixed-resistance so a 5 V source lights it) | EC, CJS | D3 | simulated |
-| `dc-motor` | a, b | resistance (Ω), inductance (H), back-EMF constant | electrical + simple rotation model | EC, CJS | later | planned |
+| `dc-motor` | a, b | resistance (Ω), inductance (H), torqueConstant (N·m/A = V·s/rad), inertia (kg·m²), damping (N·m·s); FAULHABER 2224U012SR: 8.77 Ω, 203 µH, 14.6 mNm/A, 2.7 g·cm², friction 0.2 mNm at 7810 rpm | v = R·i + L·di/dt + Kt·ω, J·dω/dt = Kt·i − b·ω (backward Euler; at DC ω = Kt·i/b); reading `speed` (rad/s, shown in rpm); rotor turns on screen at the simulated speed; vs ngspice analogue (DC, spin-up, AC) | EC, CJS | D16 | simulated |
 
 ## Switches
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |

@@ -51,6 +51,28 @@ export const PASSIVES = [
 		params: { ratedVoltage: positive("volts"), ratedPower: positive("watts at the rated voltage") },
 		defaults: { ratedVoltage: 6, ratedPower: 1 },
 	}),
+	// FAULHABER 2224U012SR (datasheet "Series 2224 ... SR", 012 SR column, at 22 °C): terminal resistance 8.77 Ω, rotor
+	// inductance 203 µH, torque constant 14.6 mNm/A (in SI also the back-EMF constant, V·s/rad: its speed constant
+	// 655 rpm/V agrees), rotor inertia 2.7 g·cm². Its friction torque, 0.2 mNm, is modelled as viscous damping that
+	// gives that torque at the no-load speed (7810 rpm), so the no-load current comes out at its 13.8 mA within 2%.
+	defineComponent("dc-motor", {
+		idPrefix: "MOT",
+		pins: ["a", "b"],
+		params: {
+			resistance: positive("ohms, winding resistance"),
+			inductance: positive("henries, winding inductance"),
+			torqueConstant: positive("newton-metres per amp; also the back-EMF in volts per radian per second"),
+			inertia: positive("kilogram square metres, rotor and load inertia (1 g·cm² = 1e-7)"),
+			damping: positive("newton-metre-seconds, friction torque per radian per second of speed"),
+		},
+		defaults: {
+			resistance: 8.77,
+			inductance: 203e-6,
+			torqueConstant: 0.0146,
+			inertia: 2.7e-7,
+			damping: 0.2e-3 / ((7810 * 2 * Math.PI) / 60),
+		},
+	}),
 	defineComponent("transformer", {
 		idPrefix: "T",
 		pins: ["primaryA", "primaryB", "secondaryA", "secondaryB"],

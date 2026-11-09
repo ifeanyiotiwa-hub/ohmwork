@@ -47,6 +47,7 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"polarized-capacitor": POLARISED_LEADS,
 	potentiometer: { a: { x: -40, y: 0 }, b: { x: 40, y: 0 }, wiper: { x: 0, y: -40 } },
 	lamp: LEADS,
+	"dc-motor": LEADS,
 	transformer: {
 		primaryA: { x: -40, y: -40 },
 		primaryB: { x: -40, y: 40 },

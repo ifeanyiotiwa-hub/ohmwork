@@ -1,6 +1,6 @@
 import type { Component } from "@engineering-circuit/format"
 import { expect, test } from "vitest"
-import { meterText, valueText } from "./part-text"
+import { meterText, speedText, valueText } from "./part-text"
 
 const at = { position: { x: 0, y: 0 }, rotation: 0 } as const
 const part = (component: Pick<Component, "id" | "type" | "params">) => ({ ...at, ...component }) as Component
@@ -44,4 +44,11 @@ test("the LED 7-segment says which pin is common, and the tapped transformer rea
 	const display = { commonCathode: false, saturationCurrent: 2.811e-11, emissionCoefficient: 3.73, seriesResistance: 0.042, maxCurrent: 0.03, maxBrightnessCurrent: 0.01 }
 	expect(valueText(part({ id: "SEG1", type: "seven-segment-led", params: display }))).toBe("common +")
 	expect(valueText(part({ id: "TT1", type: "tapped-transformer", params: { primaryInductance: 4, turnsRatio: 2, coupling: 0.999 } }))).toBe("4 H 1:2")
+})
+
+test("a motor reads its speed in rpm, negative when it runs backwards", () => {
+	expect(speedText({ voltage: 12, current: 0.0136, speed: 813.73 })).toBe("7771 rpm")
+	expect(speedText({ voltage: -12, current: -0.0136, speed: -813.73 })).toBe("−7771 rpm")
+	expect(speedText({ voltage: 0, current: 0, speed: 0 })).toBe("0 rpm")
+	expect(speedText({ voltage: 1, current: 1 })).toBeUndefined()
 })

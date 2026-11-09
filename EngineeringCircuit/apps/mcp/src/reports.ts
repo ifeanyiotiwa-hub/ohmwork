@@ -62,11 +62,14 @@ function nodesOf(circuit: Circuit, solution?: DcSolution) {
 
 const OPEN_READING = "open (nothing connects its leads)"
 
-const readingReport = ({ voltage, current, resistance }: ComponentReading) => ({
+const RPM_PER_RADIAN_PER_SECOND = 60 / (2 * Math.PI)
+
+const readingReport = ({ voltage, current, resistance, speed }: ComponentReading) => ({
 	voltage: rounded(voltage),
 	current: rounded(current),
 	power: rounded(voltage * current),
 	...(resistance === undefined ? {} : { resistance: Number.isFinite(resistance) ? rounded(resistance) : OPEN_READING }),
+	...(speed === undefined ? {} : { speedRpm: rounded(speed * RPM_PER_RADIAN_PER_SECOND) }),
 })
 
 /** A multi-port part's ports by name ("primary", "output"), each with voltage, current and power. */

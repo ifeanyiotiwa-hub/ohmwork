@@ -2,6 +2,7 @@ import { type Component, type ComponentType, RGB_COLOURS, SEGMENT_PINS } from "@
 import type { LogicMemories } from "../digital/advance"
 import { LOGIC_PARTS, type LogicPart, initialMemory } from "../digital/logic"
 import { bipolarDevice } from "../nonlinear/bipolar"
+import { dcMotorDevice } from "../nonlinear/dc-motor"
 import type { Device } from "../nonlinear/device"
 import { diodeDevice } from "../nonlinear/diode"
 import { mosfetDevice } from "../nonlinear/mosfet"
@@ -75,6 +76,7 @@ export const GROUND_PIN = "@ground"
 /** Parts whose behaviour depends on time; a circuit without any is the same at every instant. */
 export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<ComponentType>([
 	"clock",
+	"dc-motor",
 	"timer-555",
 	"scope-probe",
 	"adc-4bit",
@@ -95,6 +97,7 @@ export const TIME_DEPENDENT_TYPES: ReadonlySet<ComponentType> = new Set<Componen
 /** Parts that carry state from one time step to the next (multi-port ones per port, keyed "T1/primary"). */
 export const STATEFUL_TYPES: ReadonlySet<ComponentType> = new Set([
 	"capacitor",
+	"dc-motor",
 	"polarized-capacitor",
 	"inductor",
 	"transformer",
@@ -340,6 +343,11 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 		segment(id, ["a", "wiper"], params.resistance * params.position),
 		segment(id, ["wiper", "b"], params.resistance * (1 - params.position)),
 	],
+	"dc-motor": ({ id, params }, { transient }) => {
+		const motion = transient?.memory[`${id}/motion`]
+		const step = transient && { timeStep: transient.timeStep, previousSpeed: motion?.voltage ?? 0, previousCurrent: motion?.current ?? 0 }
+		return [deviceBranch(id, dcMotorDevice(params, step))]
+	},
 	lamp: ({ id, params }) => [
 		{ kind: "resistor", componentId: id, pins: ["a", "b"], resistance: params.ratedVoltage ** 2 / params.ratedPower },
 	],

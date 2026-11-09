@@ -48,6 +48,8 @@ export type UiConfig = {
 		/** Samples kept at most, oldest dropped first. */
 		maxSamples: number
 	}
+	/** A motor's rotor on screen (see spinOf). */
+	spin: { minSecondsPerTurn: number; maxSecondsPerTurn: number }
 	/** The oscilloscope's frequency view: the sweep, in hertz (log scale). */
 	bode: { startHz: number; stopHz: number; pointsPerDecade: number }
 	flow: {
@@ -73,6 +75,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
 	scope: { windowRealSeconds: 4, maxSamples: 8000 },
+	spin: { minSecondsPerTurn: 0.25, maxSecondsPerTurn: 30 },
 	bode: { startHz: 1, stopHz: 1e6, pointsPerDecade: 20 },
 	live: { reconnectDelaysMs: [1000, 2000, 4000, 8000], maxReconnectAttempts: 30 },
 	library: { maxEntries: 200, autosaveDelayMs: 500, maxFileBytes: 5 * 1024 * 1024, pictureMargin: 60, pngScale: 2 },

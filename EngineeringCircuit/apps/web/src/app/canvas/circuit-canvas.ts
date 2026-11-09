@@ -17,10 +17,11 @@ import { glowOf } from "../circuit/glow"
 import { pathThrough, snap } from "../circuit/geometry"
 import { placeBox, routeAround } from "../circuit/routing"
 import { labelPlacement, readingPlacement } from "../circuit/labels"
-import { isMeter, meterText, valueText } from "../circuit/part-text"
+import { isMeter, meterText, speedText, valueText } from "../circuit/part-text"
 import { formatSi } from "../circuit/si-units"
 import {
 	CAPACITOR_PLATES,
+	MOTOR_ROTOR,
 	SEVEN_SEGMENT_PATHS,
 	WIPER_TRACK,
 	potentiometerWiper,
@@ -32,7 +33,7 @@ import {
 	switchLeverPath,
 } from "../circuit/symbols"
 import { UI_CONFIG } from "../circuit/ui-config"
-import { flowOf, voltageColour } from "../circuit/visuals"
+import { flowOf, spinOf, voltageColour } from "../circuit/visuals"
 import { type View, pinchView } from "./gestures"
 import { dialOf } from "../circuit/dial"
 
@@ -195,7 +196,7 @@ export class CircuitCanvas {
 		const agentChanged = this.store.agentChanges().components
 		const pressed = this.store.pressed()
 		const group = this.store.multiSelection()
-		const { logicHigh } = this.store.circuit().simulation
+		const { logicHigh, speed } = this.store.circuit().simulation
 		const largest = Math.max(0, ...Object.values(solution?.pinVoltages ?? {}).map(Math.abs))
 		const overheated = new Set(this.store.warnings().flatMap((warning) => (warning.kind === "burn-out" ? warning.componentIds : [])))
 		return this.store.circuit().components.map((part) => {
@@ -215,6 +216,7 @@ export class CircuitCanvas {
 					return { pin, d, colour: voltage === undefined ? null : voltageColour(voltage, largest) }
 				}),
 				wiper: part.type === "potentiometer" ? potentiometerWiper(part.params.position) : undefined,
+				rotor: part.type === "dc-motor" ? { d: MOTOR_ROTOR, spin: spinOf(solution?.readings[part.id]?.speed ?? 0, speed, this.config.spin) } : undefined,
 				overheated: overheated.has(part.id),
 				label: labelPlacement(symbol, part.rotation, at),
 				readingAt: readingPlacement(symbol, part.rotation, at, isMeter(part)),
@@ -224,7 +226,9 @@ export class CircuitCanvas {
 				}),
 				value: valueText(part),
 				reading:
-					meterText(part, solution?.readings[part.id]) ?? (current === 0 ? undefined : formatSi(Math.abs(current), "A")),
+					speedText(solution?.readings[part.id]) ??
+					meterText(part, solution?.readings[part.id]) ??
+					(current === 0 ? undefined : formatSi(Math.abs(current), "A")),
 				meter: isMeter(part),
 				body: symbol.body,
 				glow: glowOf(part, solution, logicHigh),

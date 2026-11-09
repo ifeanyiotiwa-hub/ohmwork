@@ -21,7 +21,8 @@ import { type NetBranch, chooseReferences, conductiveSets, findCurrentWithoutPat
 export type { DcInputs } from "./branches"
 
 /** `resistance` is an ohmmeter's reading: Infinity when nothing connects its leads. */
-export type ComponentReading = { voltage: number; current: number; resistance?: number }
+/** `resistance`: an ohmmeter's reading. `speed`: a motor's, in radians per second (forwards with current from a to b). */
+export type ComponentReading = { voltage: number; current: number; resistance?: number; speed?: number }
 
 /** Parts that push energy into the circuit; an ohmmeter sharing a circuit with one can't read resistance. */
 const POWERING_TYPES: ReadonlySet<ComponentType> = new Set([
@@ -513,5 +514,9 @@ function readingsOf(
 		into[key] = { voltage, current: (into[key]?.current ?? 0) + (mna.branchCurrents[index] ?? 0) }
 	})
 
+	for (const [id, reading] of Object.entries(readings)) {
+		const motion = internal[`${id}/motion`]
+		if (motion) reading.speed = motion.voltage
+	}
 	return { pinVoltages, readings, ports, ...(Object.keys(internal).length > 0 ? { internal } : {}) }
 }

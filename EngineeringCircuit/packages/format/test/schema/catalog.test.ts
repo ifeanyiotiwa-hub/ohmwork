@@ -69,3 +69,12 @@ test("every LED colour has a model and a current rating, and LEDs default to red
 	const led = COMPONENT_DEFINITIONS.find((definition) => definition.type === "led")
 	expect(led?.defaults).toMatchObject({ color: "red", ...LED_MODELS.red })
 })
+
+test("a new DC motor follows the FAULHABER 2224U012SR, and refuses a motor with no friction (it would spin up for ever)", () => {
+	const motor = COMPONENT_DEFINITIONS.find((definition) => definition.type === "dc-motor")
+	expect(motor?.pins).toEqual(["a", "b"])
+	expect(motor?.defaults).toMatchObject({ resistance: 8.77, inductance: 203e-6, torqueConstant: 0.0146, inertia: 2.7e-7 })
+	// Friction torque 0.2 mNm at the no-load speed of 7810 rpm, as a viscous damping.
+	expect(motor?.defaults.damping).toBeCloseTo(0.2e-3 / ((7810 * 2 * Math.PI) / 60), 12)
+	expect(motor?.schema.shape.params.safeParse({ ...motor?.defaults, damping: 0 }).success).toBe(false)
+})
