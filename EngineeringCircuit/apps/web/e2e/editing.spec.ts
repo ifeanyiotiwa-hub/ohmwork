@@ -144,3 +144,40 @@ test("the picture frames everything drawn: a note's whole box and a part's label
 		expect(box.bottom).toBeLessThanOrEqual(y + height)
 	}
 })
+
+test("net labels with the same name connect without a wire; renaming one disconnects it", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	for (const [type, x, y] of [
+		["voltage-source", 140, 300],
+		["net-label", 300, 160],
+		["net-label", 460, 160],
+		["resistor", 600, 300],
+		["ground", 380, 460],
+	] as const) {
+		await choosePart(page, type)
+		await canvas(page).click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["V1:positive", "NL1:terminal"],
+		["NL2:terminal", "R1:a"],
+		["R1:b", "GND1:terminal"],
+		["V1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	// Both labels start as "A": the resistor gets the supply's 5 V and 5 mA.
+	await expect(page.locator(".part-reading", { hasText: "5 mA" }).first()).toBeVisible()
+
+	await page.locator('[data-part="NL2"]').click()
+	const name = page.locator('[data-field="name"]')
+	await name.fill("B")
+	await name.press("Enter")
+	await expect(page.locator(".part-label", { hasText: "B" }).first()).toBeVisible()
+	await expect(page.locator(".part-reading", { hasText: "5 mA" })).toHaveCount(0)
+
+	await name.fill(" a ")
+	await name.press("Enter")
+	await expect(page.locator(".part-reading", { hasText: "5 mA" }).first()).toBeVisible()
+})

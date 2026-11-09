@@ -1,7 +1,8 @@
-import { type Circuit, type Net, buildNets, pinKey, pinsOf } from "@engineering-circuit/format"
+import { type Circuit, type Net, buildNets, netLabelKey, pinKey, pinsOf } from "@engineering-circuit/format"
 import type { DcSolution } from "./solve-dc"
 
-type Edge = { wireId: string; neighbour: string; forward: boolean }
+/** `wireId` undefined: the unseen link between two net labels of one name, which carries current but is no wire. */
+type Edge = { id: string; wireId: string | undefined; neighbour: string; forward: boolean }
 
 export function wireCurrents(circuit: Circuit, solution: DcSolution): Record<string, number> {
 	const outflow = partOutflows(circuit, solution)
@@ -42,15 +43,30 @@ function adjacency(circuit: Circuit): Map<string, Edge[]> {
 	for (const wire of circuit.wires) {
 		const from = pinKey(wire.from)
 		const to = pinKey(wire.to)
-		link(from, { wireId: wire.id, neighbour: to, forward: true })
-		link(to, { wireId: wire.id, neighbour: from, forward: false })
+		link(from, { id: wire.id, wireId: wire.id, neighbour: to, forward: true })
+		link(to, { id: wire.id, wireId: wire.id, neighbour: from, forward: false })
+	}
+	// Each net label is linked to the first label of its name, so the current can be followed from one to the other.
+	const firstLabelOf = new Map<string, string>()
+	for (const component of circuit.components) {
+		if (component.type !== "net-label") continue
+		const name = netLabelKey(component.params.name)
+		const pin = pinKey({ componentId: component.id, pin: "terminal" })
+		const first = firstLabelOf.get(name)
+		if (first === undefined) {
+			firstLabelOf.set(name, pin)
+			continue
+		}
+		const id = `label:${pin}`
+		link(first, { id, wireId: undefined, neighbour: pin, forward: true })
+		link(pin, { id, wireId: undefined, neighbour: first, forward: false })
 	}
 	return edges
 }
 
 function carrySubtree(
 	pin: string,
-	viaWire: string | undefined,
+	viaEdge: string | undefined,
 	edges: Map<string, Edge[]>,
 	outflow: Map<string, number>,
 	currents: Record<string, number>,
@@ -59,9 +75,9 @@ function carrySubtree(
 	visited.add(pin)
 	let subtreeOutflow = outflow.get(pin) ?? 0
 	for (const edge of edges.get(pin) ?? []) {
-		if (edge.wireId === viaWire || visited.has(edge.neighbour)) continue
-		const intoChild = carrySubtree(edge.neighbour, edge.wireId, edges, outflow, currents, visited)
-		currents[edge.wireId] = edge.forward ? intoChild : -intoChild
+		if (edge.id === viaEdge || visited.has(edge.neighbour)) continue
+		const intoChild = carrySubtree(edge.neighbour, edge.id, edges, outflow, currents, visited)
+		if (edge.wireId !== undefined) currents[edge.wireId] = edge.forward ? intoChild : -intoChild
 		subtreeOutflow += intoChild
 	}
 	return subtreeOutflow

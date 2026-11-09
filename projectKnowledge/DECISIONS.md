@@ -221,3 +221,10 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - Renamed now: everything a person reads (page title, install name and short name, the toolbar wordmark, desktop and Android app names, window title, the agent's instructions and tutor prompt, README, VISION, release name).
 - Not renamed yet: code identifiers (package scope, folder, MCP server id, app identifier). Renaming them touches every import and config for no visible gain, and the app identifier can change only before anyone installs the app; it is a D18 item, done once before the first public release.
 - Wordmark: the app icon at text size, then "Sparkbench" with "Spark" in the accent colour, one word.
+
+## ADR-040: Net labels (D17)
+- `net-label` (one pin, a `name`) joins nodes by name, as a SPICE node name does. It is done once, in format's `buildNets`, so the engine, the app's node labels and colours, and the agent all see one node; the part has no branch of its own. No format version: a new type (COMPONENTS.md checklist).
+- Names match trimmed and ignoring capitals (`netLabelKey`), as ngspice does with node names, so "VCC" and "Vcc" never fail to connect silently. A name needs a visible character and at most 24 characters.
+- Wire currents follow a node through its wires; a labelled node is several groups of wires with no wire between them, so same-named labels are linked by an unseen edge in that walk. Without it, the wires behind the second label showed 0 A (found by a test).
+- Parameters can now be text: `ParamField` kind "text" (a string in the schema), a text box in the inspector; an empty name is put back rather than sent.
+- The canvas shows a label by its name only; its id (NL1) would be clutter. The ground part stays the way to mark 0 V: a label named "GND" or "0" is an ordinary name.

@@ -167,6 +167,13 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: LABEL_ABOVE,
 		labelAnchor: "middle",
 	},
+	// A tag with its pin on the left; the canvas shows the label's name beside it, not its id.
+	"net-label": {
+		body: { left: -20, top: -9, right: 34, bottom: 9 },
+		paths: ["M-20 0 H-10", "M-10 0 L-2 -9 H34 V9 H-2 Z"],
+		label: { x: 12, y: -16 },
+		labelAnchor: "middle",
+	},
 	junction: {
 		body: { left: -6, top: -6, right: 6, bottom: 6 },
 		paths: ["M-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0"],
@@ -561,6 +568,7 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"switch-spdt": "Two-way switch",
 	resistor: "Resistor",
 	junction: "Junction",
+	"net-label": "Net label",
 	capacitor: "Capacitor",
 	inductor: "Inductor",
 	switch: "Switch",

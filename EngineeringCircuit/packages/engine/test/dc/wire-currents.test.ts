@@ -101,3 +101,29 @@ test("a loop of wires inside one node still delivers the right total current", (
 	const leavingBatteryNode = (currents.w1 ?? 0) - (currents.w3 ?? 0)
 	expectClose(leavingBatteryNode, 4)
 })
+
+test("net labels join a circuit without a wire, and the wires on both sides carry its current", () => {
+	// 6 V into 3 Ω, the supply reaching the resistor only through two labels named "VCC".
+	const circuit = circuitOf(
+		[
+			{ id: "V1", type: "voltage-source", params: { voltage: 6 } },
+			{ id: "NL1", type: "net-label", params: { name: "VCC" } },
+			{ id: "NL2", type: "net-label", params: { name: "vcc" } },
+			{ id: "R1", type: "resistor", params: { resistance: 3, powerRating: 20 } },
+			{ id: "GND", type: "ground", params: {} },
+		],
+		[
+			["V1.positive", "NL1.terminal"],
+			["NL2.terminal", "R1.a"],
+			["R1.b", "GND.terminal"],
+			["V1.negative", "GND.terminal"],
+		],
+	)
+	const result = solveDc(circuit)
+	if (!result.ok) throw new Error(JSON.stringify(result.errors))
+	expectClose(result.solution.readings.R1?.current, 2)
+	expect(result.solution.warnings).toEqual([])
+	const currents = wireCurrents(circuit, result.solution)
+	expectClose(Math.abs(currents.w1 ?? 0), 2)
+	expectClose(Math.abs(currents.w2 ?? 0), 2)
+})

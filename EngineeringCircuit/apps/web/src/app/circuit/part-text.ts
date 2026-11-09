@@ -18,6 +18,8 @@ export function valueText(component: Component): string {
 			const shifted = offset === 0 ? "" : ` ${offset > 0 ? "+" : ""}${formatSi(offset, "V")}`
 			return `${formatSi(amplitude, "V")} ${formatSi(frequency, "Hz")}${shifted}`
 		}
+		case "net-label":
+			return component.params.name
 		case "resistor":
 			// The power rating is in the inspector; the label stays the resistance.
 			return formatSi(component.params.resistance, "Ω")

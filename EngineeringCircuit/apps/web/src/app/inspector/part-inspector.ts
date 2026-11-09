@@ -17,6 +17,7 @@ type FieldView =
 	  }
 	| { name: string; kind: "boolean"; checked: boolean }
 	| { name: string; kind: "choice"; value: string; options: string[] }
+	| { name: string; kind: "text"; value: string; maxLength: number }
 
 const RECENT_HISTORY = 5
 
@@ -60,6 +61,8 @@ export class PartInspector {
 					return { name: field.name, kind: "boolean", checked: value === true }
 				case "choice":
 					return { name: field.name, kind: "choice", value: String(value), options: field.options }
+				case "text":
+					return { name: field.name, kind: "text", value: typeof value === "string" ? value : "", maxLength: field.maxLength }
 			}
 		})
 	})
@@ -145,6 +148,17 @@ export class PartInspector {
 
 	protected setBoolean(componentId: string, name: string, event: Event): void {
 		this.store.apply({ type: "set-parameter", componentId, name, value: (event.target as HTMLInputElement).checked })
+	}
+
+	/** Text (a net label's name): an empty or unchanged entry is put back, as the format requires a name. */
+	protected setText(componentId: string, name: string, current: string, event: Event): void {
+		const input = event.target as HTMLInputElement
+		const text = input.value.trim()
+		if (text === "" || text === current) {
+			input.value = current
+			return
+		}
+		this.store.apply({ type: "set-parameter", componentId, name, value: text })
 	}
 
 	protected setChoice(componentId: string, name: string, event: Event): void {

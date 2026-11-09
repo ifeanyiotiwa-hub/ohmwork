@@ -52,3 +52,7 @@ test("a motor reads its speed in rpm, negative when it runs backwards", () => {
 	expect(speedText({ voltage: 0, current: 0, speed: 0 })).toBe("0 rpm")
 	expect(speedText({ voltage: 1, current: 1 })).toBeUndefined()
 })
+
+test("a net label reads as its name", () => {
+	expect(valueText(part({ id: "NL1", type: "net-label", params: { name: "VCC" } }))).toBe("VCC")
+})

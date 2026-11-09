@@ -45,3 +45,7 @@ test("a number with both limits carries its range, for a slider", () => {
 		range: { min: 0, max: 1 },
 	})
 })
+
+test("a net label's name is a text field", () => {
+	expect(paramFieldsOf("net-label")).toEqual([{ name: "name", kind: "text", description: expect.stringContaining("same name"), maxLength: 24 }])
+})

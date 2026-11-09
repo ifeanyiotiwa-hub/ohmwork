@@ -5,6 +5,7 @@ export type ParamField =
 	| { name: string; kind: "number"; description: string; positiveOnly: boolean; range?: { min: number; max: number } }
 	| { name: string; kind: "boolean"; description: string }
 	| { name: string; kind: "choice"; description: string; options: string[] }
+	| { name: string; kind: "text"; description: string; maxLength: number }
 
 export function paramFieldsOf(type: ComponentType): ParamField[] {
 	const schema = z.toJSONSchema(definitionOf(type).schema.shape.params)
@@ -16,6 +17,7 @@ export function paramFieldsOf(type: ComponentType): ParamField[] {
 			return [{ name, kind: "choice", description, options: property.enum.map(String) }]
 		}
 		if (property.type === "boolean") return [{ name, kind: "boolean", description }]
+		if (property.type === "string") return [{ name, kind: "text", description, maxLength: property.maxLength ?? Number.MAX_SAFE_INTEGER }]
 		const { minimum, maximum } = property
 		const field = { name, kind: "number" as const, description, positiveOnly: property.exclusiveMinimum === 0 }
 		return [typeof minimum === "number" && typeof maximum === "number" ? { ...field, range: { min: minimum, max: maximum } } : field]

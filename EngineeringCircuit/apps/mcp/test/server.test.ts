@@ -121,6 +121,21 @@ describe("a voltage divider built through the tools", () => {
 		})
 	})
 
+	test("net labels of the same name connect, with no wire between them", async () => {
+		await call("add_component", { type: "voltage-source", params: { voltage: 9 } })
+		await call("add_component", { type: "net-label", params: { name: "VCC" } })
+		await call("add_component", { type: "net-label", params: { name: "VCC" } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "V1.positive", to: "NL1.terminal" })
+		await call("connect", { from: "NL2.terminal", to: "R1.a" })
+		await call("connect", { from: "R1.b", to: "GND1.terminal" })
+		await call("connect", { from: "V1.negative", to: "GND1.terminal" })
+		expect((await call("probe", { target: "R1" })).data).toMatchObject({ voltage: 9, current: 0.009 })
+		expect((await call("set_parameter", { componentId: "NL2", name: "name", value: "OTHER" })).isError).toBe(false)
+		expect((await call("probe", { target: "R1" })).data).toMatchObject({ current: 0 })
+	})
+
 	test("a motor's speed is reported in rpm (FAULHABER 2224U012SR at 12 V: 7770 rpm, ngspice 813.73 rad/s)", async () => {
 		await call("add_component", { type: "voltage-source", params: { voltage: 12 } })
 		await call("add_component", { type: "dc-motor" })

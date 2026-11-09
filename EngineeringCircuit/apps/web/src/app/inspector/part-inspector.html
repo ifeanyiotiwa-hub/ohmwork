@@ -45,6 +45,14 @@
 					@if (field.hint) {
 						<span class="field-hint">{{ field.hint }}</span>
 					}
+				} @else if (field.kind === "text") {
+					<input
+						type="text"
+						[attr.data-field]="field.name"
+						[value]="field.value"
+						[attr.maxlength]="field.maxLength"
+						(change)="setText(part.id, field.name, field.value, $event)"
+					/>
 				} @else if (field.kind === "boolean") {
 					<input type="checkbox" [attr.data-field]="field.name" [checked]="field.checked" (change)="setBoolean(part.id, field.name, $event)" />
 				} @else {

@@ -5,6 +5,9 @@ export type Net = { index: number; pins: PinRef[]; isGround: boolean }
 
 export const pinKey = (ref: PinRef): string => `${ref.componentId}:${ref.pin}`
 
+/** What makes two net labels the same: their names without surrounding spaces, ignoring capitals (as SPICE node names). */
+export const netLabelKey = (name: string): string => name.trim().toLowerCase()
+
 export function buildNets(circuit: Circuit): Net[] {
 	const parent = new Map<string, string>()
 
@@ -22,6 +25,16 @@ export function buildNets(circuit: Circuit): Net[] {
 	)
 	allPins.forEach((ref) => parent.set(pinKey(ref), pinKey(ref)))
 	circuit.wires.forEach((wire) => parent.set(root(pinKey(wire.from)), root(pinKey(wire.to))))
+	// Net labels: the first label of each name stands for it; the others join it.
+	const firstLabelOf = new Map<string, string>()
+	for (const component of circuit.components) {
+		if (component.type !== "net-label") continue
+		const name = netLabelKey(component.params.name)
+		const key = pinKey({ componentId: component.id, pin: "terminal" })
+		const first = firstLabelOf.get(name)
+		if (first === undefined) firstLabelOf.set(name, key)
+		else parent.set(root(key), root(first))
+	}
 
 	const groundIds = new Set(circuit.components.filter((c) => c.type === "ground").map((c) => c.id))
 	const netsByRoot = new Map<string, Net>()

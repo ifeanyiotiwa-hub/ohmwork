@@ -78,6 +78,7 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"p-mosfet": MOSFET_LEADS,
 	"voltage-rail": { terminal: { x: 0, y: 40 } },
 	junction: { terminal: { x: 0, y: 0 } },
+	"net-label": { terminal: { x: -20, y: 0 } },
 	"scope-probe": POLARISED_LEADS,
 	"seven-segment": Object.fromEntries(["a", "b", "c", "d", "e", "f", "g", "dp"].map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
 	"seven-segment-led": {

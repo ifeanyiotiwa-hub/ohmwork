@@ -1,6 +1,9 @@
 import * as z from "zod"
 import { defineComponent, positive } from "./define"
 
+/** Characters in a net label's name. */
+export const NET_LABEL_MAX_LENGTH = 24
+
 export const PASSIVES = [
 	defineComponent("resistor", {
 		idPrefix: "R",
@@ -14,6 +17,19 @@ export const PASSIVES = [
 	}),
 	// A connection point in the middle of wiring: any number of wires meet at its one pin.
 	defineComponent("junction", { idPrefix: "J", pins: ["terminal"], params: {}, defaults: {} }),
+	// A named node (SPICE node name): every pin wired to a label of the same name is one node, with no wire between.
+	defineComponent("net-label", {
+		idPrefix: "NL",
+		pins: ["terminal"],
+		params: {
+			name: z
+				.string()
+				.max(NET_LABEL_MAX_LENGTH)
+				.regex(/\S/, "needs a name")
+				.describe("labels with the same name are connected (spaces and capitals don't matter)"),
+		},
+		defaults: { name: "A" },
+	}),
 	defineComponent("capacitor", {
 		idPrefix: "C",
 		pins: ["a", "b"],
