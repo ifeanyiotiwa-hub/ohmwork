@@ -52,6 +52,8 @@ export type DcSolution = {
 	pinVoltages: Record<string, number>
 	readings: Record<string, ComponentReading>
 	ports: Record<string, ComponentReading>
+	/** Parts' own working kept between time steps (a transistor's stored charge), by "id/name"; not a reading. */
+	internal?: Record<string, ComponentReading>
 	/** Outputs of logic and switching parts during this solve (a flip-flop's Q, a relay pulled in), by id. */
 	states?: Record<string, readonly boolean[]>
 	warnings: SimIssue[]
@@ -100,7 +102,7 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 		}))
 	if (notSimulated.length > 0) return { ok: false, errors: notSimulated }
 
-	const context = { ...inputs, logicHigh: circuit.simulation.logicHigh }
+	const context = { ...inputs, logicHigh: circuit.simulation.logicHigh, temperature: circuit.simulation.temperature }
 	const raw = circuit.components.flatMap((component) => {
 		const model = dcModelOf(component)
 		return model === "not-simulated" ? [] : model(component, context)
@@ -460,19 +462,25 @@ function readingsOf(
 	)
 
 	const ports: Record<string, ComponentReading> = {}
+	const internal: Record<string, ComponentReading> = {}
 	branches.forEach((branch) => {
-		if (branch.kind !== "device" || !branch.device.ports) return
+		if (branch.kind !== "device") return
 		const voltages = (branch.terminalNets ?? []).map((net) => mna.netVoltages[net] ?? 0)
-		for (const port of branch.device.ports(voltages, terminalCurrents(branch, mna.netVoltages))) {
+		const currents = terminalCurrents(branch, mna.netVoltages)
+		for (const port of branch.device.ports?.(voltages, currents) ?? []) {
 			ports[`${branch.componentId}/${port.name}`] = { voltage: port.voltage, current: port.current }
+		}
+		for (const kept of branch.device.remember?.(voltages, currents) ?? []) {
+			internal[`${branch.componentId}/${kept.name}`] = { voltage: kept.voltage, current: kept.current }
 		}
 	})
 	branches.forEach((branch, index) => {
 		if (!branch.port) return
 		const key = `${branch.componentId}/${branch.port}`
+		const into = branch.internal ? internal : ports
 		const voltage = voltageAt(branch.componentId, branch.pins[0]) - voltageAt(branch.componentId, branch.pins[1])
-		ports[key] = { voltage, current: (ports[key]?.current ?? 0) + (mna.branchCurrents[index] ?? 0) }
+		into[key] = { voltage, current: (into[key]?.current ?? 0) + (mna.branchCurrents[index] ?? 0) }
 	})
 
-	return { pinVoltages, readings, ports }
+	return { pinVoltages, readings, ports, ...(Object.keys(internal).length > 0 ? { internal } : {}) }
 }

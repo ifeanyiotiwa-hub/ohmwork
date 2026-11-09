@@ -376,7 +376,7 @@ describe("over time", () => {
 	})
 
 	test("set_simulation changes the time step and speed, and period is accepted for frequency", async () => {
-		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001, logic high 5 V")
+		expect((await call("set_simulation", { timeStep: 1e-6, speed: 0.001 })).text).toBe("Simulation: time step 0.000001 s, speed 0.001, logic high 5 V, 27 °C")
 		await call("add_component", { type: "ac-source" })
 		expect((await call("set_parameter", { componentId: "AC1", name: "period", value: 0.01 })).text).toBe("Set AC1 frequency to 100")
 	})
@@ -410,7 +410,8 @@ test("probing a transistor reports base-emitter and collector-emitter", async ()
 	await call("add_component", { type: "voltage-source", params: { voltage: 2 } })
 	await call("add_component", { type: "resistor", params: { resistance: 1000 } })
 	await call("add_component", { type: "resistor", params: { resistance: 100000 } })
-	await call("add_component", { type: "npn-transistor" })
+	// No Early effect, to compare with the D4 ngspice values (npn.cir has none).
+	await call("add_component", { type: "npn-transistor", params: { earlyVoltage: 1e15 } })
 	await call("add_component", { type: "ground" })
 	await call("connect", { from: "V1.positive", to: "R1.a" })
 	await call("connect", { from: "R1.b", to: "Q1.collector" })

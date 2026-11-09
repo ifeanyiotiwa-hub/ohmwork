@@ -29,6 +29,11 @@ export type Device = {
 	linearize(voltages: readonly number[], state: readonly number[]): Linearization
 	/** Named readings for parts with more than two terminals (a transistor's base-emitter, collector-emitter). */
 	ports?(voltages: readonly number[], currents: readonly number[]): PortReading[]
+	/**
+	 * The part's own working that the next time step needs (a transistor's stored charge, an op-amp's internal drive):
+	 * kept between steps, never shown as a reading. Two numbers per entry, in the reading's fields.
+	 */
+	remember?(voltages: readonly number[], currents: readonly number[]): PortReading[]
 }
 
 /** Junction voltages settle when they move less than this between iterations. */

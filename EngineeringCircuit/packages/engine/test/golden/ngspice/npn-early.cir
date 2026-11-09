@@ -1,0 +1,15 @@
+* NPN (IS 1e-13, BF 100, BR 1) with Early voltage VAF 50 V: base fed 10 uA, collector at 2 V and at 10 V.
+* Results: I(collector) 1.02809e-03 A at 2 V, 1.18809e-03 A at 10 V.
+.model QE NPN(IS=1e-13 BF=100 BR=1 VAF=50)
+Vc2 c2 0 2
+Vc10 c10 0 10
+Q2 c2 b2 0 QE
+Q10 c10 b10 0 QE
+Ib2 0 b2 10u
+Ib10 0 b10 10u
+.op
+.control
+run
+print -i(Vc2) -i(Vc10)
+.endc
+.end

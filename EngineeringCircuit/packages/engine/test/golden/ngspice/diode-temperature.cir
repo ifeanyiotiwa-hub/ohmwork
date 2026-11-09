@@ -1,0 +1,14 @@
+* Silicon diode (IS 1e-14, N 1; ngspice defaults EG 1.11, XTI 3) at 1 mA: at 27 C and at 75 C.
+* Results: v(a) 6.551180e-01 V at 27 C, 5.690216e-01 V at 75 C.
+.model DT D(IS=1e-14 N=1)
+I1 0 a 1m
+D1 a 0 DT
+.op
+.control
+run
+print v(a)
+set temp=75
+run
+print v(a)
+.endc
+.end

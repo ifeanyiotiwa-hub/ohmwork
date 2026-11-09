@@ -299,14 +299,15 @@ export function createServer(
 		"set_simulation",
 		{
 			description:
-				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower), speed (simulated seconds per real second in the app), and logicHigh (volts for logic 1; logic inputs read 1 above half of it).",
+				"Change how time runs: timeStep (seconds per step; smaller is more accurate and slower), speed (simulated seconds per real second in the app), logicHigh (volts for logic 1; logic inputs read 1 above half of it), and temperature (°C of every part; diodes and transistors change with it; 27 is SPICE's nominal).",
 			inputSchema: z.object({
 				timeStep: z.number().positive().optional(),
 				speed: z.number().positive().optional(),
 				logicHigh: z.number().positive().optional(),
+				temperature: z.number().gt(-273.15).optional(),
 			}),
 		},
-		({ timeStep, speed, logicHigh }) => edit({ type: "set-simulation", timeStep, speed, logicHigh }),
+		({ timeStep, speed, logicHigh, temperature }) => edit({ type: "set-simulation", timeStep, speed, logicHigh, temperature }),
 	)
 
 	server.registerTool(

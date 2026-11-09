@@ -10,8 +10,13 @@ export const ICS = [
 			gain: positive("ratio, open-loop gain"),
 			supplyHigh: z.number().describe("volts, the highest the output can go"),
 			supplyLow: z.number().describe("volts, the lowest the output can go"),
+			gainBandwidth: positive("hertz, gain × bandwidth: the frequency where its gain falls to 1"),
+			slewRate: positive("volts per second the output can change at most (0.5 V/µs = 500000)"),
+			maxOutputCurrent: positive("amps the output can deliver at most (short-circuit current)"),
 		},
-		defaults: { gain: 100000, supplyHigh: 15, supplyLow: -15 },
+		// Gain and swing: CircuitJS1 OpAmpElm. Dynamics and output current: LM741 (TI SNOSC25D, Oct 2015): slew 0.5 V/µs,
+		// short-circuit current 25 mA, unity-gain rise time 0.3 µs, so gain-bandwidth 0.35 / 0.3 µs (its own formula).
+		defaults: { gain: 100000, supplyHigh: 15, supplyLow: -15, gainBandwidth: 0.35 / 0.3e-6, slewRate: 0.5e6, maxOutputCurrent: 0.025 },
 	}),
 	// CircuitJS1 TimerElm (a 555): internal 5 kΩ / 10 kΩ divider puts control at ⅔ of vcc.
 	defineComponent("timer-555", {

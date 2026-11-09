@@ -62,6 +62,19 @@ const V8_ADDED_PARAMS: Readonly<Record<string, JsonObject>> = {
 	"p-mosfet": { maxCurrent: 0.13, maxPower: 0.3 },
 }
 
+/**
+ * Version 9 gave the op-amp a gain-bandwidth, a slew rate and an output current limit. Old op-amps get values so large
+ * that they behave exactly as before (ideal); new ones get the LM741's.
+ */
+const V9_ADDED_PARAMS: Readonly<Record<string, JsonObject>> = {
+	"op-amp": { gainBandwidth: 1e15, slewRate: 1e15, maxOutputCurrent: 1e6 },
+	// …and transistors gained an Early effect and stored charge; old ones keep none of either.
+	"npn-transistor": { earlyVoltage: 1e15, emitterCapacitance: 0, collectorCapacitance: 0, transitTime: 0, reverseTransitTime: 0 },
+	"pnp-transistor": { earlyVoltage: 1e15, emitterCapacitance: 0, collectorCapacitance: 0, transitTime: 0, reverseTransitTime: 0 },
+	"n-mosfet": { gateSourceCapacitance: 0, gateDrainCapacitance: 0 },
+	"p-mosfet": { gateSourceCapacitance: 0, gateDrainCapacitance: 0 },
+}
+
 /** Keyed by the version migrated from. */
 export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	1: (document) => ({ ...document, simulation: { timeStep: 5e-6, speed: 0.01 } }),
@@ -74,6 +87,11 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	5: (document) => addParams(document, V6_ADDED_PARAMS),
 	6: splitRgbModels,
 	7: (document) => addParams(document, V8_ADDED_PARAMS),
+	// Also a circuit temperature, SPICE's nominal 27 °C, where every part behaves as it did.
+	8: (document) => ({
+		...addParams(document, V9_ADDED_PARAMS),
+		simulation: { ...(isObject(document.simulation) ? document.simulation : {}), temperature: 27 },
+	}),
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

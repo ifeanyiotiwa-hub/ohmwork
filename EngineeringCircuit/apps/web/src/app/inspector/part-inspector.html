@@ -129,6 +129,11 @@
 				<span class="field-hint">simulated seconds per real second</span>
 			</label>
 		}
+		<label class="field">
+			<span class="field-name">temperature</span>
+			<input type="text" inputmode="decimal" data-field="temperature" [value]="settings().temperature" (change)="setSimulation('temperature', $event)" />
+			<span class="field-hint">of every part: diodes and transistors change with it (27 °C is nominal)</span>
+		</label>
 		<button type="button" class="add-note" data-add-note (click)="store.addNote('New note')">Add a note</button>
 		@if (store.canPaste()) {
 			<button type="button" class="add-note" (click)="store.paste()" title="Paste (Ctrl/⌘+V)">Paste</button>

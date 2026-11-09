@@ -14,6 +14,8 @@ Units are SI. Pin names are lowercase words. Parameter names are ours; defaults 
 | SPICE | ngspice HTML manual, v47+ (Mar 2026), Table 2.2 element letters, §4.1 source waveforms, §7.2 diode, §7.3 BJT | Standard element set and parameter names/defaults |
 | KB | Kingbright datasheets: 5 mm single-colour LEDs (blue L-7113QBC-D; white L-7113MWC, discontinued listing), and WP154A4SUREQBFZGW full-colour LED (spec DSAJ8688 V.12A, 2024-11-01), SC56-11EWA 0.56" red 7-segment (spec DSAP6671 V.1A, 2019-03-04) | LED forward voltages at 20 mA and maximum DC currents (ADR-023, ADR-027) |
 | DS | Small-signal datasheets: Vishay 1N4728A–1N4761A (doc 85816 Rev. 2.7, 2024-11-07), onsemi 2N3903/2N3904 (Rev. 9, 2021-08) and 2N3906 (Rev. 4, 2010-02), Diodes Inc. 2N7002 (DS11303 Rev. 33) and BSS84 (DS30149 Rev. 27) | Ratings of the Zener, transistors and MOSFETs (ADR-029) |
+| TI | TI LM741 datasheet (SNOSC25D, revised Oct 2015) | Op-amp slew rate, output short-circuit current, gain-bandwidth from rise time (ADR-031) |
+| SM | Manufacturer SPICE models: onsemi 2N3904 (MODPEX, 2001-08-07), Fairchild/onsemi 2N7002 (Rev. 0.0, 2007-11-05) | Transistor Early voltage, junction capacitances and transit times; MOSFET gate capacitances (ADR-031) |
 
 ## Reference and sources
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
@@ -61,9 +63,9 @@ Diode-family params follow SPICE §7.2 names and meanings (SPICE's own defaults:
 | `zener-diode` | anode, cathode | diode-family + breakdownVoltage (CJS default 5.6 V) + maxCurrent (162 mA, 1N4734A IZM) | diode with reverse breakdown | EC, CJS, SPICE `D` (BV) | D4 | simulated |
 | `led` | anode, cathode | color, diode-family params (per colour, `LED_MODELS`, Kingbright 5 mm Vf at 20 mA), maxCurrent (30 mA, green 25 mA), maxBrightnessCurrent (CJS 10 mA) | diode + brightness. CJS default: IS 93.2e-12, RS 0.042, N 3.73 (≈2.23 V at 1 A), red | EC, CJS | D4 | simulated |
 | `rgb-led` | red, green, blue, common | commonCathode, N and RS (shared), IS per colour, max current per colour | three LEDs sharing one pin, red on the red LED model, green and blue on the InGaN (3.3 V) model; colours mix; burn-out per colour (format v7) | EC, KB | D4, D15c | simulated |
-| `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13), maxCurrent (200 mA) and maxPower (625 mW) as 2N3904 | Ebers–Moll (SPICE level 1 reduces to it) | EC, CJS, SPICE `Q` | D4 | simulated |
+| `npn-transistor` | collector, base, emitter | beta (SPICE BF default 100), betaReverse (BR 1), saturationCurrent (IS: SPICE 1e-16, CJS 1e-13), maxCurrent (200 mA) and maxPower (625 mW) as 2N3904 | Ebers–Moll with Gummel–Poon's forward Early effect (VAF 1000 V), stored charge (CJE, CJC held at zero bias; TF, TR) and temperature, from onsemi's 2N3904 model; vs ngspice | EC, CJS, SPICE `Q` | D4 | simulated |
 | `pnp-transistor` | collector, base, emitter | as NPN (ratings as 2N3906: 200 mA, 625 mW) | Ebers–Moll | EC, CJS, SPICE `Q` | D4 | simulated |
-| `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²), maxCurrent (170 mA) and maxPower (370 mW) as 2N7002 | square-law (SPICE level 1, λ = 0); defaults 1.5 V, 0.02 A/V² (CJS MosfetElm) | EC, CJS, SPICE `M` | D4 | simulated |
+| `n-mosfet` | drain, gate, source | thresholdVoltage (V), transconductance (A/V²), maxCurrent (170 mA) and maxPower (370 mW) as 2N7002 | square-law (SPICE level 1, λ = 0, as Fairchild's 2N7002 model has none); gate capacitances Cgs 16 pF, Cgd 46 pF (held at its maximum); defaults 1.5 V, 0.02 A/V² (CJS MosfetElm) | EC, CJS, SPICE `M` | D4 | simulated |
 | `p-mosfet` | drain, gate, source | as N-MOSFET (ratings as BSS84: 130 mA, 300 mW) | square-law | EC, CJS, SPICE `M` | D4 | simulated |
 
 ## Digital logic
@@ -88,7 +90,7 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 ## ICs, converters and displays
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
-| `op-amp` (ideal) | nonInverting, inverting, output | gain, supplyHigh (V), supplyLow (V) | high-gain source with a smooth tanh limit to the rails (ADR-019) | EC, CJS | D9 | simulated |
+| `op-amp` | nonInverting, inverting, output | gain (CJS 100000), supplyHigh/Low (±15 V), gainBandwidth (1.17 MHz), slewRate (0.5 V/µs), maxOutputCurrent (25 mA): LM741 | smooth rail limit; over time one pole (GBW, vs ngspice within 1%) and a slew limit; output current limit as a mode switch | EC, CJS, TI | D9, D16 | simulated |
 | `timer-555` | ground, trigger, output, reset, control, threshold, discharge, vcc | – | comparators + SR latch + discharge transistor | EC, CJS | D9 | simulated |
 | `seven-segment` | a, b, c, d, e, f, g, dp | – | logic display (CJS default): a segment lights at logic 1. LED-accurate version: `seven-segment-led` | EC, CJS | D9 | simulated |
 | `bcd-to-seven-segment` | d0, d1, d2, d3, a, b, c, d, e, f, g | – | logic decoder, CJS table incl. A–F | EC, CJS | D9 | simulated |

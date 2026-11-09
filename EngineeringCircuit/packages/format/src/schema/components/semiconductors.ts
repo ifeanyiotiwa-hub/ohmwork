@@ -74,25 +74,50 @@ const transistorParams = {
 	saturationCurrent: positive("amps (IS)"),
 	maxCurrent: positive("amps the collector can carry continuously; more is reported as burning it out"),
 	maxPower: positive("watts it can turn into heat continuously; more is reported as burning it out"),
+	earlyVoltage: positive("volts (SPICE VAF): collector current grows with collector voltage, (1 + Vce/VAF)"),
+	emitterCapacitance: z.number().nonnegative().describe("farads across base–emitter (SPICE CJE, held at its zero-bias value)"),
+	collectorCapacitance: z.number().nonnegative().describe("farads across base–collector (SPICE CJC, held at its zero-bias value)"),
+	transitTime: z.number().nonnegative().describe("seconds (SPICE TF): charge stored per amp of forward current"),
+	reverseTransitTime: z.number().nonnegative().describe("seconds (SPICE TR): charge stored in saturation; slows turning off"),
 }
 /**
  * CircuitJS1 TransistorModel "default", rated as the common small-signal parts: 2N3904 (NPN, onsemi Rev. 9, 2021)
  * and 2N3906 (PNP, onsemi Rev. 4, 2010) both give IC 200 mA continuous and PD 625 mW at 25 °C.
  */
-const TRANSISTOR_DEFAULTS = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13, maxCurrent: 0.2, maxPower: 0.625 }
+const TRANSISTOR_DEFAULTS = {
+	beta: 100,
+	betaReverse: 1,
+	saturationCurrent: 1e-13,
+	maxCurrent: 0.2,
+	maxPower: 0.625,
+	// onsemi's 2N3904 PSpice model (MODPEX, 2001-08-07): VAF 1000, CJE 4.64214 pF, CJC 3.76961 pF, TF 0.419578 ns,
+	// TR 68.2023 ns. The capacitances are held at their zero-bias values (their voltage dependence is not modelled).
+	earlyVoltage: 1000,
+	emitterCapacitance: 4.64214e-12,
+	collectorCapacitance: 3.76961e-12,
+	transitTime: 0.419578e-9,
+	reverseTransitTime: 68.2023e-9,
+}
 
 const mosfetParams = {
 	thresholdVoltage: positive("volts between gate and source where it starts to conduct (a size; a P-MOSFET's gate goes below its source)"),
 	transconductance: positive("amps per volt squared (SPICE KP with W = L)"),
 	maxCurrent: positive("amps the drain can carry continuously; more is reported as burning it out"),
 	maxPower: positive("watts it can turn into heat continuously; more is reported as burning it out"),
+	gateSourceCapacitance: z.number().nonnegative().describe("farads between gate and source"),
+	gateDrainCapacitance: z.number().nonnegative().describe("farads between gate and drain (the Miller capacitance)"),
 }
 /**
  * CircuitJS1 MosfetElm defaults, rated as small-signal parts: N 2N7002 (Diodes Inc. DS11303 Rev. 33: ID 170 mA,
  * PD 370 mW on a minimal pad) and P BSS84 (DS30149 Rev. 27: ID −130 mA, PD 300 mW).
  */
-const N_MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02, maxCurrent: 0.17, maxPower: 0.37 }
-const P_MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02, maxCurrent: 0.13, maxPower: 0.3 }
+/**
+ * Gate capacitances from Fairchild's 2N7002 model (onsemi, Rev. 0.0, 2007-11-05): Cgs 16 pF; the gate–drain
+ * capacitance reaches 46 pF, held at that value here. That model has no channel-length modulation, so neither do we.
+ */
+const GATE_CAPACITANCES = { gateSourceCapacitance: 16e-12, gateDrainCapacitance: 46e-12 }
+const N_MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02, maxCurrent: 0.17, maxPower: 0.37, ...GATE_CAPACITANCES }
+const P_MOSFET_DEFAULTS = { thresholdVoltage: 1.5, transconductance: 0.02, maxCurrent: 0.13, maxPower: 0.3, ...GATE_CAPACITANCES }
 /** 1N4734A (5.6 V, Vishay 85816 Rev. 2.7, 2024): IZM 162 mA. */
 const ZENER_MAX_CURRENT = 0.162
 

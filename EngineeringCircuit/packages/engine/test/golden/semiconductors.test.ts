@@ -19,7 +19,8 @@ function solved(parts: Parts, wires: Wires) {
 
 const DIODE = { saturationCurrent: 1.7143528192808883e-7, emissionCoefficient: 2, seriesResistance: 0 }
 const LED = { saturationCurrent: 93.2e-12, emissionCoefficient: 3.73, seriesResistance: 0.042, maxBrightnessCurrent: 0.01 }
-const TRANSISTOR = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13 }
+// As the netlists: no Early effect (VAF ∞), so these check the D4 model on its own.
+const TRANSISTOR = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13, earlyVoltage: 1e15 }
 const MOSFET = { thresholdVoltage: 1.5, transconductance: 0.02 }
 
 test("a diode with 1 kΩ from 5 V drops 0.526 V (ngspice 0.5260731 V, 4.47393 mA)", () => {

@@ -67,10 +67,28 @@ describe("older files", () => {
 		])
 	})
 
+	test("a version 8 op-amp stays ideal (bandwidth, slew and current far beyond any circuit); new ones are LM741s", () => {
+		const result = parseCircuit({
+			...createCircuit("Old"),
+			version: 8,
+			components: [{ id: "U1", type: "op-amp", position: { x: 0, y: 0 }, rotation: 0, params: { gain: 100000, supplyHigh: 15, supplyLow: -15 } }],
+		})
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.circuit.components[0]?.params).toEqual({
+			gain: 100000,
+			supplyHigh: 15,
+			supplyLow: -15,
+			gainBandwidth: 1e15,
+			slewRate: 1e15,
+			maxOutputCurrent: 1e6,
+		})
+	})
+
 	test("a version 7 file's Zeners, transistors and MOSFETs gain datasheet ratings (their electrical values stay)", () => {
 		const at = { position: { x: 0, y: 0 }, rotation: 0 }
 		const transistor = { beta: 100, betaReverse: 1, saturationCurrent: 1e-13 }
 		const mosfet = { thresholdVoltage: 1.5, transconductance: 0.02 }
+		const noDynamics = { earlyVoltage: 1e15, emitterCapacitance: 0, collectorCapacitance: 0, transitTime: 0, reverseTransitTime: 0 }
 		const result = parseCircuit({
 			...createCircuit("Old"),
 			version: 7,
@@ -85,10 +103,11 @@ describe("older files", () => {
 		if (!result.ok) throw new Error(JSON.stringify(result.errors))
 		expect(result.circuit.components.map((component) => component.params)).toEqual([
 			{ saturationCurrent: 1e-14, emissionCoefficient: 1, seriesResistance: 0, breakdownVoltage: 5.6, maxCurrent: 0.162 },
-			{ ...transistor, maxCurrent: 0.2, maxPower: 0.625 },
-			{ ...transistor, maxCurrent: 0.2, maxPower: 0.625 },
-			{ ...mosfet, maxCurrent: 0.17, maxPower: 0.37 },
-			{ ...mosfet, maxCurrent: 0.13, maxPower: 0.3 },
+			// …and, from version 9, no Early effect or stored charge (they behave as before).
+			{ ...transistor, maxCurrent: 0.2, maxPower: 0.625, ...noDynamics },
+			{ ...transistor, maxCurrent: 0.2, maxPower: 0.625, ...noDynamics },
+			{ ...mosfet, maxCurrent: 0.17, maxPower: 0.37, gateSourceCapacitance: 0, gateDrainCapacitance: 0 },
+			{ ...mosfet, maxCurrent: 0.13, maxPower: 0.3, gateSourceCapacitance: 0, gateDrainCapacitance: 0 },
 		])
 	})
 
@@ -136,7 +155,7 @@ describe("older files", () => {
 
 describe("simulation settings", () => {
 	test("time step and speed must be positive", () => {
-		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1, logicHigh: 5 } })
+		const errors = errorsOf({ ...createCircuit("t"), simulation: { timeStep: 0, speed: -1, logicHigh: 5, temperature: 27 } })
 		expect(errors.map((error) => error.path)).toEqual(["simulation.timeStep", "simulation.speed"])
 	})
 })

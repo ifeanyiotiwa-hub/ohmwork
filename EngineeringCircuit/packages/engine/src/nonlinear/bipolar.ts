@@ -1,21 +1,55 @@
-// Bipolar transistor, Ebers–Moll transport form (SPICE Gummel–Poon level 1 without Early effect or resistances),
-// with CircuitJS1's junction limiting (TransistorElm.ts).
+// Bipolar transistor, Ebers–Moll transport form (SPICE Gummel–Poon level 1 without resistances or high-injection
+// effects), with CircuitJS1's junction limiting (TransistorElm.ts). Added from Gummel–Poon:
+//  - the forward Early effect: the transport current is scaled by (1 − vbc/VAF), as qb = 1/(1 − vbc/VAF);
+//  - stored charge over time: Qbe = CJE·vbe + TF·If and Qbc = CJC·vbc + TR·Ir (zero-bias junction capacitances held
+//    constant, and the transit-time charge), each stepped with backward Euler;
+//  - temperature: the thermal voltage and the saturation current follow it (junction.ts).
 import { type Device, type Linearization, RUNAWAY_CONDUCTANCE, settledBetween } from "./device"
-import { THERMAL_VOLTAGE, criticalVoltage, limitJunction } from "./junction"
+import { NOMINAL_TEMPERATURE, criticalVoltage, limitJunction, saturationCurrentAt, thermalVoltageAt } from "./junction"
 
-export type BipolarParams = { beta: number; betaReverse: number; saturationCurrent: number }
+export type BipolarParams = {
+	beta: number
+	betaReverse: number
+	saturationCurrent: number
+	earlyVoltage: number
+	emitterCapacitance: number
+	collectorCapacitance: number
+	transitTime: number
+	reverseTransitTime: number
+}
+/** Over time: the step and the charges at the end of the last one (base–emitter, base–collector). */
+export type BipolarStep = { timeStep: number; previousCharges: readonly [number, number] }
 
 const COLLECTOR = 0
 const BASE = 1
 const EMITTER = 2
 
 /** NPN for polarity 1, PNP for -1. Terminals: collector, base, emitter. */
-export function bipolarDevice({ beta, betaReverse, saturationCurrent }: BipolarParams, polarity: 1 | -1): Device {
-	const critical = criticalVoltage(THERMAL_VOLTAGE, saturationCurrent)
+export function bipolarDevice(
+	params: BipolarParams,
+	polarity: 1 | -1,
+	{ temperature = NOMINAL_TEMPERATURE, step }: { temperature?: number; step?: BipolarStep } = {},
+): Device {
+	const { beta, betaReverse, earlyVoltage, emitterCapacitance, collectorCapacitance, transitTime, reverseTransitTime } = params
+	const thermal = thermalVoltageAt(temperature)
+	const saturationCurrent = saturationCurrentAt(params.saturationCurrent, temperature)
+	const critical = criticalVoltage(thermal, saturationCurrent)
 	const minimum = saturationCurrent * 0.01
 	const junctions = (voltages: readonly number[]) => {
 		const base = voltages[BASE] ?? 0
 		return [polarity * (base - (voltages[EMITTER] ?? 0)), polarity * (base - (voltages[COLLECTOR] ?? 0))]
+	}
+	/** Junction currents and their slopes at (vbe, vbc). */
+	const diodes = (vbe: number, vbc: number) => ({
+		forward: saturationCurrent * (Math.exp(vbe / thermal) - 1) + minimum * vbe,
+		reverse: saturationCurrent * (Math.exp(vbc / thermal) - 1) + minimum * vbc,
+		gForward: (saturationCurrent / thermal) * Math.exp(vbe / thermal) + minimum,
+		gReverse: (saturationCurrent / thermal) * Math.exp(vbc / thermal) + minimum,
+	})
+	/** Charge stored across each junction, for the time steps. */
+	const charges = (vbe: number, vbc: number): [number, number] => {
+		const { forward, reverse } = diodes(vbe, vbc)
+		return [emitterCapacitance * vbe + transitTime * forward, collectorCapacitance * vbc + reverseTransitTime * reverse]
 	}
 
 	return {
@@ -28,19 +62,33 @@ export function bipolarDevice({ beta, betaReverse, saturationCurrent }: BipolarP
 		linearize: (voltages, state): Linearization => {
 			const [rawBe = 0, rawBc = 0] = junctions(voltages)
 			const [lastBe = 0, lastBc = 0] = state
-			const vbe = limitJunction(rawBe, lastBe, THERMAL_VOLTAGE, critical)
-			const vbc = limitJunction(rawBc, lastBc, THERMAL_VOLTAGE, critical)
+			const vbe = limitJunction(rawBe, lastBe, thermal, critical)
+			const vbc = limitJunction(rawBc, lastBc, thermal, critical)
+			const { forward, reverse, gForward, gReverse } = diodes(vbe, vbc)
 
-			const forward = saturationCurrent * (Math.exp(vbe / THERMAL_VOLTAGE) - 1) + minimum * vbe
-			const reverse = saturationCurrent * (Math.exp(vbc / THERMAL_VOLTAGE) - 1) + minimum * vbc
-			const gForward = (saturationCurrent / THERMAL_VOLTAGE) * Math.exp(vbe / THERMAL_VOLTAGE) + minimum
-			const gReverse = (saturationCurrent / THERMAL_VOLTAGE) * Math.exp(vbc / THERMAL_VOLTAGE) + minimum
+			// Early effect: the transport current (If − Ir) scaled by (1 − vbc/VAF).
+			const early = 1 - vbc / earlyVoltage
+			const transport = forward - reverse
+			let collector = transport * early - reverse / betaReverse
+			let base = forward / beta + reverse / betaReverse
+			const dCollector: [number, number] = [gForward * early, -gReverse * early - transport / earlyVoltage - gReverse / betaReverse]
+			const dBase: [number, number] = [gForward / beta, gReverse / betaReverse]
 
-			// Currents into the collector and base, and their slopes against (vbe, vbc).
-			const collector = forward - reverse * (1 + 1 / betaReverse)
-			const base = forward / beta + reverse / betaReverse
-			const dCollector = [gForward, -gReverse * (1 + 1 / betaReverse)] as const
-			const dBase = [gForward / beta, gReverse / betaReverse] as const
+			if (step) {
+				// Charging current of each junction over the step (backward Euler): into the base, out of the
+				// emitter (base–emitter) and out of the collector (base–collector).
+				const [qBe, qBc] = charges(vbe, vbc)
+				const [previousBe, previousBc] = step.previousCharges
+				const capBe = (emitterCapacitance + transitTime * gForward) / step.timeStep
+				const capBc = (collectorCapacitance + reverseTransitTime * gReverse) / step.timeStep
+				const chargingBe = (qBe - previousBe) / step.timeStep
+				const chargingBc = (qBc - previousBc) / step.timeStep
+				collector -= chargingBc
+				base += chargingBe + chargingBc
+				dCollector[1] -= capBc
+				dBase[0] += capBe
+				dBase[1] += capBc
+			}
 
 			// vbe = p(Vb − Ve), vbc = p(Vb − Vc): rows of d(junction)/d(terminal) without p, over (Vc, Vb, Ve).
 			const row = (slopes: readonly [number, number]) => [-slopes[1], slopes[0] + slopes[1], -slopes[0]]
@@ -66,5 +114,11 @@ export function bipolarDevice({ beta, betaReverse, saturationCurrent }: BipolarP
 				current: currents[COLLECTOR] ?? 0,
 			},
 		],
+		// The charge across each junction for the next step: base–emitter in "voltage", base–collector in "current".
+		remember: (voltages) => {
+			const [vbe = 0, vbc = 0] = junctions(voltages)
+			const [qBe, qBc] = charges(vbe, vbc)
+			return [{ name: "charge", voltage: qBe, current: qBc }]
+		},
 	}
 }

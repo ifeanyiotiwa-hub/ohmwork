@@ -1,0 +1,17 @@
+* Single-pole op-amp (open-loop gain 100000, gain-bandwidth 1.1667 MHz = 0.35 / 0.3 us, LM741 SNOSC25D) as
+* E (gain) -> R-C pole -> E (buffer), in a x10 non-inverting amplifier (Rf 9k, Rg 1k). 10 mV sine at f.
+* Results (peak of v(out), 150-200 us): f=117k 7.06061e-02 V, f=300k 3.62432e-02 V.
+.param f=117k
+Vin in 0 SIN(0 0.01 {f})
+E1 int 0 in neg 100000
+Rp int pole 1k
+Cp pole 0 {1/(2*3.14159265358979*1.16666666667e6/100000)/1k}
+E2 out 0 pole 0 1
+Rf out neg 9k
+Rg neg 0 1k
+.tran 10n 200u uic
+.control
+run
+meas tran peak MAX v(out) FROM=150u TO=200u
+.endc
+.end

@@ -100,6 +100,16 @@ test("dragging a note moves it", async ({ page }) => {
 	await expect(note).not.toHaveAttribute("transform", before ?? "")
 })
 
+test("the circuit's temperature can be set; it is kept with the circuit", async ({ page }) => {
+	const temperature = page.locator('[data-field="temperature"]')
+	await expect(temperature).toHaveValue("27 °C")
+	await temperature.fill("75")
+	await temperature.press("Enter")
+	await expect(temperature).toHaveValue("75 °C")
+	await page.getByRole("button", { name: "Undo" }).click()
+	await expect(temperature).toHaveValue("27 °C")
+})
+
 test("a circuit deleted from the library is gone from the list", async ({ page }) => {
 	await page.getByRole("button", { name: "Library" }).click()
 	const library = page.getByRole("dialog", { name: "Your circuits" })

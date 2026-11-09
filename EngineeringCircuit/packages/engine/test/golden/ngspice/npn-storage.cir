@@ -1,0 +1,18 @@
+* NPN switch with the onsemi 2N3904 model's capacitances and transit times (MODPEX, 2001-08-07: CJE 4.64214p,
+* Results: the input falls at 10 us; v(c) rises through 2.5 V at 1.02052e-05 s (205 ns of storage delay).
+* CJC 3.76961p, TF 0.419578n, TR 68.2023n), held constant (MJE = MJC = 0, as our model), on our IS/BF/BR.
+* 5 V square at 50 kHz into the base through 10k; 1k from 5 V to the collector.
+.model QS NPN(IS=1e-13 BF=100 BR=1 CJE=4.64214p MJE=0 CJC=3.76961p MJC=0 TF=0.419578n TR=68.2023n)
+Vin in 0 PULSE(0 5 0 1p 1p 10u 20u)
+Rb in b 10k
+Vcc vcc 0 5
+Rc vcc c 1k
+Q1 c b 0 QS
+.tran 1n 25u uic
+.control
+run
+meas tran rise_at WHEN v(c)=2.5 RISE=1 FROM=10u
+meas tran fall_at WHEN v(c)=2.5 FALL=1
+meas tran vc_at_11u FIND v(c) AT=11u
+.endc
+.end

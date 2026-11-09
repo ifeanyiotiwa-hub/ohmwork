@@ -1,7 +1,7 @@
 // Shockley diode with optional series resistance and Zener breakdown. The breakdown curve is CircuitJS1's
 // (Diode.ts): a mirrored exponential offset so that 5 mA flows at the breakdown voltage.
 import { type Device, type Linearization, RUNAWAY_CONDUCTANCE, settledBetween } from "./device"
-import { THERMAL_VOLTAGE, criticalVoltage, limitJunction } from "./junction"
+import { NOMINAL_TEMPERATURE, THERMAL_VOLTAGE, criticalVoltage, limitJunction, saturationCurrentAt, thermalVoltageAt } from "./junction"
 
 export type DiodeParams = {
 	saturationCurrent: number
@@ -9,6 +9,8 @@ export type DiodeParams = {
 	seriesResistance: number
 	/** Reverse voltage where 5 mA flows; 0 for a plain diode. */
 	breakdownVoltage?: number
+	/** °C; a silicon diode's forward voltage falls as it warms (absent: 27 °C, and for LEDs, whose band gap differs). */
+	temperature?: number
 }
 
 const ZENER_REFERENCE_CURRENT = -0.005
@@ -18,8 +20,9 @@ const SERIES_ITERATIONS = 100
 
 type Curve = { current(junction: number): number; conductance(junction: number): number; limit(next: number, previous: number): number }
 
-function curveOf({ saturationCurrent, emissionCoefficient, breakdownVoltage = 0 }: DiodeParams): Curve {
-	const scale = emissionCoefficient * THERMAL_VOLTAGE
+function curveOf({ saturationCurrent: nominalSaturation, emissionCoefficient, breakdownVoltage = 0, temperature = NOMINAL_TEMPERATURE }: DiodeParams): Curve {
+	const scale = emissionCoefficient * thermalVoltageAt(temperature)
+	const saturationCurrent = saturationCurrentAt(nominalSaturation, temperature, emissionCoefficient)
 	const critical = criticalVoltage(scale, saturationCurrent)
 	// CircuitJS1 puts a conductance of 1% of IS across each junction so the matrix never becomes singular.
 	const minimum = saturationCurrent * 0.01

@@ -14,8 +14,11 @@ import { acVoltage, squareVoltage } from "../transient/waveforms"
 
 export type Pins = [first: string, second: string]
 
-/** `port`: groups a multi-port part's branches (a transformer's windings) for readings and stored state. */
-export type Branch = { componentId: string; pins: Pins; port?: string } & (
+/**
+ * `port`: groups a multi-port part's branches (a transformer's windings) for readings and stored state.
+ * `internal`: the port is the part's own working (a MOSFET's gate capacitance): kept between time steps, not shown.
+ */
+export type Branch = { componentId: string; pins: Pins; port?: string; internal?: true } & (
 	| { kind: "resistor"; resistance: number }
 	/** `sense`: a 0 V branch whose current a CCVS / CCCS of the same part reads. */
 	| { kind: "voltage"; voltage: number; sense?: true }
@@ -64,7 +67,7 @@ export type SolveInputs = DcInputs & {
 }
 
 /** What a part model sees: the solve inputs plus the circuit's logic-high voltage. */
-export type ModelContext = SolveInputs & { logicHigh: number }
+export type ModelContext = SolveInputs & { logicHigh: number; temperature: number }
 
 /** Stands for the circuit's ground in a branch's pins: logic parts and rails are referenced to it. */
 export const GROUND_PIN = "@ground"
@@ -97,6 +100,11 @@ export const STATEFUL_TYPES: ReadonlySet<ComponentType> = new Set([
 	"transformer",
 	"tapped-transformer",
 	"relay",
+	"op-amp",
+	"npn-transistor",
+	"pnp-transistor",
+	"n-mosfet",
+	"p-mosfet",
 ])
 
 /** A typical multimeter test current; the ohmmeter reads voltage ÷ this (CircuitJS1's OhmMeterElm works the same way). */
@@ -121,16 +129,37 @@ const companion = (componentId: string, conductance: number, injected: number, p
 
 const AT_REST: StoredState = { voltage: 0, current: 0 }
 
-function capacitorModel(id: string, capacitance: number, pins: Pins, transient: TransientContext | undefined): Branch[] {
-	if (!transient) return []
-	const previous = transient.memory[id]
-	if (!previous || transient.backwardEuler) {
-		const conductance = capacitance / transient.timeStep
-		return companion(id, conductance, conductance * (previous ?? AT_REST).voltage, pins)
-	}
-	const conductance = (2 * capacitance) / transient.timeStep
-	return companion(id, conductance, conductance * previous.voltage + previous.current, pins)
+/** `port`: for a capacitance inside a part (a MOSFET's gate), whose state is kept as that port ("M1/gate-source-capacitance"). */
+function capacitorModel(id: string, capacitance: number, pins: Pins, transient: TransientContext | undefined, port?: string): Branch[] {
+	if (!transient || capacitance === 0) return []
+	const previous = transient.memory[port ? `${id}/${port}` : id]
+	const branches = (() => {
+		if (!previous || transient.backwardEuler) {
+			const conductance = capacitance / transient.timeStep
+			return companion(id, conductance, conductance * (previous ?? AT_REST).voltage, pins)
+		}
+		const conductance = (2 * capacitance) / transient.timeStep
+		return companion(id, conductance, conductance * previous.voltage + previous.current, pins)
+	})()
+	return port ? branches.map((branch): Branch => ({ ...branch, port, internal: true })) : branches
 }
+
+/** A transistor's temperature, and over time the charges its junctions held at the end of the last step. */
+const bipolarOptions = (id: string, { temperature, transient }: ModelContext) => {
+	if (!transient) return { temperature }
+	const stored = transient.memory[`${id}/charge`]
+	return { temperature, step: { timeStep: transient.timeStep, previousCharges: [stored?.voltage ?? 0, stored?.current ?? 0] as const } }
+}
+
+/** A MOSFET's gate capacitances (to source, and the Miller one to drain), as capacitors inside the part. */
+const gateCapacitances = (
+	id: string,
+	{ gateSourceCapacitance, gateDrainCapacitance }: { gateSourceCapacitance: number; gateDrainCapacitance: number },
+	transient: TransientContext | undefined,
+): Branch[] => [
+	...capacitorModel(id, gateSourceCapacitance, ["gate", "source"], transient, "gate-source-capacitance"),
+	...capacitorModel(id, gateDrainCapacitance, ["gate", "drain"], transient, "gate-drain-capacitance"),
+]
 
 /** A resistance that may be zero (a potentiometer at its end stop) is a plain wire there. */
 const segment = (componentId: string, pins: Pins, resistance: number): Branch =>
@@ -340,8 +369,8 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	switch: ({ id, params }) => (params.closed ? [wire(id)] : []),
 	"switch-spdt": ({ id, params }) => [wire(id, ["common", params.position])],
 	"push-button": ({ id, params }, { pressed }) => (params.normallyOpen === (pressed?.has(id) ?? false) ? [wire(id)] : []),
-	diode: ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
-	"zener-diode": ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
+	diode: ({ id, params }, { temperature }) => [deviceBranch(id, diodeDevice({ ...params, temperature }, "anode", "cathode"))],
+	"zener-diode": ({ id, params }, { temperature }) => [deviceBranch(id, diodeDevice({ ...params, temperature }, "anode", "cathode"))],
 	led: ({ id, params }) => [deviceBranch(id, diodeDevice(params, "anode", "cathode"))],
 	"rgb-led": ({ id, params }) =>
 		RGB_COLOURS.map((colour) => {
@@ -357,10 +386,10 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 		SEGMENT_PINS.map((segment) =>
 			deviceBranch(id, params.commonCathode ? diodeDevice(params, segment, "common") : diodeDevice(params, "common", segment), segment),
 		),
-	"npn-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, 1))],
-	"pnp-transistor": ({ id, params }) => [deviceBranch(id, bipolarDevice(params, -1))],
-	"n-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, 1))],
-	"p-mosfet": ({ id, params }) => [deviceBranch(id, mosfetDevice(params, -1))],
+	"npn-transistor": ({ id, params }, context) => [deviceBranch(id, bipolarDevice(params, 1, bipolarOptions(id, context)))],
+	"pnp-transistor": ({ id, params }, context) => [deviceBranch(id, bipolarDevice(params, -1, bipolarOptions(id, context)))],
+	"n-mosfet": ({ id, params }, { transient }) => [deviceBranch(id, mosfetDevice(params, 1)), ...gateCapacitances(id, params, transient)],
+	"p-mosfet": ({ id, params }, { transient }) => [deviceBranch(id, mosfetDevice(params, -1)), ...gateCapacitances(id, params, transient)],
 	"voltage-rail": ({ id, params }) => [toGround(id, "terminal", params.voltage)],
 	"logic-input": ({ id, params }, { logicHigh }) => [toGround(id, "out", params.high ? logicHigh : 0)],
 	"logic-output": () => [],
@@ -388,7 +417,16 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 	"t-flip-flop": logicModel(LOGIC_PARTS["t-flip-flop"]),
 	"jk-flip-flop": logicModel(LOGIC_PARTS["jk-flip-flop"]),
 	"counter-4bit": logicModel(LOGIC_PARTS["counter-4bit"]),
-	"op-amp": ({ id, params }) => [deviceBranch(id, opAmpDevice(params, GROUND_PIN))],
+	"op-amp": ({ id, params }, { transient }) => [
+		deviceBranch(
+			id,
+			opAmpDevice(
+				params,
+				GROUND_PIN,
+				transient ? { timeStep: transient.timeStep, previousDrive: transient.memory[`${id}/drive`]?.voltage ?? 0 } : undefined,
+			),
+		),
+	],
 	// CircuitJS1 TimerElm: 5 kΩ / 10 kΩ divider puts control at ⅔ vcc; output through 1 Ω to vcc or ground;
 	// while the output is low, discharge is pulled to ground through 10 Ω. The latch is in digital/timer-555.ts.
 	"timer-555": ({ id }, { logic }) => {

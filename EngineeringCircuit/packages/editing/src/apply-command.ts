@@ -166,10 +166,11 @@ function propose(draft: Circuit, command: Exclude<EditCommand, { type: "batch" }
 				...(command.timeStep === undefined ? {} : { timeStep: command.timeStep }),
 				...(command.speed === undefined ? {} : { speed: command.speed }),
 				...(command.logicHigh === undefined ? {} : { logicHigh: command.logicHigh }),
+				...(command.temperature === undefined ? {} : { temperature: command.temperature }),
 			}
 			return {
 				candidate: { ...draft, simulation },
-				summary: `Simulation: time step ${String(simulation.timeStep)} s, speed ${String(simulation.speed)}, logic high ${String(simulation.logicHigh)} V`,
+				summary: `Simulation: time step ${String(simulation.timeStep)} s, speed ${String(simulation.speed)}, logic high ${String(simulation.logicHigh)} V, ${String(simulation.temperature)} °C`,
 			}
 		}
 

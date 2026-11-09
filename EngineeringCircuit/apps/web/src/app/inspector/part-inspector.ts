@@ -107,13 +107,13 @@ export class PartInspector {
 	}
 
 	protected readonly settings = computed(() => {
-		const { timeStep, speed } = this.store.circuit().simulation
-		return { timeStep: formatSi(timeStep, "s"), speed: String(speed) }
+		const { timeStep, speed, temperature } = this.store.circuit().simulation
+		return { timeStep: formatSi(timeStep, "s"), speed: String(speed), temperature: `${temperature} °C` }
 	})
 
-	protected setSimulation(name: "timeStep" | "speed", event: Event): void {
+	protected setSimulation(name: "timeStep" | "speed" | "temperature", event: Event): void {
 		const text = (event.target as HTMLInputElement).value
-		const value = parseSi(text)
+		const value = parseSi(name === "temperature" ? text.replace(/\s*°?C\s*$/i, "") : text)
 		if (value === undefined) {
 			this.store.editError.set(`Couldn't read "${text}" as a number. Try 5u, 0.01 or 1e-6.`)
 			return

@@ -59,8 +59,8 @@ whatever the app is at that point.
 |---|---|
 | Adaptive time step | Local truncation error control as in SPICE; keep the fixed step as an option; golden tests must still pass |
 | AC analysis (Bode plot) | Small-signal analysis around the DC point with complex MNA; a frequency-sweep view; golden tests against ngspice `.ac` |
-| Transistor dynamics | Junction capacitances, Early effect and temperature (Gummel–Poon parameters); ngspice goldens |
-| Op-amp limits | Slew rate and gain-bandwidth as parameters (CircuitJS1 keeps GBW in its format but does not simulate it) |
+| ~~Transistor dynamics~~ (done, D16b; capacitances held constant, LEDs/β/Zener voltage not temperature-dependent) | Junction capacitances, Early effect and temperature (Gummel–Poon parameters); ngspice goldens |
+| ~~Op-amp limits~~ (done, D16b, with the output current limit) | Slew rate and gain-bandwidth as parameters (CircuitJS1 keeps GBW in its format but does not simulate it) |
 | ~~Wider gates~~ (done, D16a) | 3- and 4-input gate types (new types, so no format break) |
 | Tri-state and buses | A tri-state buffer type and bus wires; needs a "high impedance" output state in the logic model |
 | ~~Wider converters~~ (done, D16a) | `adc-8bit` / `dac-8bit` as new types (pins stay fixed per type) |

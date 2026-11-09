@@ -60,7 +60,7 @@ export function stepTransient(circuit: Circuit, previous: TransientState, { time
 
 	const stateful = new Set(circuit.components.filter((component) => STATEFUL_TYPES.has(component.type)).map((part) => part.id))
 	const memory = Object.fromEntries(
-		[...Object.entries(result.solution.readings), ...Object.entries(result.solution.ports)]
+		[...Object.entries(result.solution.readings), ...Object.entries(result.solution.ports), ...Object.entries(result.solution.internal ?? {})]
 			.filter(([key]) => stateful.has(key.split("/")[0] ?? ""))
 			.map(([key, reading]): [string, StoredState] => [key, { voltage: reading.voltage, current: reading.current }]),
 	)
