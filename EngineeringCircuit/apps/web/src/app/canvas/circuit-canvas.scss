@@ -105,15 +105,6 @@
 	}
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.wire-flow,
-	.rotor.spinning,
-	.part.agent-changed,
-	.wire.agent-changed {
-		animation: none;
-	}
-}
-
 .part {
 	cursor: move;
 }
@@ -238,8 +229,15 @@
 	}
 }
 
-/* Without motion: a steady red glow and a still wisp, so the state still shows. */
+/* Without motion: nothing flows, turns or pulses; an overheated part keeps a steady red glow and a still wisp. */
 @media (prefers-reduced-motion: reduce) {
+	.wire-flow,
+	.rotor.spinning,
+	.part.agent-changed,
+	.wire.agent-changed {
+		animation: none;
+	}
+
 	.part.overheated .symbol {
 		animation: none;
 		filter: drop-shadow(0 0 4px var(--danger));

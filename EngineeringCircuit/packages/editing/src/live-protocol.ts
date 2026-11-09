@@ -1,5 +1,5 @@
 import { type Circuit, parseCircuit } from "@engineering-circuit/format"
-import { z } from "zod"
+import * as z from "zod"
 import type { DocumentChange, HistoryItem } from "./circuit-document"
 import { editCommandSchema } from "./edit-command"
 

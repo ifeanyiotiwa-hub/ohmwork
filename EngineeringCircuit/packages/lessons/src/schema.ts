@@ -1,5 +1,5 @@
 import { type ComponentType, isComponentType } from "@engineering-circuit/format"
-import { z } from "zod"
+import * as z from "zod"
 
 const partType = z.custom<ComponentType>(isComponentType, "Unknown component type")
 const range = z.tuple([z.number(), z.number()]).describe("lowest and highest accepted value")

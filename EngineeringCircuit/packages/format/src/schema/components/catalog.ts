@@ -1,4 +1,4 @@
-import { z } from "zod"
+import * as z from "zod"
 import { ICS } from "./ics"
 import { LOGIC } from "./logic"
 import { MEASUREMENT } from "./measurement"

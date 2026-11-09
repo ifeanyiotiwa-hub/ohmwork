@@ -1,4 +1,4 @@
-import { z } from "zod"
+import * as z from "zod"
 import { defineComponent, positive } from "./define"
 
 // Diode-family parameters follow SPICE (ngspice manual §7.2); defaults are CircuitJS1's models (DiodeModel.ts).

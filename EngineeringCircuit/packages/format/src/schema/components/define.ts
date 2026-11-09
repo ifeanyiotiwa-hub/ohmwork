@@ -1,4 +1,4 @@
-import { z } from "zod"
+import * as z from "zod"
 import { pointSchema, rotationSchema } from "../geometry"
 
 export const positive = (unit: string) => z.number().positive().describe(unit)

@@ -1,5 +1,5 @@
 import { type ComponentType, isComponentType, pinRefSchema, pointSchema, rotationSchema } from "@engineering-circuit/format"
-import { z } from "zod"
+import * as z from "zod"
 
 const idSchema = z.string().min(1)
 

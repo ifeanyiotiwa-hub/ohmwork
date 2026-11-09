@@ -1,4 +1,4 @@
-import { z } from "zod"
+import * as z from "zod"
 import { componentSchema } from "./components/catalog"
 import { pointSchema } from "./geometry"
 

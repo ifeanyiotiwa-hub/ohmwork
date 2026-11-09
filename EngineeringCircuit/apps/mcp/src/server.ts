@@ -24,7 +24,7 @@ import {
 } from "@engineering-circuit/format"
 import { LESSONS, checkSolution, lessonById } from "@engineering-circuit/lessons"
 import { type CallToolResult, McpServer, completable } from "@modelcontextprotocol/server"
-import { z } from "zod"
+import * as z from "zod"
 import type { LiveServer } from "./live/live-server"
 import { DEFAULT_OPTIONS, type ServerOptions } from "./options"
 import {

@@ -1,4 +1,4 @@
-import { z } from "zod"
+import * as z from "zod"
 import { defineComponent, positive } from "./define"
 
 export const PASSIVES = [

@@ -13,7 +13,7 @@ import {
 	pinPosition,
 	pinsOf,
 } from "@engineering-circuit/format"
-import { z } from "zod"
+import * as z from "zod"
 
 const SIGNIFICANT_DIGITS = 6
 

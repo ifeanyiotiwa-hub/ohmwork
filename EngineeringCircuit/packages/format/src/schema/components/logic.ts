@@ -1,4 +1,4 @@
-import { z } from "zod"
+import * as z from "zod"
 import { defineComponent, positive } from "./define"
 
 // Logic parts are referenced to ground (no supply pins, as in EveryCircuit and CircuitJS1). Outputs are 0 V or the
