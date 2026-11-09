@@ -189,3 +189,16 @@ Trade-off: the link lives as long as the MCP server; when it closes the app keep
 - The speed is a new optional field of a part's reading, `speed` (rad/s), as `resistance` is for the ohmmeter: the agent gets `speedRpm`, the canvas and inspector show rpm. On screen the rotor turns at the simulated speed in real time (speed × simulation speed), capped at 4 turns a second and still below one turn in 30 s (`UI_CONFIG.spin`), so what is seen matches the clock.
 - Checked against ngspice's electromechanical analogue (`dc-motor.cir`): steady speed and current to 0.01%, spin-up at 5, 11 and 40 ms to 0.2%, AC current to 0.1%.
 - No current rating: the motor's rated current is a thermal (continuous) limit, and stall current is normal for a moment, so burn-out would mislead.
+
+## ADR-035: Tri-state buffer and shared bus lines (D16e)
+- `tri-state-buffer` (in, enable, out; enable active high) is a sequential part like a gate: after each solve it reads its input and enable (one step of delay, ADR-018) and keeps [level, enabled]. No change to the boolean outputs of the other logic parts.
+- Its output is not an ideal source, unlike a gate's: two ideal sources on one line are a short circuit even when they agree, so a bus could never have two drivers. Enabled, it drives through its output resistance (Norton form: the resistance to ground and level ÷ R into the pin); disabled, only its leakage stays. Values from TI SN74HC125 (SCLS104F): about 30 Ω (4.3 V at −6 mA, 0.17 V at 6 mA, typical at 4.5 V), I_OZ 0.01 µA at 6 V (600 MΩ), continuous output current 35 mA.
+- The leakage gives an undriven line a path to ground, so it reads 0 V (or what a pull-up sets) without a "not connected to ground" warning, as gate inputs left open do.
+- Bus contention is shown by physics, not a special rule: two enabled outputs at different levels pass about 83 mA through each other, past the 35 mA rating, so both burn out (glow and smoke) with advice to enable one at a time.
+- A multi-bit "bus wire" (one drawn line carrying several signals) is a drawing feature that needs net names; it moves to D17 with net labels.
+
+## ADR-036: Oscilloscope trigger, own scales, X-Y and watched parts (D16e)
+- All in the app's plot layer (`scope/scope-plot.ts`), on the samples it already has; the engine is unchanged.
+- Trigger: the window starts at the latest rising crossing of the first trace through the middle of its range (interpolated between samples) that has a whole window of samples after it, so a repeating wave stands still; with no such crossing it runs free and says "no rising edge". The app now keeps two windows of samples (`UI_CONFIG.scope.historyWindows`, `maxSamples` doubled) so there is room to look back.
+- Own scales: each trace on its own range (shown in the legend) instead of one shared one. X-Y: the second trace up against the first across, each on its own scale, over the last window.
+- Watch a part: the inspector's "Show on scope" adds a part's voltage (first pin to second) as a trace without placing a probe. It is a view setting, kept in the store and not saved with the circuit (a probe is the saved way); it is cleared when the circuit is replaced. The worker gets a `watch` message and records those parts' reading voltages with the probes'. Watched parts appear in the frequency view too (`bodePlot` takes each trace's pins).

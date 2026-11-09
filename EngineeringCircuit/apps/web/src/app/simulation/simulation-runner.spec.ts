@@ -117,3 +117,13 @@ test("without scope probes nothing is sampled", () => {
 	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
 	expect(runner.handle({ type: "advance", seconds: 1e-4, maxSteps: 1000 })?.samples).toEqual([])
 })
+
+test("a watched part's voltage is sampled like a probe's, without placing one", () => {
+	const runner = new SimulationRunner()
+	runner.handle({ type: "load", circuit: rc(), circuitId: 1 })
+	runner.handle({ type: "watch", ids: ["C1"] })
+	const samples = runner.handle({ type: "advance", seconds: 1e-3, maxSteps: 1000 })?.samples ?? []
+	expect(samples.at(-1)?.values["C1"]).toBeCloseTo(3.1606, 3)
+	runner.handle({ type: "watch", ids: [] })
+	expect(runner.handle({ type: "advance", seconds: 1e-4, maxSteps: 1000 })?.samples).toEqual([])
+})

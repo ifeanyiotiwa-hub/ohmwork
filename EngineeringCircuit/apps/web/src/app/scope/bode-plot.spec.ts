@@ -3,6 +3,8 @@ import { expect, test } from "vitest"
 import { bodePlot } from "./bode-plot"
 
 const size = { width: 100, height: 50 }
+const P1 = { id: "P1", pins: ["positive", "negative"] } as const
+const P2 = { id: "P2", pins: ["positive", "negative"] } as const
 /** P1 across a 1:1 path (0 dB, 0°), P2 at a tenth and 90° behind (−20 dB, −90°). */
 const points: AcPoint[] = [10, 100, 1000].map((frequency) => ({
 	frequency,
@@ -11,14 +13,14 @@ const points: AcPoint[] = [10, 100, 1000].map((frequency) => ({
 const coordinates = (polyline: string | undefined) => polyline?.split(" ").map((pair) => pair.split(",").map(Number)) ?? []
 
 test("frequency runs across on a log scale, with a line at each decade", () => {
-	const plot = bodePlot(points, ["P1"], { re: 2, im: 0 }, size)
+	const plot = bodePlot(points, [P1], { re: 2, im: 0 }, size)
 	expect(coordinates(plot.traces[0]?.gain).map(([x]) => x)).toEqual([0, 50, 100])
 	expect(plot.decades).toEqual([{ x: 50, frequency: 100 }])
 	expect(plot.range).toEqual({ start: 10, stop: 1000 })
 })
 
 test("gain is in dB relative to the input, on a scale rounded out to 10 dB; phase spans ±180°", () => {
-	const plot = bodePlot(points, ["P1", "P2"], { re: 2, im: 0 }, size)
+	const plot = bodePlot(points, [P1, P2], { re: 2, im: 0 }, size)
 	expect(plot.gain).toEqual({ min: -30, max: 10 })
 	const [unity, tenth] = plot.traces
 	expect(unity?.peak).toBeCloseTo(0, 9)
@@ -32,7 +34,7 @@ test("gain is in dB relative to the input, on a scale rounded out to 10 dB; phas
 })
 
 test("a flat response still gets a scale, and no points give empty traces", () => {
-	expect(bodePlot(points, ["P1"], { re: 2, im: 0 }, size).gain).toEqual({ min: -10, max: 10 })
-	const empty = bodePlot([], ["P1"], { re: 1, im: 0 }, size)
+	expect(bodePlot(points, [P1], { re: 2, im: 0 }, size).gain).toEqual({ min: -10, max: 10 })
+	const empty = bodePlot([], [P1], { re: 1, im: 0 }, size)
 	expect(empty.traces).toEqual([{ id: "P1", gain: "", phase: "", peak: undefined }])
 })

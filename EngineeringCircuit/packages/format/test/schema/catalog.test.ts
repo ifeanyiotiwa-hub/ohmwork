@@ -78,3 +78,9 @@ test("a new DC motor follows the FAULHABER 2224U012SR, and refuses a motor with 
 	expect(motor?.defaults.damping).toBeCloseTo(0.2e-3 / ((7810 * 2 * Math.PI) / 60), 12)
 	expect(motor?.schema.shape.params.safeParse({ ...motor?.defaults, damping: 0 }).success).toBe(false)
 })
+
+test("a new tri-state buffer follows the TI SN74HC125: about 30 Ω out, 35 mA at most", () => {
+	const buffer = COMPONENT_DEFINITIONS.find((definition) => definition.type === "tri-state-buffer")
+	expect(buffer?.pins).toEqual(["in", "enable", "out"])
+	expect(buffer?.defaults).toEqual({ outputResistance: 30, maxCurrent: 0.035 })
+})

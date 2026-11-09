@@ -333,6 +333,14 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: { x: 0, y: -22 },
 		labelAnchor: "middle",
 	},
+	// A buffer triangle; enable comes up from below to its lower edge.
+	"tri-state-buffer": {
+		body: { left: -40, top: -16, right: 40, bottom: 40 },
+		paths: ["M-40 0 H-20 M16 0 H40", "M-20 -16 L16 0 L-20 16 Z", "M0 40 V7"],
+		marks: [{ text: "EN", at: { x: -14, y: 28 } }],
+		label: { x: 0, y: -22 },
+		labelAnchor: "middle",
+	},
 	"and-gate": gateSymbol([AND_LEADS, AND_SHAPE, "M24 0 H40"]),
 	"nand-gate": gateSymbol([AND_LEADS, AND_SHAPE, bubbleAt(24), "M32 0 H40"]),
 	"or-gate": gateSymbol([OR_LEADS, OR_SHAPE, "M22 0 H40"]),
@@ -570,6 +578,7 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	"logic-output": "Logic output",
 	clock: "Clock",
 	"not-gate": "NOT",
+	"tri-state-buffer": "Tri-state buffer",
 	"and-gate": "AND",
 	"or-gate": "OR",
 	"nand-gate": "NAND",

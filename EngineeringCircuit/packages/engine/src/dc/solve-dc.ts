@@ -332,6 +332,19 @@ function burnOutWarnings(
 			const drive = ports[`${component.id}/base-emitter`]
 			return overRatings(component.id, component.params, "collector", output, drive, " Limit the base drive, or the collector current with a resistor.")
 		}
+		if (component.type === "tri-state-buffer") {
+			const current = Math.abs(ports[`${component.id}/output`]?.current ?? 0)
+			return current > component.params.maxCurrent
+				? [
+						burnsOut(
+							component.id,
+							`output carries ${formatSi(current, "A")}`,
+							formatSi(component.params.maxCurrent, "A"),
+							" Outputs that share a line must take turns: enable only one at a time.",
+						),
+					]
+				: []
+		}
 		if (component.type === "n-mosfet" || component.type === "p-mosfet") {
 			const output = ports[`${component.id}/drain-source`]
 			return overRatings(component.id, component.params, "drain", output, undefined, " Limit the drain current with a resistor.")
@@ -404,6 +417,7 @@ const READ_ONLY_PINS: Partial<Record<ComponentType, readonly string[]>> = {
 	"adc-4bit": ["in", "vref"],
 	"dac-4bit": ["d0", "d1", "d2", "d3", "vref"],
 	"scope-probe": ["positive", "negative"],
+	"tri-state-buffer": ["in", "enable"],
 	voltmeter: ["positive", "negative"],
 }
 

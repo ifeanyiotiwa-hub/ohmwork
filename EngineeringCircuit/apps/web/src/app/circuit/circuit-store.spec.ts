@@ -272,3 +272,16 @@ describe("joined to the live link", () => {
 		expect(store.circuit().components.map((component) => component.id)).toEqual(["GND1"])
 	})
 })
+
+test("a part can be watched on the oscilloscope without a probe, and leaves it when deleted", () => {
+	expect(store.scopeTraces()).toEqual([])
+	store.toggleWatch("R2")
+	expect(store.scopeTraces()).toEqual([{ id: "R2", pins: ["a", "b"] }])
+	expect(store.isWatched("R2")).toBe(true)
+	store.toggleWatch("R2")
+	expect(store.scopeTraces()).toEqual([])
+	store.toggleWatch("R2")
+	store.selection.set({ kind: "component", id: "R2" })
+	store.removeSelected()
+	expect(store.scopeTraces()).toEqual([])
+})

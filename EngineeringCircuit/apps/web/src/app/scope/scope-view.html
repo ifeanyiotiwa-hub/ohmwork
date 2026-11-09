@@ -1,11 +1,22 @@
 <section class="scope" [class.frequency]="mode() === 'frequency'" aria-label="Oscilloscope" data-scope>
 	<div class="legend">
-		@if (acInput()) {
-			<span class="modes" role="group" aria-label="Show">
+		<span class="modes" role="group" aria-label="Show">
+			@if (acInput()) {
 				<button type="button" [attr.aria-pressed]="mode() === 'time'" (click)="show('time')">Time</button>
 				<button type="button" [attr.aria-pressed]="mode() === 'frequency'" (click)="show('frequency')">Frequency</button>
-			</span>
-		}
+			}
+			@if (mode() === "time" && !xy()) {
+				<button type="button" [attr.aria-pressed]="trigger()" (click)="trigger.set(!trigger())" title="Hold a repeating wave still: start at a rising edge of the first trace">
+					Trigger
+				</button>
+				<button type="button" [attr.aria-pressed]="separateScales()" (click)="separateScales.set(!separateScales())" title="Scale each trace to itself">
+					Own scales
+				</button>
+			}
+			@if (mode() === "time" && canShowXy()) {
+				<button type="button" [attr.aria-pressed]="xy()" (click)="toggleXy()" title="Second trace up against the first across">X-Y</button>
+			}
+		</span>
 		@if (bode(); as response) {
 			@if ("error" in response) {
 				<span class="problem" role="status">{{ response.error }}</span>
@@ -17,13 +28,26 @@
 				}
 				<span class="scale">relative to {{ response.input }} · {{ response.range }} · gain {{ response.gain }} · phase ±180°</span>
 			}
+		} @else if (xyView(); as view) {
+			<span class="scale" data-xy>X {{ view.across }}: {{ view.x }} · Y {{ view.up }}: {{ view.y }}</span>
 		} @else {
 			@for (trace of plot().traces; track trace.id) {
 				<span class="channel" [style.--trace]="trace.colour" [attr.data-trace]="trace.id">
 					<span class="swatch"></span>{{ trace.id }} <strong>{{ trace.latestText }}</strong>
+					@if (trace.rangeText) {
+						<span class="range">{{ trace.rangeText }}</span>
+					}
 				</span>
 			}
-			<span class="scale">{{ plot().division }}/div · {{ plot().bottom }} to {{ plot().top }}</span>
+			<span class="scale">
+				@if (trigger()) {
+					<span data-trigger-state>{{ plot().triggered ? "triggered" : "no rising edge" }}</span> ·
+				}
+				{{ plot().division }}/div
+				@if (plot().scale; as scale) {
+					· {{ scale }}
+				}
+			</span>
 		}
 	</div>
 	@if (bode(); as response) {
@@ -47,8 +71,15 @@
 				}
 			</svg>
 		}
+	} @else if (xyView(); as view) {
+		<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true" data-xy-plot>
+			@for (x of gridLines; track x) {
+				<line class="grid" [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="box.height" />
+			}
+			<polyline class="trace xy" [attr.points]="view.points" />
+		</svg>
 	} @else {
-		<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true">
+		<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true" data-time-plot>
 			@for (x of gridLines; track x) {
 				<line class="grid" [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="box.height" />
 			}

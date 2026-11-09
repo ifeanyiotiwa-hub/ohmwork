@@ -70,6 +70,12 @@
 			</dl>
 		}
 
+		@if (watchable(); as id) {
+			<button type="button" data-watch [attr.aria-pressed]="store.isWatched(id)" (click)="store.toggleWatch(id)">
+				{{ store.isWatched(id) ? "Hide from scope" : "Show on scope" }}
+			</button>
+		}
+
 		@if (ports().length > 0) {
 			<dl class="readings" data-ports>
 				@for (port of ports(); track port.name) {

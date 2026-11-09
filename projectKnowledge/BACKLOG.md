@@ -11,11 +11,11 @@ with the reason. When an item is done, mark it here and in `HANDOVER.md` "Known 
 | D2 DC engine | Nothing significant (the "part not simulated yet" error has no test because every part is simulated now) | – |
 | D3 Time simulation | ~~Adaptive time step~~ (done, D16c); ~~AC frequency analysis (Bode plots)~~ (done, D16d); ~~a fix for ringing when an inductor's switch opens~~ (done, D15a) | Fixed step is what CircuitJS1 does and was accurate to 0.003%; adaptive stepping is a large, separate project. Ringing is a known side-effect of the trapezoidal method (CircuitJS1 has it too) |
 | D4 Diodes / transistors | ~~Burn-out warnings; per-colour LED models~~ (done, D15a; RGB LED D15c); transistor switching delays, Early effect, temperature; a fallback when the solver won't settle (partly done, D15a) | Not in D4's acceptance criteria, and each needs sourced data |
-| D5 Logic | An event-driven engine; gates with more than 2 inputs; tri-state outputs and buses | Stepping logic with the analog solve (one step of delay) is simpler and is what CircuitJS1 does (ADR-018). Wider gates can be built by chaining 2-input ones |
+| D5 Logic | An event-driven engine; ~~gates with more than 2 inputs~~ (done, D16a); ~~tri-state outputs~~ (done, D16e) and multi-bit bus wires (D17) | Stepping logic with the analog solve (one step of delay) is simpler and is what CircuitJS1 does (ADR-018). Wider gates can be built by chaining 2-input ones |
 | D6 App | ~~Joining a wire in its middle; copy/paste and multi-select; label overlap around a sideways battery~~ (all done, D15b) | The junction was in D6's scope and was missed. Several wires on one pin cover most cases, but it is a real gap. Copy/paste was not in the acceptance criteria |
 | D7 AI tools | A remote (network) connection. ~~An AI tool for renaming a circuit~~ (done in D12a: `rename_circuit`) | Remote needs hosting (D14) |
 | D8 Live link | ~~Reconnecting after a drop~~ (done, D15b); more than one learner at a time | The link lives as long as Claude Code runs. Several learners would need the D14 backend |
-| D9 Oscilloscope + ICs | Scope triggering, a separate scale per trace, X-Y mode, "show any part on the scope"; op-amp speed limits (slew rate, bandwidth); ADC/DAC with more than 4 bits; an LED-style 7-segment display | Kept to the acceptance criteria. The 4-bit limit comes from the rule that a part's pins can't change with a setting (ADR-009) |
+| D9 Oscilloscope + ICs | ~~Scope triggering, a separate scale per trace, X-Y mode, "show any part on the scope"~~ (done, D16e); ~~op-amp speed limits~~ (D16b); ~~ADC/DAC with more than 4 bits; an LED-style 7-segment display~~ (D16a) | Kept to the acceptance criteria. The 4-bit limit comes from the rule that a part's pins can't change with a setting (ADR-009) |
 | D10 Saving | ~~Saving back over the same file on disk~~ (done, D11a); syncing across devices; ~~image export~~ (done, D15b) | Browser support for writing files in place is uneven, and syncing needs the D14 backend |
 | D11a Desktop | Code signing and notarization; running the Windows/Linux CI builds; joining a live session from the desktop app (deep link); iOS; a signed release APK and Play Store listing | Signing needs paid developer accounts (Apple, a Windows certificate); CI needs a GitHub remote; a deep link needs a registered URL scheme and the MCP server allowing the Tauri origin; iOS needs full Xcode, not installed; a release APK needs a signing key kept outside the repo |
 | Parts list "later" items | Net labels, subcircuits (custom chips), a parts browser with "request a part" (all D17). ~~Text notes~~ (done in D12b). Tapped transformer, DC motor (D16) | Assigned |
@@ -62,10 +62,10 @@ whatever the app is at that point.
 | ~~Transistor dynamics~~ (done, D16b; capacitances held constant, LEDs/β/Zener voltage not temperature-dependent) | Junction capacitances, Early effect and temperature (Gummel–Poon parameters); ngspice goldens |
 | ~~Op-amp limits~~ (done, D16b, with the output current limit) | Slew rate and gain-bandwidth as parameters (CircuitJS1 keeps GBW in its format but does not simulate it) |
 | ~~Wider gates~~ (done, D16a) | 3- and 4-input gate types (new types, so no format break) |
-| Tri-state and buses | A tri-state buffer type and bus wires; needs a "high impedance" output state in the logic model |
+| ~~Tri-state and buses~~ (done, D16e: `tri-state-buffer`; outputs share a line, contention burns out). Multi-bit bus wires (one drawn line for many signals) move to D17 with net labels, which they need | A tri-state buffer type and bus wires; needs a "high impedance" output state in the logic model |
 | ~~Wider converters~~ (done, D16a) | `adc-8bit` / `dac-8bit` as new types (pins stay fixed per type) |
 | ~~LED 7-segment~~ (done, D16a) | `seven-segment-led` with a common pin and real LED segments, next to the logic display |
-| Scope upgrades | Trigger on a rising edge, per-trace scale, X-Y mode, and "watch this part" from the inspector without placing a probe |
+| ~~Scope upgrades~~ (done, D16e) | Trigger on a rising edge, per-trace scale, X-Y mode, and "watch this part" from the inspector without placing a probe |
 
 ### D17 Building bigger
 | Item | How |

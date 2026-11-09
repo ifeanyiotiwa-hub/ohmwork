@@ -23,6 +23,7 @@ export function valueText(component: Component): string {
 			return formatSi(component.params.resistance, "Ω")
 		case "diode":
 		case "dc-motor":
+		case "tri-state-buffer":
 			return ""
 		case "logic-input":
 			return component.params.high ? "1" : "0"

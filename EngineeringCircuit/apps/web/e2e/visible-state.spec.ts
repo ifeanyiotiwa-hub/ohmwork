@@ -84,3 +84,40 @@ test("a motor spins up and shows its speed; a reversed supply turns it backwards
 	await expect(page.locator(".part-reading", { hasText: "−3238 rpm" })).toBeVisible({ timeout: 30_000 })
 	await expect(motor.locator("[data-rotor]")).toHaveClass(/reverse/)
 })
+
+test("two tri-state buffers share a bus line: it follows the enabled one, and enabling both makes them smoke", async ({ page }) => {
+	await build(
+		page,
+		[
+			["logic-input", 120, 160],
+			["logic-input", 120, 360],
+			["tri-state-buffer", 340, 160],
+			["tri-state-buffer", 340, 360],
+			["logic-input", 160, 260],
+			["logic-input", 160, 460],
+			["logic-output", 620, 260],
+		],
+		[
+			["IN1:out", "TRI1:in"],
+			["IN2:out", "TRI2:in"],
+			["IN3:out", "TRI1:enable"],
+			["IN4:out", "TRI2:enable"],
+			["TRI1:out", "OUT1:in"],
+			["TRI2:out", "OUT1:in"],
+		],
+	)
+	const lit = async () => Number(await page.locator('[data-part="OUT1"] .glow').getAttribute("opacity"))
+	// IN1 sends 1, IN2 sends 0; nothing enabled, the line reads 0.
+	await page.locator('[data-part="IN1"]').click()
+	await expect.poll(lit).toBe(0)
+	await page.locator('[data-part="IN3"]').click()
+	await expect.poll(lit).toBe(1)
+	await page.locator('[data-part="IN3"]').click()
+	await page.locator('[data-part="IN4"]').click()
+	await expect.poll(lit).toBe(0)
+	await expect(page.locator("[data-smoke]")).toHaveCount(0)
+
+	await page.locator('[data-part="IN3"]').click()
+	await expect(page.locator('[data-part="TRI1"]')).toHaveClass(/overheated/)
+	await expect(page.locator('[data-part="TRI2"]')).toHaveClass(/overheated/)
+})

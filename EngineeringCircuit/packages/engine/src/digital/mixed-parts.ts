@@ -52,3 +52,15 @@ export const RELAY: Sequential = {
 		return { outputs: [pulledIn], state: memory.state }
 	},
 }
+
+/**
+ * outputs[0]: the level it passes on, outputs[1]: enabled. Read like a gate's inputs (1 above half of logic high), with
+ * a gate's one step of delay; the output (driving, or let go) is in dc/branches.ts.
+ */
+export const TRI_STATE: Sequential = {
+	initial: () => ({ outputs: [false, false], state: { value: 0, clock: false } }),
+	next: (memory, readings, logicHigh) => ({
+		outputs: [readings.voltage("in") > logicHigh / 2, readings.voltage("enable") > logicHigh / 2],
+		state: memory.state,
+	}),
+}

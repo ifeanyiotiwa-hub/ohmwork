@@ -31,6 +31,18 @@ export const LOGIC = [
 		defaults: { frequency: 100, dutyCycle: 0.5 },
 	}),
 	defineComponent("not-gate", { idPrefix: "NOT", pins: ["in", "out"], params: {}, defaults: {} }),
+	// A buffer whose output lets go of the line while enable is 0, so several can share a bus. Output values: TI
+	// SN74HC125 (SCLS104F, April 2021) at 4.5 V, typical: 4.3 V at −6 mA (33 Ω) and 0.17 V at 6 mA (28 Ω), about
+	// 30 Ω; continuous output current ±35 mA (absolute maximum). Its enable is active high (the 74HC125's is low).
+	defineComponent("tri-state-buffer", {
+		idPrefix: "TRI",
+		pins: ["in", "enable", "out"],
+		params: {
+			outputResistance: positive("ohms the output drives through while enabled"),
+			maxCurrent: positive("amps the output can carry continuously (absolute maximum)"),
+		},
+		defaults: { outputResistance: 30, maxCurrent: 0.035 },
+	}),
 	gate("and-gate", "AND"),
 	gate("or-gate", "OR"),
 	gate("nand-gate", "NAND"),

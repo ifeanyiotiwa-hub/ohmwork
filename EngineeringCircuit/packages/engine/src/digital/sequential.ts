@@ -1,6 +1,6 @@
 import type { ComponentType } from "@engineering-circuit/format"
 import { type LogicMemory, type LogicPart, initialMemory, logicPartOf } from "./logic"
-import { ADC_4BIT, ADC_8BIT, DAC_4BIT, DAC_8BIT, RELAY } from "./mixed-parts"
+import { ADC_4BIT, ADC_8BIT, DAC_4BIT, DAC_8BIT, RELAY, TRI_STATE } from "./mixed-parts"
 import { TIMER_555 } from "./timer-555"
 
 /** What a sequential part can read after a solve: its pin voltages and its ports' currents (a relay's coil). */
@@ -33,6 +33,7 @@ const SPECIAL: Partial<Record<ComponentType, Sequential>> = {
 	"adc-8bit": ADC_8BIT,
 	"dac-8bit": DAC_8BIT,
 	relay: RELAY,
+	"tri-state-buffer": TRI_STATE,
 }
 
 export function sequentialOf(type: ComponentType): Sequential | undefined {

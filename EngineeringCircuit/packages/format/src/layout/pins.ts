@@ -131,6 +131,7 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	"logic-output": { in: { x: -40, y: 0 } },
 	clock: { out: { x: 40, y: 0 } },
 	"not-gate": { in: { x: -40, y: 0 }, out: { x: 40, y: 0 } },
+	"tri-state-buffer": { in: { x: -40, y: 0 }, enable: { x: 0, y: 40 }, out: { x: 40, y: 0 } },
 	"and-gate": GATE_LEADS,
 	"or-gate": GATE_LEADS,
 	"nand-gate": GATE_LEADS,

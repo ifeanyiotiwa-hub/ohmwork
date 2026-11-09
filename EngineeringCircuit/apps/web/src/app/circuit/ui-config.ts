@@ -47,6 +47,8 @@ export type UiConfig = {
 		windowRealSeconds: number
 		/** Samples kept at most, oldest dropped first. */
 		maxSamples: number
+		/** Windows of samples kept, so a triggered view can look back for a crossing. */
+		historyWindows: number
 	}
 	/** A motor's rotor on screen (see spinOf). */
 	spin: { minSecondsPerTurn: number; maxSecondsPerTurn: number }
@@ -74,7 +76,7 @@ export const DEFAULT_UI_CONFIG: UiConfig = {
 	dial: { pixelsPerStep: 10, degreesPerStep: 30, turnIdleMs: 1000 },
 	agentHighlightMs: 2000,
 	simulation: { maxStepsPerFrame: 2000, maxFrameSeconds: 0.1 },
-	scope: { windowRealSeconds: 4, maxSamples: 8000 },
+	scope: { windowRealSeconds: 4, maxSamples: 16000, historyWindows: 2 },
 	spin: { minSecondsPerTurn: 0.25, maxSecondsPerTurn: 30 },
 	bode: { startHz: 1, stopHz: 1e6, pointsPerDecade: 20 },
 	live: { reconnectDelaysMs: [1000, 2000, 4000, 8000], maxReconnectAttempts: 30 },

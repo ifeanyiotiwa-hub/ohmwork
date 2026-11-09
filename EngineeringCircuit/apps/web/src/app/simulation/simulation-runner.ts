@@ -8,6 +8,7 @@ export class SimulationRunner {
 	private circuitId = 0
 	private state: TransientState = initialTransientState()
 	private pressed: ReadonlySet<string> = new Set()
+	private watched: readonly string[] = []
 	/** Simulated seconds requested but smaller than one time step, carried to the next frame. */
 	private owed = 0
 	/** The step size the last frame ended on, so adaptive steps carry on from it. */
@@ -22,6 +23,9 @@ export class SimulationRunner {
 				return undefined
 			case "press":
 				this.pressed = new Set(message.pressed)
+				return undefined
+			case "watch":
+				this.watched = message.ids
 				return undefined
 			case "restart":
 				this.state = initialTransientState()
@@ -43,7 +47,10 @@ export class SimulationRunner {
 		const circuit = this.circuit
 		if (!circuit) return undefined
 		const until = this.state.time + this.owed + seconds
-		const probes = circuit.components.filter((component) => component.type === "scope-probe").map((probe) => probe.id)
+		const probes = [
+			...circuit.components.filter((component) => component.type === "scope-probe").map((probe) => probe.id),
+			...this.watched.filter((id) => circuit.components.some((component) => component.id === id && component.type !== "scope-probe")),
+		]
 		const recorded: ScopeSample[] = []
 		const result = advanceTransient(circuit, this.state, until, {
 			maxStep: circuit.simulation.timeStep,

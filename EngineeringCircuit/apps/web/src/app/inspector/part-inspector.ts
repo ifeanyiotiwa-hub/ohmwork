@@ -1,5 +1,5 @@
 import { Component, computed, inject } from "@angular/core"
-import { type ComponentType, paramFieldsOf } from "@engineering-circuit/format"
+import { type ComponentType, paramFieldsOf, pinsOf } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
 import { speedText } from "../circuit/part-text"
 import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
@@ -62,6 +62,12 @@ export class PartInspector {
 					return { name: field.name, kind: "choice", value: String(value), options: field.options }
 			}
 		})
+	})
+
+	/** A part whose voltage (first pin to second) can go on the oscilloscope without a probe; probes are already on it. */
+	protected readonly watchable = computed(() => {
+		const part = this.store.selectedComponent()
+		return part && part.type !== "scope-probe" && pinsOf(part.type).length >= 2 ? part.id : undefined
 	})
 
 	protected readonly reading = computed(() => {

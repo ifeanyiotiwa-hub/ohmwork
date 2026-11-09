@@ -7,7 +7,7 @@ import type { Device } from "../nonlinear/device"
 import { diodeDevice } from "../nonlinear/diode"
 import { mosfetDevice } from "../nonlinear/mosfet"
 import { opAmpDevice } from "../nonlinear/op-amp"
-import { ADC_4BIT, ADC_8BIT, CONVERTER_4BIT, CONVERTER_8BIT, type Converter, DAC_4BIT, DAC_8BIT, RELAY } from "../digital/mixed-parts"
+import { ADC_4BIT, ADC_8BIT, CONVERTER_4BIT, CONVERTER_8BIT, type Converter, DAC_4BIT, DAC_8BIT, RELAY, TRI_STATE } from "../digital/mixed-parts"
 import { TIMER_555 } from "../digital/timer-555"
 import { DenseMatrix } from "../linear/dense-matrix"
 import { factorLu } from "../linear/lu"
@@ -195,6 +195,12 @@ const toGround = (componentId: string, pin: string, voltage: number): Branch => 
 	voltage,
 })
 
+/**
+ * A disabled tri-state output's leakage: SN74HC125 I_OZ, ±0.01 µA typical at 6 V. It is what lets a line no output
+ * drives read 0 V (or follow a pull-up) instead of floating.
+ */
+const OFF_STATE_RESISTANCE = 6 / 0.01e-6
+
 /** Each output pin is an ideal source to ground at 0 V or logic high (CircuitJS1 GateElm). */
 const logicModel =
 	(part: LogicPart) =>
@@ -343,6 +349,17 @@ export const DC_MODELS: { [Type in ComponentType]: DcModel<Type> } = {
 		segment(id, ["a", "wiper"], params.resistance * params.position),
 		segment(id, ["wiper", "b"], params.resistance * (1 - params.position)),
 	],
+	// Enabled: its level through its output resistance (a Norton source: the resistance to ground and level / R into
+	// the pin). Disabled: only its leakage. Both as port "output", whose current the burn-out check reads.
+	"tri-state-buffer": ({ id, params }, { logic, logicHigh }) => {
+		const [level = false, enabled = false] = (logic?.[id] ?? TRI_STATE.initial()).outputs
+		const resistance = enabled ? params.outputResistance : OFF_STATE_RESISTANCE
+		const toLine = { componentId: id, pins: ["out", GROUND_PIN] as Pins, port: "output" }
+		return [
+			{ kind: "resistor", ...toLine, resistance },
+			...(enabled && level ? [{ kind: "current" as const, ...toLine, current: logicHigh / resistance }] : []),
+		]
+	},
 	"dc-motor": ({ id, params }, { transient }) => {
 		const motion = transient?.memory[`${id}/motion`]
 		const step = transient && { timeStep: transient.timeStep, previousSpeed: motion?.voltage ?? 0, previousCurrent: motion?.current ?? 0 }

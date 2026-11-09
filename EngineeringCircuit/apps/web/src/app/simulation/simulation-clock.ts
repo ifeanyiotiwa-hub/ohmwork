@@ -17,6 +17,7 @@ export class SimulationClock {
 	readonly failure = signal<string | undefined>(undefined)
 
 	private worker: Worker | undefined
+	private watched: string[] = []
 	private circuit: Circuit | undefined
 	private running = true
 	private waiting = false
@@ -37,6 +38,12 @@ export class SimulationClock {
 
 	press(pressed: readonly string[]): void {
 		if (this.worker) this.post({ type: "press", pressed: [...pressed] })
+	}
+
+	/** Parts to sample besides the scope probes. Sent before the circuit too, since the worker starts with none. */
+	watch(ids: readonly string[]): void {
+		this.watched = [...ids]
+		if (this.worker) this.post({ type: "watch", ids: this.watched })
 	}
 
 	restart(): void {
@@ -80,8 +87,9 @@ export class SimulationClock {
 		this.pendingSeconds = 0
 	}
 
+	/** Keeps `historyWindows` scope windows, so a triggered view has a whole window after its trigger point. */
 	private record(fresh: readonly ScopeSample[], now: number): void {
-		const window = this.config.scope.windowRealSeconds * (this.circuit?.simulation.speed ?? 0)
+		const window = this.config.scope.windowRealSeconds * this.config.scope.historyWindows * (this.circuit?.simulation.speed ?? 0)
 		this.samples.update((previous) =>
 			[...previous, ...fresh].filter((sample) => sample.time >= now - window).slice(-this.config.scope.maxSamples),
 		)
@@ -94,6 +102,7 @@ export class SimulationClock {
 	private workerInstance(): Worker {
 		if (this.worker) return this.worker
 		const worker = new Worker(new URL("./simulation.worker", import.meta.url), { type: "module" })
+		worker.postMessage({ type: "watch", ids: this.watched } satisfies ToWorker)
 		worker.addEventListener("message", ({ data }: MessageEvent<FromWorker>) => {
 			this.waiting = false
 			this.frame.set(data)

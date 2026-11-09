@@ -76,6 +76,7 @@ Gates have fixed inputs: 2 for most, 1 for NOT. Wider gates are built by chainin
 | `logic-input` (toggle) | out | high | EC (Logic Source), CJS | D5 | simulated |
 | `logic-output` (indicator) | in | – | CJS | D5 | simulated |
 | `not-gate` | in, out | – | EC, CJS (Inverter) | D5 | simulated |
+| `tri-state-buffer` | in, enable, out | outputResistance (Ω), maxCurrent (A); TI SN74HC125: 30 Ω, 35 mA. Enable active high. Enabled: drives its input's level through its output resistance; disabled: only its leakage (600 MΩ, I_OZ). Outputs may share a bus line; two enabled at different levels pass more than 35 mA and burn out | EC, CJS | D16 | simulated |
 | `and-gate`, `or-gate`, `nand-gate`, `nor-gate`, `xor-gate`, `xnor-gate` | a, b, out | – | EC, CJS | D5 | simulated |
 | `and-gate-3`, `and-gate-4`, `or-gate-3`, `or-gate-4`, `nand-gate-3`, `nand-gate-4`, `nor-gate-3`, `nor-gate-4` | a, b, c (, d), out | – (widths sold as chips: 74HC11/21, 4075/4072, 10/20, 27/4002; id prefixes ANDT/ANDQ…) | CJS (gates with N inputs) | D16 | simulated |
 | `sr-latch` (NOR, active-high) | s, r, q, qNot | – | EC | D5 | simulated |

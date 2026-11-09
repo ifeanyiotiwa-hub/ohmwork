@@ -19,12 +19,12 @@ const GAIN_FLOOR = -120
 const HALF_TURN = 180
 
 /**
- * Lays a frequency response out as two width × height plots sharing a log frequency scale across: each scope probe's
+ * Lays a frequency response out as two width × height plots sharing a log frequency scale across: each trace's
  * gain (dB) relative to the input, and its phase (degrees, −180 at the bottom to 180 at the top).
  */
 export function bodePlot(
 	points: readonly AcPoint[],
-	probes: readonly string[],
+	sources: readonly { id: string; pins: readonly [string, string] }[],
 	input: Complex,
 	{ width, height }: { width: number; height: number },
 ): BodePlot {
@@ -34,11 +34,11 @@ export function bodePlot(
 	const x = (frequency: number) => (span > 0 ? (Math.log10(frequency / start) / span) * width : 0)
 	const round = (value: number) => Math.round(value * 100) / 100
 
-	const responses = probes.map((id) => ({
+	const responses = sources.map(({ id, pins: [high, low] }) => ({
 		id,
 		values: points.map((point) => {
-			const positive = point.pinVoltages[`${id}:positive`] ?? { re: 0, im: 0 }
-			const negative = point.pinVoltages[`${id}:negative`] ?? { re: 0, im: 0 }
+			const positive = point.pinVoltages[`${id}:${high}`] ?? { re: 0, im: 0 }
+			const negative = point.pinVoltages[`${id}:${low}`] ?? { re: 0, im: 0 }
 			const { decibels, phase } = gainAndPhase({ re: positive.re - negative.re, im: positive.im - negative.im }, input)
 			return { frequency: point.frequency, decibels, degrees: (phase * HALF_TURN) / Math.PI }
 		}),

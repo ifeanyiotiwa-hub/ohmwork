@@ -9,7 +9,7 @@ import {
 	stepTransient,
 	wireCurrents,
 } from "@engineering-circuit/engine"
-import { type Circuit, type ComponentType, type PinRef, type Point, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, type ComponentType, type PinRef, type Point, createCircuit, pinsOf } from "@engineering-circuit/format"
 import { LiveLink } from "../live/live-link"
 import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
@@ -22,6 +22,9 @@ import { UI_CONFIG } from "./ui-config"
 const NOTE_GAP_BELOW = 100
 
 export type Selection = { kind: "component" | "wire" | "note"; id: string }
+
+/** One oscilloscope trace: a part and the two pins its voltage is measured between (first minus second). */
+export type ScopeTraceSource = { id: string; pins: readonly [string, string] }
 
 /**
  * The circuit being edited. On its own the app keeps a local CircuitDocument; joined to the live link, the
@@ -77,12 +80,22 @@ export class CircuitStore {
 		const frame = this.clock.frame()
 		return this.timeDependent() && frame?.circuitId === this.idOf(this.circuit()) ? frame.time : undefined
 	})
-	/** Scope probes in the circuit, in order; the oscilloscope shows one trace each. */
-	readonly scopeProbes = computed(() =>
-		this.circuit()
-			.components.filter((component) => component.type === "scope-probe")
-			.map((component) => component.id),
-	)
+	/** Parts the learner watches on the oscilloscope without a probe; a view setting, not saved with the circuit. */
+	private readonly watched = signal<readonly string[]>([])
+	/**
+	 * What the oscilloscope shows, one trace each: scope probes in circuit order, then watched parts still in the
+	 * circuit. Each trace is the voltage from its first pin to its second.
+	 */
+	readonly scopeTraces = computed<ScopeTraceSource[]>(() => {
+		const components = this.circuit().components
+		const probes = components.filter((component) => component.type === "scope-probe")
+		const watched = this.watched().flatMap((id) => {
+			const part = components.find((component) => component.id === id)
+			const [first, second] = part ? pinsOf(part.type) : []
+			return part && part.type !== "scope-probe" && first && second ? [{ id, pins: [first, second] as const }] : []
+		})
+		return [...probes.map((probe) => ({ id: probe.id, pins: ["positive", "negative"] as const })), ...watched]
+	})
 	readonly scopeSamples = this.clock.samples.asReadonly()
 
 	readonly slowed = computed(() => this.time() !== undefined && this.clock.frame()?.slowed === true)
@@ -144,6 +157,19 @@ export class CircuitStore {
 		})
 		effect(() => this.clock.press([...this.pressed()]))
 		effect(() => this.clock.setRunning(!this.paused()))
+		effect(() => {
+			const watching = new Set(this.watched())
+			this.clock.watch(this.scopeTraces().flatMap((trace) => (watching.has(trace.id) ? [trace.id] : [])))
+		})
+	}
+
+	/** Shows a part's voltage on the oscilloscope, or stops showing it. */
+	toggleWatch(id: string): void {
+		this.watched.update((ids) => (ids.includes(id) ? ids.filter((watched) => watched !== id) : [...ids, id]))
+	}
+
+	isWatched(id: string): boolean {
+		return this.scopeTraces().some((trace) => trace.id === id) && this.watched().includes(id)
 	}
 
 	/** Starts the time simulation again from rest: capacitors empty, inductors at 0 A. */
@@ -209,6 +235,8 @@ export class CircuitStore {
 	replace(circuit: Circuit, summary: string): void {
 		this.clock.restart()
 		this.selection.set(undefined)
+		// A different circuit: what was watched belonged to the old one.
+		this.watched.set([])
 		this.editError.set(undefined)
 		if (this.shared()) {
 			this.predicted.set(circuit)

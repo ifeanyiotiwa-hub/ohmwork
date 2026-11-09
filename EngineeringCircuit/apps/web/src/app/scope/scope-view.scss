@@ -55,6 +55,10 @@
 	background: var(--trace);
 }
 
+.range {
+	color: var(--text-muted);
+}
+
 .scale {
 	margin-left: auto;
 }
@@ -85,6 +89,10 @@
 
 	&.phase {
 		stroke-dasharray: 6 3;
+	}
+
+	&.xy {
+		stroke: var(--trace-1);
 	}
 
 	stroke-width: 2;

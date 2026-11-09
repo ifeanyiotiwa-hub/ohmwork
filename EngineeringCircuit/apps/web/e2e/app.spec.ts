@@ -393,6 +393,61 @@ test("with an AC source the oscilloscope also shows the frequency response: an R
 	await expect(scope.locator("[data-gain]")).toHaveCount(0)
 })
 
+test("any part can be shown on the oscilloscope without a probe; two traces can be triggered or plotted X-Y", async ({ page }) => {
+	test.setTimeout(REAL_TIME_TEST_MS)
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["ac-source", 120, 280],
+		["resistor", 300, 160],
+		["capacitor", 460, 280],
+		["ground", 300, 440],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["AC1:positive", "R1:a"],
+		["R1:b", "C1:a"],
+		["C1:b", "GND1:terminal"],
+		["AC1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const scope = page.locator("[data-scope]")
+	await expect(scope).toHaveCount(0)
+
+	await page.locator('[data-part="C1"]').click()
+	await page.locator("[data-watch]").click()
+	await expect(page.locator("[data-watch]")).toHaveText("Hide from scope")
+	await expect(scope.locator('[data-trace="C1"]')).toBeVisible()
+	await expect(scope.getByRole("button", { name: "X-Y" })).toHaveCount(0)
+	await page.locator('[data-part="AC1"]').click()
+	await page.locator("[data-watch]").click()
+	await expect(scope.locator('[data-trace="AC1"]')).toBeVisible()
+
+	// The source's sine is a wave to trigger on once two windows of it have been recorded.
+	await scope.getByRole("button", { name: "Trigger" }).click()
+	await expect(scope.locator("[data-trigger-state]")).toHaveText("triggered", { timeout: 30_000 })
+
+	await scope.getByRole("button", { name: "X-Y" }).click()
+	await expect(scope.locator("[data-xy]")).toContainText("X C1")
+	await expect(scope.locator("[data-xy]")).toContainText("Y AC1")
+	expect(((await scope.locator("[data-xy-plot] polyline").getAttribute("points")) ?? "").split(" ").length).toBeGreaterThan(10)
+
+	await scope.getByRole("button", { name: "X-Y" }).click()
+	await scope.getByRole("button", { name: "Own scales" }).click()
+	await expect(scope.locator('[data-trace="C1"] .range')).toBeVisible()
+
+	// Hiding both empties the oscilloscope.
+	await page.locator("[data-watch]").click()
+	await page.locator('[data-part="C1"]').click()
+	await page.locator("[data-watch]").click()
+	await expect(scope).toHaveCount(0)
+})
+
 test("a BCD decoder drives a 7-segment display: input 1 lights segments b and c", async ({ page }) => {
 	await page.getByRole("button", { name: "New" }).click()
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })
