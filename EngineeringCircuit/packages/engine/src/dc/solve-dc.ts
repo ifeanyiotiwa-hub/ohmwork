@@ -92,8 +92,20 @@ export function solveDc(circuit: Circuit, inputs: DcInputs = {}): DcResult {
 	}
 }
 
-/** Solves the circuit once; with `inputs.transient`, that is one time step. */
-export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
+/** The solved circuit before readings: its nets, its branches linearized at the solution, and the solution. */
+export type OperatingPoint = {
+	nets: Net[]
+	netOf: (componentId: string, pin: string) => number
+	branches: NetBranch[]
+	mna: MnaSolution
+	referenceNets: ReadonlySet<number>
+	openMeters: ReadonlySet<string>
+	conductive: ReturnType<typeof conductiveSets>
+	referenceWarnings: SimIssue[]
+}
+
+/** Builds the circuit's equations and solves them (Newton–Raphson when it has non-linear parts). */
+export function operatingPoint(circuit: Circuit, inputs: SolveInputs): { ok: true; point: OperatingPoint } | { ok: false; errors: SimIssue[] } {
 	const notSimulated = circuit.components
 		.filter((component) => dcModelOf(component) === "not-simulated")
 		.map((component) => ({
@@ -172,11 +184,30 @@ export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
 			],
 		}
 	}
-	const { mna } = solved
+	return {
+		ok: true,
+		point: {
+			nets,
+			netOf,
+			branches: solved.branches,
+			mna: solved.mna,
+			referenceNets: references.referenceNets,
+			openMeters,
+			conductive,
+			referenceWarnings: references.warnings,
+		},
+	}
+}
 
-	const readings = readingsOf(circuit, nets, solved.branches, mna, netOf, openMeters)
+/** Solves the circuit once; with `inputs.transient`, that is one time step. */
+export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
+	const solved = operatingPoint(circuit, inputs)
+	if (!solved.ok) return solved
+	const { nets, netOf, branches, mna, openMeters, conductive, referenceWarnings } = solved.point
+
+	const readings = readingsOf(circuit, nets, branches, mna, netOf, openMeters)
 	const warnings = [
-		...references.warnings,
+		...referenceWarnings,
 		...poweredOhmmeterWarnings(circuit, branches, conductive),
 		...reversedCapacitorWarnings(circuit, readings.readings),
 		...burnOutWarnings(circuit, readings.readings, readings.ports),

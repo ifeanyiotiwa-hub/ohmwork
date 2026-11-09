@@ -1,0 +1,15 @@
+* AC: series R-L-C, output across R (10 Ohm, 10 mH, 1 uF): a band-pass peaking at 1591.55 Hz.
+* Results vdb, vp(rad): 1591.55 Hz 0 (-2.2e-10), 0; 1 kHz -1.97212e+01, 1.467350; 3 kHz -2.26588e+01, -1.49710
+Vin in 0 AC 1
+L1 in a 10m
+C1 a out 1u
+R1 out 0 10
+.control
+ac lin 1 1591.55 1591.55
+print vdb(out) vp(out)
+ac lin 1 1k 1k
+print vdb(out) vp(out)
+ac lin 1 3k 3k
+print vdb(out) vp(out)
+.endc
+.end

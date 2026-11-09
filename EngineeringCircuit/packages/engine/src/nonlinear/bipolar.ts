@@ -3,7 +3,10 @@
 //  - the forward Early effect: the transport current is scaled by (1 − vbc/VAF), as qb = 1/(1 − vbc/VAF);
 //  - stored charge over time: Qbe = CJE·vbe + TF·If and Qbc = CJC·vbc + TR·Ir (zero-bias junction capacitances held
 //    constant, and the transit-time charge), each stepped with backward Euler;
+//  - small signal (AC analysis): the same charges as capacitances, CJE + TF·gF across base–emitter and CJC + TR·gR
+//    across base–collector, at the operating point;
 //  - temperature: the thermal voltage and the saturation current follow it (junction.ts).
+import { complex, complexMatrix } from "../linear/complex"
 import { type Device, type Linearization, RUNAWAY_CONDUCTANCE, settledBetween } from "./device"
 import { NOMINAL_TEMPERATURE, criticalVoltage, limitJunction, saturationCurrentAt, thermalVoltageAt } from "./junction"
 
@@ -114,6 +117,26 @@ export function bipolarDevice(
 				current: currents[COLLECTOR] ?? 0,
 			},
 		],
+		acAdmittance: (_voltages, linearization, omega) => {
+			const [vbe = 0, vbc = 0] = linearization.state
+			const { gForward, gReverse } = diodes(vbe, vbc)
+			const admittance = complexMatrix(linearization.conductance)
+			const between = (first: number, second: number, capacitance: number) => {
+				const susceptance = omega * capacitance
+				const add = (row: number, column: number, sign: number) => {
+					const line = admittance[row]
+					const entry = line?.[column]
+					if (line && entry) line[column] = complex(entry.re, entry.im + sign * susceptance)
+				}
+				add(first, first, 1)
+				add(second, second, 1)
+				add(first, second, -1)
+				add(second, first, -1)
+			}
+			between(BASE, EMITTER, emitterCapacitance + transitTime * gForward)
+			between(BASE, COLLECTOR, collectorCapacitance + reverseTransitTime * gReverse)
+			return admittance
+		},
 		// The charge across each junction for the next step: base–emitter in "voltage", base–collector in "current".
 		remember: (voltages) => {
 			const [vbe = 0, vbc = 0] = junctions(voltages)

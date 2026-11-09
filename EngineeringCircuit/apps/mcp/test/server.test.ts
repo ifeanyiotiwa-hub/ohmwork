@@ -66,6 +66,7 @@ test("offers the build, inspect and file tools", async () => {
 		"create_circuit",
 		"disconnect",
 		"explain_circuit",
+		"frequency_response",
 		"get_circuit",
 		"list_component_types",
 		"list_lessons",
@@ -337,6 +338,44 @@ describe("meters and push buttons", () => {
 		expect((await call("probe", { target: "R1", pressed: ["PB1"] })).data).toMatchObject({ current: 0.005 })
 		const simulated = (await call("simulate", { pressed: ["PB1"] })).data
 		expect(simulated).toMatchObject({ components: expect.arrayContaining([expect.objectContaining({ id: "R1", current: 0.005 })]) })
+	})
+})
+
+describe("frequency response", () => {
+	async function buildLowPass() {
+		await call("add_component", { type: "ac-source", params: { amplitude: 2 } })
+		await call("add_component", { type: "resistor", params: { resistance: 1000 } })
+		await call("add_component", { type: "capacitor", params: { capacitance: 1e-6 } })
+		await call("add_component", { type: "ground" })
+		await call("connect", { from: "AC1.positive", to: "R1.a" })
+		await call("connect", { from: "R1.b", to: "C1.a" })
+		await call("connect", { from: "C1.b", to: "GND1.terminal" })
+		await call("connect", { from: "AC1.negative", to: "GND1.terminal" })
+	}
+
+	test("frequency_response gives gain and phase relative to the AC source (ngspice: -3.0103 dB, -45° at 159.155 Hz)", async () => {
+		await buildLowPass()
+		const { data, isError } = await call("frequency_response", { output: "C1.a", start: 159.155, stop: 1591.55, pointsPerDecade: 1 })
+		expect(isError).toBe(false)
+		expect(data).toMatchObject({
+			input: "AC1",
+			points: [
+				{ frequency: 159.155, gainDb: expect.closeTo(-3.0103, 3), phaseDegrees: expect.closeTo(-45, 2) },
+				{ frequency: expect.closeTo(1591.55, 2), gainDb: expect.closeTo(-20.04, 1) },
+			],
+		})
+		const across = await call("frequency_response", { output: "R1", start: 159.155, stop: 159.155 })
+		expect(across.data).toMatchObject({ points: [{ gainDb: expect.closeTo(-3.0103, 3), phaseDegrees: expect.closeTo(45, 2) }] })
+	})
+
+	test("frequency_response needs an AC source and a real pin, and bounds the points", async () => {
+		await buildVoltageDivider()
+		expect((await call("frequency_response", { output: "R2.a", start: 10, stop: 1000 })).text).toContain("AC source")
+		await call("create_circuit", { name: "low-pass" })
+		await buildLowPass()
+		expect((await call("frequency_response", { output: "C9.a", start: 10, stop: 1000 })).isError).toBe(true)
+		expect((await call("frequency_response", { output: "C1.a", start: 1000, stop: 10 })).isError).toBe(true)
+		expect((await call("frequency_response", { output: "C1.a", start: 1e-3, stop: 1e12, pointsPerDecade: 100 })).text).toContain("points")
 	})
 })
 

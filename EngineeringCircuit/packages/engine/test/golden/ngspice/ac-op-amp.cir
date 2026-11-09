@@ -1,0 +1,18 @@
+* AC: the single-pole op-amp of op-amp-bandwidth.cir (gain 100000, GBW 1.16667 MHz) in a x10 non-inverting amplifier.
+* Results vdb, vp(rad): 1 kHz 1.999881e+01, -8.57036e-03; 116.667 kHz 1.698925e+01, -7.85350e-01; 1 MHz 1.280211, -1.45464
+Vin in 0 AC 1
+E1 int 0 in neg 100000
+Rp int pole 1k
+Cp pole 0 {1/(2*3.14159265358979*1.16666666667e6/100000)/1k}
+E2 out 0 pole 0 1
+Rf out neg 9k
+Rg neg 0 1k
+.control
+ac lin 1 1k 1k
+print vdb(out) vp(out)
+ac lin 1 116.667k 116.667k
+print vdb(out) vp(out)
+ac lin 1 1meg 1meg
+print vdb(out) vp(out)
+.endc
+.end

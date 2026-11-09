@@ -10,3 +10,5 @@ export {
 } from "./transient/step"
 export { wireCurrents } from "./dc/wire-currents"
 export { type AdvanceOptions, type AdvanceResult, advanceTransient, usesFixedSteps } from "./transient/adaptive"
+export { type AcPoint, type AcResult, type AcSweep, gainAndPhase, solveAc, sweepFrequencies } from "./ac/solve-ac"
+export { type Complex, magnitude } from "./linear/complex"

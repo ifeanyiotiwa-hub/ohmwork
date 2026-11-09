@@ -4,6 +4,29 @@
 	height: 180px;
 	border-top: 1px solid var(--border);
 	background: var(--canvas-bg);
+
+	&.frequency {
+		grid-template-rows: auto 1fr 1fr;
+		height: 240px;
+	}
+}
+
+.modes {
+	display: inline-flex;
+
+	button {
+		padding: 0 8px;
+		font-size: 12px;
+	}
+
+	button[aria-pressed="true"] {
+		border-color: var(--accent);
+		background: var(--accent-soft);
+	}
+}
+
+.problem {
+	color: var(--danger);
 }
 
 .legend {
@@ -41,6 +64,10 @@
 	height: 100%;
 }
 
+.plot + .plot {
+	border-top: 1px solid var(--border);
+}
+
 .grid {
 	stroke: var(--grid-dot);
 	stroke-width: 1;
@@ -55,6 +82,11 @@
 
 .trace {
 	fill: none;
+
+	&.phase {
+		stroke-dasharray: 6 3;
+	}
+
 	stroke-width: 2;
 	stroke-linejoin: round;
 	vector-effect: non-scaling-stroke;

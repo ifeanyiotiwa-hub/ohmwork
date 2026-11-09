@@ -9,7 +9,7 @@ with the reason. When an item is done, mark it here and in `HANDOVER.md` "Known 
 | D | Left out | Why |
 |---|---|---|
 | D2 DC engine | Nothing significant (the "part not simulated yet" error has no test because every part is simulated now) | – |
-| D3 Time simulation | Adaptive time step (fixed step only); AC frequency analysis (Bode plots); ~~a fix for ringing when an inductor's switch opens~~ (done, D15a) | Fixed step is what CircuitJS1 does and was accurate to 0.003%; adaptive stepping is a large, separate project. Ringing is a known side-effect of the trapezoidal method (CircuitJS1 has it too) |
+| D3 Time simulation | ~~Adaptive time step~~ (done, D16c); ~~AC frequency analysis (Bode plots)~~ (done, D16d); ~~a fix for ringing when an inductor's switch opens~~ (done, D15a) | Fixed step is what CircuitJS1 does and was accurate to 0.003%; adaptive stepping is a large, separate project. Ringing is a known side-effect of the trapezoidal method (CircuitJS1 has it too) |
 | D4 Diodes / transistors | ~~Burn-out warnings; per-colour LED models~~ (done, D15a; RGB LED D15c); transistor switching delays, Early effect, temperature; a fallback when the solver won't settle (partly done, D15a) | Not in D4's acceptance criteria, and each needs sourced data |
 | D5 Logic | An event-driven engine; gates with more than 2 inputs; tri-state outputs and buses | Stepping logic with the analog solve (one step of delay) is simpler and is what CircuitJS1 does (ADR-018). Wider gates can be built by chaining 2-input ones |
 | D6 App | ~~Joining a wire in its middle; copy/paste and multi-select; label overlap around a sideways battery~~ (all done, D15b) | The junction was in D6's scope and was missed. Several wires on one pin cover most cases, but it is a real gap. Copy/paste was not in the acceptance criteria |
@@ -58,7 +58,7 @@ whatever the app is at that point.
 | Item | How |
 |---|---|
 | ~~Adaptive time step~~ (done, D16c: step doubling; logic circuits stay fixed) | Local truncation error control as in SPICE; keep the fixed step as an option; golden tests must still pass |
-| AC analysis (Bode plot) | Small-signal analysis around the DC point with complex MNA; a frequency-sweep view; golden tests against ngspice `.ac` |
+| ~~AC analysis (Bode plot)~~ (done, D16d: `solveAc`, MCP `frequency_response`, oscilloscope Frequency view) | Small-signal analysis around the DC point with complex MNA; a frequency-sweep view; golden tests against ngspice `.ac` |
 | ~~Transistor dynamics~~ (done, D16b; capacitances held constant, LEDs/β/Zener voltage not temperature-dependent) | Junction capacitances, Early effect and temperature (Gummel–Poon parameters); ngspice goldens |
 | ~~Op-amp limits~~ (done, D16b, with the output current limit) | Slew rate and gain-bandwidth as parameters (CircuitJS1 keeps GBW in its format but does not simulate it) |
 | ~~Wider gates~~ (done, D16a) | 3- and 4-input gate types (new types, so no format break) |

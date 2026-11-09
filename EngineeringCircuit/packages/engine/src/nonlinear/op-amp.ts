@@ -6,6 +6,8 @@
 //            that size (a mode switch between Newton iterations, as CircuitJS1 switches its op-amp's output)
 // Over time the drive follows d(drive)/dt = ωp · (gain · (V+ − V−) − drive), ωp = 2π · gainBandwidth / gain (one pole,
 // the standard first-order op-amp model), stepped with backward Euler, and changes by at most slewRate · Δt per step.
+// In AC analysis the same pole divides the gain: gain / (1 + jω/ωp).
+import { complex, complexMatrix, over } from "../linear/complex"
 import { type Device, type Linearization, settledBetween } from "./device"
 
 export type OpAmpParams = {
@@ -117,6 +119,19 @@ export function opAmpDevice(params: OpAmpParams, groundPin: string, step?: OpAmp
 				current: currents[OUTPUT] ?? 0,
 			},
 		],
+		acAdmittance: (_voltages, linearization, omega) => {
+			const admittance = complexMatrix(linearization.conductance)
+			const pole = (2 * Math.PI * gainBandwidth) / gain
+			const rolloff = over(complex(1), complex(1, omega / pole))
+			const output = admittance[OUTPUT]
+			const ground = admittance[GROUND]
+			for (const input of [NON_INVERTING, INVERTING]) {
+				const outputEntry = linearization.conductance[OUTPUT]?.[input] ?? 0
+				if (output) output[input] = complex(outputEntry * rolloff.re, outputEntry * rolloff.im)
+				if (ground) ground[input] = complex(-outputEntry * rolloff.re, -outputEntry * rolloff.im)
+			}
+			return admittance
+		},
 		// Where its internal drive had got to, for the next step.
 		remember: (voltages) => [{ name: "drive", voltage: driveOf(difference(voltages)).drive, current: 0 }],
 	}

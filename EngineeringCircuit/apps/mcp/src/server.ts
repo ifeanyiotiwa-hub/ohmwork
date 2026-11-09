@@ -1,13 +1,24 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
 import { isAbsolute, relative, resolve, sep } from "node:path"
 import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
-import { advanceTransient, initialTransientState, solveDc, usesFixedSteps } from "@engineering-circuit/engine"
+import {
+	type Complex,
+	advanceTransient,
+	gainAndPhase,
+	initialTransientState,
+	solveAc,
+	solveDc,
+	sweepFrequencies,
+	usesFixedSteps,
+} from "@engineering-circuit/engine"
 import {
 	COMPONENT_DEFINITIONS,
 	type ComponentType,
 	type PinRef,
 	createCircuit,
 	parseCircuitJson,
+	pinKey,
+	pinsOf,
 	rotationSchema,
 	serializeCircuit,
 } from "@engineering-circuit/format"
@@ -39,6 +50,7 @@ Meters are ideal: a voltmeter goes across a part, an ammeter in series (across a
 Push buttons are released unless you list them in simulate/probe "pressed"; in the app the learner holds them with the mouse.
 Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style.
 Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
+Filters and amplifiers: frequency_response sweeps an ac-source's frequency and gives gain (dB) and phase at a pin or across a part.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
 
 const COMPONENT_TYPES = COMPONENT_DEFINITIONS.map((definition) => definition.type) as [ComponentType, ...ComponentType[]]
@@ -70,6 +82,9 @@ const pressedSchema = z
 	.describe("Push buttons to hold down for this reading, e.g. [\"PB1\"]; all others are released")
 const DEFAULT_SAMPLES = 20
 const MAX_SAMPLES = 200
+const DEFAULT_POINTS_PER_DECADE = 10
+const MAX_POINTS_PER_DECADE = 100
+const MAX_RESPONSE_POINTS = 1000
 const inputsOf = (pressed: readonly string[] | undefined) => ({ pressed: new Set(pressed) })
 
 export type ServerContext = {
@@ -302,6 +317,68 @@ export function createServer(
 				return failure(`That needed more than ${options.maxTransientSteps} steps. Use a shorter duration or a larger time step (set_simulation).`)
 			}
 			return text({ timeStep, stepping: fixed ? "fixed" : "adaptive", steps: result.steps, samples: recorded })
+		},
+	)
+
+	server.registerTool(
+		"frequency_response",
+		{
+			description:
+				'Small-signal frequency response (as SPICE .ac): the circuit at its DC operating point, driven by its AC sources at each frequency of a log sweep. Gives gain (dB) and phase (degrees) of the output relative to the input AC source. output is a pin ("R1.b", from ground) or a two-pin part ("C1", across it). Every AC source drives at once; name the input when there are several.',
+			inputSchema: z.object({
+				output: z.string().min(1),
+				start: z.number().positive().describe("hertz"),
+				stop: z.number().positive().describe("hertz, at least start"),
+				pointsPerDecade: z
+					.number()
+					.int()
+					.min(1)
+					.max(MAX_POINTS_PER_DECADE)
+					.optional()
+					.describe(`default ${DEFAULT_POINTS_PER_DECADE}`),
+				input: z.string().min(1).optional().describe("The AC source the gain is relative to"),
+			}),
+			annotations: READ_ONLY,
+		},
+		({ output, start, stop, pointsPerDecade = DEFAULT_POINTS_PER_DECADE, input }) => {
+			const circuit = document.circuit
+			if (stop < start) return failure("stop must be at least start.")
+			const sources = circuit.components.filter((component) => component.type === "ac-source")
+			if (sources.length === 0) return failure("A frequency response needs an AC source as its input; add an ac-source.")
+			const source = input === undefined && sources.length === 1 ? sources[0] : sources.find((candidate) => candidate.id === input)
+			if (source?.type !== "ac-source") {
+				return failure(`Name the input AC source (one of ${sources.map((candidate) => candidate.id).join(", ")}).`)
+			}
+			const found = findProbeTarget(circuit, output)
+			if ("error" in found) return failure(found.error)
+			if (found.kind === "ports") return failure(`Give one pin of "${output}" (as "${output}.<pin>"); it has more than two.`)
+			const frequencies = sweepFrequencies({ start, stop, pointsPerDecade })
+			if (frequencies.length > MAX_RESPONSE_POINTS) {
+				return failure(`That is ${frequencies.length} points; the limit is ${MAX_RESPONSE_POINTS}. Narrow the range or use fewer points per decade.`)
+			}
+			const result = solveAc(circuit, { frequencies })
+			if (!result.ok) return failure(result.errors)
+
+			const phase = (source.params.phase * Math.PI) / 180
+			const inputPhasor: Complex = { re: source.params.amplitude * Math.cos(phase), im: source.params.amplitude * Math.sin(phase) }
+			// A pin from ground, or across a two-pin part from its first pin to its second.
+			const keys =
+				found.kind === "pin"
+					? [pinKey(found.pin)]
+					: pinsOf(circuit.components.find((part) => part.id === found.componentId)?.type ?? "ground").map((pin) =>
+							pinKey({ componentId: found.componentId, pin }),
+						)
+			const zero: Complex = { re: 0, im: 0 }
+			const points = result.points.map((point) => {
+				const [high = zero, low = zero] = keys.map((key) => point.pinVoltages[key] ?? zero)
+				const response = gainAndPhase({ re: high.re - low.re, im: high.im - low.im }, inputPhasor)
+				return {
+					frequency: Number(point.frequency.toPrecision(6)),
+					gainDb: Number(response.decibels.toFixed(3)),
+					phaseDegrees: Number(((response.phase * 180) / Math.PI).toFixed(2)),
+				}
+			})
+			return text({ input: source.id, output, points })
 		},
 	)
 

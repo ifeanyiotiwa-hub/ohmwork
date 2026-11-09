@@ -350,6 +350,49 @@ test("a 555 astable shows a square wave on the oscilloscope", async ({ page }) =
 		.toBeGreaterThan(1)
 })
 
+test("with an AC source the oscilloscope also shows the frequency response: an RC low-pass falls away", async ({ page }) => {
+	await page.getByRole("button", { name: "New" }).click()
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["ac-source", 120, 280],
+		["resistor", 300, 160],
+		["capacitor", 460, 280],
+		["ground", 300, 440],
+		["scope-probe", 640, 280],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["AC1:positive", "R1:a"],
+		["R1:b", "C1:a"],
+		["C1:b", "GND1:terminal"],
+		["AC1:negative", "GND1:terminal"],
+		["C1:a", "P1:positive"],
+		["P1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	const scope = page.locator("[data-scope]")
+	await scope.getByRole("button", { name: "Frequency" }).click()
+	await expect(scope.getByRole("button", { name: "Frequency" })).toHaveAttribute("aria-pressed", "true")
+	await expect(scope.locator('[data-trace="P1"]')).toContainText("0.0 dB")
+	await expect(scope).toContainText("relative to AC1")
+	// 1 kΩ and 1 µF: flat at 1 Hz, far down by 1 MHz (lower on screen is less gain).
+	const gain = (await scope.locator("[data-gain] polyline").getAttribute("points")) ?? ""
+	const heights = gain.split(" ").map((pair) => Number(pair.split(",")[1]))
+	expect(heights.at(-1) ?? 0).toBeGreaterThan((heights[0] ?? 0) + 100)
+	await expect(scope.locator("[data-phase] polyline")).toHaveCount(1)
+	// The whole panel is on screen (the canvas gives up the room), not pushed below the window.
+	const box = await scope.boundingBox()
+	expect((box?.y ?? Infinity) + (box?.height ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.height ?? 0)
+
+	await scope.getByRole("button", { name: "Time" }).click()
+	await expect(scope.locator("[data-gain]")).toHaveCount(0)
+})
+
 test("a BCD decoder drives a 7-segment display: input 1 lights segments b and c", async ({ page }) => {
 	await page.getByRole("button", { name: "New" }).click()
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })

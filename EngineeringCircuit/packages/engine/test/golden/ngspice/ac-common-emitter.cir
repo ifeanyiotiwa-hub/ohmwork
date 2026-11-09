@@ -1,0 +1,25 @@
+* AC: common-emitter amplifier on our NPN (IS 1e-13, BF 100, BR 1) with the 2N3904 model's VAF and charge (CJE, CJC
+* held constant, MJE = MJC = 0; TF, TR). 12 V, divider 47k/10k, RC 4.7k, RE 1k bypassed by 100 uF, 10 uF in and out,
+* 100k load.
+* Results vdb, vp(rad): 10 Hz 2.785399e+01, -1.63055; 1 kHz 4.746559e+01, -3.04650; 10 MHz 4.424859e+01, 2.324221
+.model QA NPN(IS=1e-13 BF=100 BR=1 VAF=1000 CJE=4.64214p MJE=0 CJC=3.76961p MJC=0 TF=0.419578n TR=68.2023n)
+Vcc vcc 0 12
+Vin in 0 AC 1
+Cin in b 10u
+R1 vcc b 47k
+R2 b 0 10k
+Q1 c b e QA
+Rc vcc c 4.7k
+Re e 0 1k
+Ce e 0 100u
+Cout c out 10u
+Rl out 0 100k
+.control
+ac lin 1 10 10
+print vdb(out) vp(out)
+ac lin 1 1k 1k
+print vdb(out) vp(out)
+ac lin 1 10meg 10meg
+print vdb(out) vp(out)
+.endc
+.end

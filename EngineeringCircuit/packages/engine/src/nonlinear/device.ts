@@ -1,3 +1,4 @@
+import type { Complex } from "../linear/complex"
 /**
  * A non-linear part, linearized afresh in each Newton–Raphson iteration. Around the present guess its terminal
  * currents are approximated as I = G·V + offset (V: terminal voltages; I: current into each terminal).
@@ -34,6 +35,11 @@ export type Device = {
 	 * kept between steps, never shown as a reading. Two numbers per entry, in the reading's fields.
 	 */
 	remember?(voltages: readonly number[], currents: readonly number[]): PortReading[]
+	/**
+	 * Small-signal admittance at angular frequency ω (AC analysis): the conductance at the operating point plus what
+	 * depends on frequency (stored charge, an op-amp's pole). Absent: just the conductance.
+	 */
+	acAdmittance?(voltages: readonly number[], linearization: Linearization, omega: number): Complex[][]
 }
 
 /** Junction voltages settle when they move less than this between iterations. */

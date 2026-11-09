@@ -1,21 +1,63 @@
-<section class="scope" aria-label="Oscilloscope" data-scope>
+<section class="scope" [class.frequency]="mode() === 'frequency'" aria-label="Oscilloscope" data-scope>
 	<div class="legend">
-		@for (trace of plot().traces; track trace.id) {
-			<span class="channel" [style.--trace]="trace.colour" [attr.data-trace]="trace.id">
-				<span class="swatch"></span>{{ trace.id }} <strong>{{ trace.latestText }}</strong>
+		@if (acInput()) {
+			<span class="modes" role="group" aria-label="Show">
+				<button type="button" [attr.aria-pressed]="mode() === 'time'" (click)="show('time')">Time</button>
+				<button type="button" [attr.aria-pressed]="mode() === 'frequency'" (click)="show('frequency')">Frequency</button>
 			</span>
 		}
-		<span class="scale">{{ plot().division }}/div · {{ plot().bottom }} to {{ plot().top }}</span>
+		@if (bode(); as response) {
+			@if ("error" in response) {
+				<span class="problem" role="status">{{ response.error }}</span>
+			} @else {
+				@for (trace of response.traces; track trace.id) {
+					<span class="channel" [style.--trace]="trace.colour" [attr.data-trace]="trace.id">
+						<span class="swatch"></span>{{ trace.id }} <span>peak</span> <strong>{{ trace.peakText }}</strong>
+					</span>
+				}
+				<span class="scale">relative to {{ response.input }} · {{ response.range }} · gain {{ response.gain }} · phase ±180°</span>
+			}
+		} @else {
+			@for (trace of plot().traces; track trace.id) {
+				<span class="channel" [style.--trace]="trace.colour" [attr.data-trace]="trace.id">
+					<span class="swatch"></span>{{ trace.id }} <strong>{{ trace.latestText }}</strong>
+				</span>
+			}
+			<span class="scale">{{ plot().division }}/div · {{ plot().bottom }} to {{ plot().top }}</span>
+		}
 	</div>
-	<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true">
-		@for (x of gridLines; track x) {
-			<line class="grid" [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="box.height" />
+	@if (bode(); as response) {
+		@if (!("error" in response)) {
+			<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true" data-gain>
+				@for (decade of response.decades; track decade.frequency) {
+					<line class="grid" [attr.x1]="decade.x" y1="0" [attr.x2]="decade.x" [attr.y2]="box.height" />
+				}
+				<line class="zero" x1="0" [attr.y1]="response.zeroGainY" [attr.x2]="box.width" [attr.y2]="response.zeroGainY" />
+				@for (trace of response.traces; track trace.id) {
+					<polyline class="trace" [attr.points]="trace.gain" [style.stroke]="trace.colour" />
+				}
+			</svg>
+			<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true" data-phase>
+				@for (decade of response.decades; track decade.frequency) {
+					<line class="grid" [attr.x1]="decade.x" y1="0" [attr.x2]="decade.x" [attr.y2]="box.height" />
+				}
+				<line class="zero" x1="0" [attr.y1]="box.height / 2" [attr.x2]="box.width" [attr.y2]="box.height / 2" />
+				@for (trace of response.traces; track trace.id) {
+					<polyline class="trace phase" [attr.points]="trace.phase" [style.stroke]="trace.colour" />
+				}
+			</svg>
 		}
-		@if (plot().zeroY; as zero) {
-			<line class="zero" x1="0" [attr.y1]="zero" [attr.x2]="box.width" [attr.y2]="zero" />
-		}
-		@for (trace of plot().traces; track trace.id) {
-			<polyline class="trace" [attr.points]="trace.points" [style.stroke]="trace.colour" />
-		}
-	</svg>
+	} @else {
+		<svg class="plot" [attr.viewBox]="'0 0 ' + box.width + ' ' + box.height" preserveAspectRatio="none" aria-hidden="true">
+			@for (x of gridLines; track x) {
+				<line class="grid" [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="box.height" />
+			}
+			@if (plot().zeroY; as zero) {
+				<line class="zero" x1="0" [attr.y1]="zero" [attr.x2]="box.width" [attr.y2]="zero" />
+			}
+			@for (trace of plot().traces; track trace.id) {
+				<polyline class="trace" [attr.points]="trace.points" [style.stroke]="trace.colour" />
+			}
+		</svg>
+	}
 </section>

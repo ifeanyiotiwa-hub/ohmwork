@@ -38,12 +38,15 @@ app-part-palette {
 .workspace {
 	display: grid;
 	grid-template-columns: 1fr 280px;
+	/* One row the height of the space left, so the stage fits it instead of growing to its content. */
+	grid-template-rows: minmax(0, 1fr);
 	min-height: 0;
 }
 
 .stage {
 	display: grid;
-	grid-template-rows: 1fr auto;
+	/* The canvas takes what the oscilloscope leaves. */
+	grid-template-rows: minmax(0, 1fr) auto;
 	min-width: 0;
 	min-height: 0;
 }
