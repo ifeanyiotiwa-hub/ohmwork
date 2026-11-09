@@ -37,7 +37,7 @@ import {
 	simulationReport,
 } from "./reports"
 
-const INSTRUCTIONS = `EngineeringCircuit: build, simulate and explain electronic circuits with a learner.
+const INSTRUCTIONS = `Sparkbench: build, simulate and explain electronic circuits with a learner.
 Workflow: list_component_types → create_circuit → add_component → connect → simulate / probe → explain_circuit.
 Pins are written "<componentId>.<pin>", e.g. "R1.a". Every circuit needs a ground part for 0 V.
 Explain from the tool results (real simulated values and warnings), in plain language suited to a beginner.
@@ -548,7 +548,7 @@ export function createServer(
 						role: "user" as const,
 						content: {
 							type: "text" as const,
-							text: `Tutor me through the lesson ${title} in EngineeringCircuit.
+							text: `Tutor me through the lesson ${title} in Sparkbench.
 - Call load_lesson, explain the goal in plain words, and offer open_in_app so I can build it myself while you watch.
 - Let me build. Don't build it for me unless I ask; then build one step and explain it.
 - Give one hint at a time, only when I'm stuck, and ask a question that leads me to the next idea.

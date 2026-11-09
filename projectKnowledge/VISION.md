@@ -1,6 +1,6 @@
 # Vision
 
-**EngineeringCircuit** is a free, open-source circuit simulator for studying, understanding, and creatively building circuits. It runs on web, Windows, macOS, Linux, and mobile, and has an MCP server so an AI agent can build circuits live, explain them, and tutor the learner.
+**Sparkbench** is a free, open-source circuit simulator for studying, understanding, and creatively building circuits. It runs on web, Windows, macOS, Linux, and mobile, and has an MCP server so an AI agent can build circuits live, explain them, and tutor the learner.
 
 Inspired by the *idea* of EveryCircuit. Clean-room: no decompiled code, assets, names, or look (see DECISIONS ADR-001).
 

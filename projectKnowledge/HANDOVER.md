@@ -85,6 +85,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-09 | Claude (Opus) | Bundle 809 → 486 kB (zod namespace import, budgets tightened; ADR-038); renamed to Sparkbench everywhere people read it, code identifiers left for D18 (ADR-039). 589 core + 151 web + 80 e2e + 2 production-build | D17 |
 | 2026-11-09 | Claude (Opus) | D16f: redo (app, live link, agent), groups take notes and turn with R, inline library delete confirm, Reconnect and offline-changes offer, keyboard wiring (P on a part) and palette arrows, slider name, manifest id and maskable icons; ADR-037. D16 done. 589 core + 151 web + 80 e2e (1 opt-in skip) + 2 production-build | D17 |
 | 2026-11-09 | Claude (Opus) | D16e parts 2–3: tri-state buffer (SN74HC125; shared bus lines, contention burns out); oscilloscope trigger, own scales, X-Y, watch a part without a probe; ADR-035, ADR-036. 588 core + 141 web + 75 e2e (1 opt-in skip) + 2 production-build | D16f |
 | 2026-11-09 | Claude (Opus) | D16e part 1: DC motor (FAULHABER 2224U012SR, vs ngspice analogue: DC, spin-up, AC), speed reading in rpm, rotor turning at simulated speed; ADR-034. 580 core + 135 web + 73 e2e (1 opt-in skip) | D16e: tri-state, scope |

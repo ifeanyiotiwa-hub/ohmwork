@@ -64,6 +64,6 @@ jobs:
           projectPath: EngineeringCircuit/apps/desktop
           tauriScript: pnpm tauri
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: Engineering Circuit ${{ github.ref_name }}
+          releaseName: Sparkbench ${{ github.ref_name }}
           releaseDraft: true
           args: ${{ matrix.args }}

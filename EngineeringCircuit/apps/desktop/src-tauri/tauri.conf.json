@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Engineering Circuit",
+  "productName": "Sparkbench",
   "mainBinaryName": "engineering-circuit",
   "version": "0.1.0",
   "identifier": "dev.engineeringcircuit.app",
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "Engineering Circuit",
+        "title": "Sparkbench",
         "width": 1280,
         "height": 800,
         "minWidth": 800,

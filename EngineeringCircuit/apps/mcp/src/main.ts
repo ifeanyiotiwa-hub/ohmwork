@@ -12,9 +12,9 @@ let live: LiveServer | undefined
 try {
 	live = await LiveServer.start(document, { ...options.live, maxMessageBytes: options.maxFileBytes })
 	// stdout carries the MCP protocol, so diagnostics go to stderr.
-	console.error(`EngineeringCircuit live link listening on ${live.address}`)
+	console.error(`Sparkbench live link listening on ${live.address}`)
 } catch (error) {
-	console.error(`EngineeringCircuit live link is off: ${error instanceof Error ? error.message : String(error)}`)
+	console.error(`Sparkbench live link is off: ${error instanceof Error ? error.message : String(error)}`)
 }
 
 await createServer(options, live ? { document, live } : { document }).connect(new StdioServerTransport())

@@ -1,7 +1,7 @@
 {
 	"id": "engineering-circuit",
-	"name": "Engineering Circuit",
-	"short_name": "Circuit",
+	"name": "Sparkbench",
+	"short_name": "Sparkbench",
 	"description": "Build, simulate and learn electronic circuits, with an AI study partner.",
 	"display": "standalone",
 	"scope": "./",

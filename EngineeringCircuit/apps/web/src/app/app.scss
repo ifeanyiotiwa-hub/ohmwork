@@ -15,14 +15,24 @@
 }
 
 .brand {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 	margin: 0;
 	font-size: 15px;
 	font-weight: 700;
 	white-space: nowrap;
 
-	span {
+	.accent {
 		color: var(--accent);
 	}
+}
+
+/* The app icon at the size of the name, so the toolbar and the installed app look the same. */
+.logo {
+	width: 22px;
+	height: 22px;
+	border-radius: 5px;
 }
 
 app-part-palette {

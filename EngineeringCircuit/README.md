@@ -1,4 +1,4 @@
-# EngineeringCircuit
+# Sparkbench
 
 Free, open-source circuit simulator for learning and creative building: web, desktop, and mobile, with an MCP server for AI agents.
 
