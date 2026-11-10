@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-	engineering_circuit_lib::run();
+	ohmwork_lib::run();
 }

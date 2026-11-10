@@ -1,4 +1,4 @@
-package dev.engineeringcircuit.app
+package dev.ohmwork.app
 
 import android.graphics.Color
 import android.os.Bundle

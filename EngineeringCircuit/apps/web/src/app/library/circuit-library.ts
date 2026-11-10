@@ -6,6 +6,7 @@ import type { FileResult } from "./circuit-files"
 export type LibraryEntry = { id: string; name: string; savedAt: number }
 type StoredCircuit = LibraryEntry & { json: string }
 
+/** The browser database's name. Kept from before the app was named OhmWork: changing it would hide every saved circuit (ADR-046). */
 const DATABASE = "engineering-circuit"
 const VERSION = 1
 const CIRCUITS = "circuits"

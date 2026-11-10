@@ -6,7 +6,7 @@ test("the install manifest has a stable id, and every icon it lists loads, with 
 	const response = await request.get("/manifest.webmanifest")
 	expect(response.ok()).toBe(true)
 	const manifest: { id?: string; icons: ManifestIcon[] } = await response.json()
-	expect(manifest.id).toBe("engineering-circuit")
+	expect(manifest.id).toBe("ohmwork")
 	for (const icon of manifest.icons) {
 		const image = await request.get(`/${icon.src}`)
 		expect(image.ok(), icon.src).toBe(true)

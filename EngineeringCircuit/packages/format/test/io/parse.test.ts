@@ -166,7 +166,7 @@ describe("simulation settings", () => {
 describe("header", () => {
 	test("rejects a file from another app", () => {
 		expect(errorsOf({ format: "something-else", version: 1 })).toEqual([
-			{ path: "format", message: "Not an engineering-circuit file" },
+			{ path: "format", message: "Not an OhmWork circuit file" },
 		])
 	})
 

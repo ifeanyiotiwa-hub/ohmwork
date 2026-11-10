@@ -1,5 +1,5 @@
 [package]
-name = "engineering-circuit"
+name = "ohmwork"
 version = "0.1.0"
 description = "OhmWork: build, simulate and learn electronic circuits"
 license = "GPL-2.0-or-later"
@@ -7,7 +7,7 @@ edition = "2024"
 rust-version = "1.90"
 
 [lib]
-name = "engineering_circuit_lib"
+name = "ohmwork_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

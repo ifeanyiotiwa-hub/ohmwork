@@ -1,9 +1,9 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "OhmWork",
-  "mainBinaryName": "engineering-circuit",
+  "mainBinaryName": "ohmwork",
   "version": "0.1.0",
-  "identifier": "dev.engineeringcircuit.app",
+  "identifier": "dev.ohmwork.app",
   "build": {
     "frontendDist": "../../web/dist/web/browser",
     "devUrl": "http://localhost:4200",

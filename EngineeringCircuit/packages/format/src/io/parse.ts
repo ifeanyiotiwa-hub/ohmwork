@@ -21,7 +21,7 @@ export const serializeCircuit = (circuit: Circuit): string => JSON.stringify(cir
 
 export function parseCircuit(input: unknown): ParseResult {
 	if (!isObject(input) || input.format !== FORMAT_ID) {
-		return failure("format", `Not an ${FORMAT_ID} file`)
+		return failure("format", "Not an OhmWork circuit file")
 	}
 
 	const version = input.version

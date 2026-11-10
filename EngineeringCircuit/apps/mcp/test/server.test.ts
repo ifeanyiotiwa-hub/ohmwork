@@ -236,7 +236,7 @@ describe("files", () => {
 	let directory: string
 
 	beforeEach(async () => {
-		directory = await mkdtemp(join(tmpdir(), "engineering-circuit-"))
+		directory = await mkdtemp(join(tmpdir(), "ohmwork-"))
 		await client.close()
 		await start({ document }, { workspaceDirectory: directory })
 	})

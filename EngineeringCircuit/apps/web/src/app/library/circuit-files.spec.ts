@@ -19,5 +19,5 @@ test("a file that is too big, or not a circuit, is explained rather than opened"
 	const other = new File(['{"hello": 1}'], "other.json")
 	const result = await readCircuitFile(other, 1000)
 	expect(result.ok).toBe(false)
-	expect(result.ok ? "" : result.message).toContain("Not an engineering-circuit file")
+	expect(result.ok ? "" : result.message).toContain("Not an OhmWork circuit file")
 })
