@@ -1,4 +1,4 @@
-import { COMPONENT_DEFINITIONS } from "@engineering-circuit/format"
+import { COMPONENT_DEFINITIONS } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { isDcSimulated } from "../../src/dc/branches"
 

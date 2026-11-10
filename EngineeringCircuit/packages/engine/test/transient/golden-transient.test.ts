@@ -1,5 +1,5 @@
 // Reference values: ngspice 47, netlists in test/golden/ngspice/ (rc-charging, rl-rise, rlc-ringing, rc-lowpass-ac).
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import type { DcSolution } from "../../src/dc/solve-dc"
 import { initialTransientState, stepTransient } from "../../src/transient/step"

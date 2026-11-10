@@ -1,4 +1,4 @@
-import { type Circuit, pinKey } from "@engineering-circuit/format"
+import { type Circuit, pinKey } from "@ohmwork/format"
 import type { LogicMemory } from "./logic"
 import { sequentialOf } from "./sequential"
 

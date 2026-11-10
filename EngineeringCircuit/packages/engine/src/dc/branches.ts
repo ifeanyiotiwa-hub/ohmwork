@@ -1,4 +1,4 @@
-import { type Component, type ComponentType, RGB_COLOURS, SEGMENT_PINS } from "@engineering-circuit/format"
+import { type Component, type ComponentType, RGB_COLOURS, SEGMENT_PINS } from "@ohmwork/format"
 import type { LogicMemories } from "../digital/advance"
 import { LOGIC_PARTS, type LogicPart, initialMemory } from "../digital/logic"
 import { bipolarDevice } from "../nonlinear/bipolar"

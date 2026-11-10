@@ -1,5 +1,5 @@
 {
-	"name": "@engineering-circuit/engine",
+	"name": "@ohmwork/engine",
 	"version": "0.1.0",
 	"private": true,
 	"license": "GPL-2.0-or-later",
@@ -8,6 +8,6 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@engineering-circuit/format": "workspace:*"
+		"@ohmwork/format": "workspace:*"
 	}
 }

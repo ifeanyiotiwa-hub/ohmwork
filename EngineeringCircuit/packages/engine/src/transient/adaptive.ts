@@ -3,7 +3,7 @@
 // second-order method's error is about a third of it). A step whose error is within SPICE's usual tolerances is kept
 // (the two half steps, the more accurate answer) and the next step grows; otherwise it is taken again, smaller.
 // Steps never cross a square wave's edge (a breakpoint, as in SPICE), and never exceed the circuit's time step.
-import { type Circuit, type ComponentType, expandSubcircuits } from "@engineering-circuit/format"
+import { type Circuit, type ComponentType, expandSubcircuits } from "@ohmwork/format"
 import type { DcInputs, StoredState } from "../dc/branches"
 import type { SimIssue } from "../dc/issues"
 import type { DcSolution } from "../dc/solve-dc"

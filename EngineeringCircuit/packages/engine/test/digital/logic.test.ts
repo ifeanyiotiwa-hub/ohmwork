@@ -1,4 +1,4 @@
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { describe, expect, test } from "vitest"
 import { solveDc } from "../../src/dc/solve-dc"
 import { type TransientState, initialTransientState, stepTransient } from "../../src/transient/step"

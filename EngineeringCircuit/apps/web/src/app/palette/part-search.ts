@@ -1,5 +1,5 @@
-import { isDcSimulated } from "@engineering-circuit/engine"
-import { COMPONENT_CATEGORIES, type ComponentType, paramFieldsOf, pinsOf } from "@engineering-circuit/format"
+import { isDcSimulated } from "@ohmwork/engine"
+import { COMPONENT_CATEGORIES, type ComponentType, paramFieldsOf, pinsOf } from "@ohmwork/format"
 import { PART_NAMES } from "../circuit/symbols"
 
 export type ListedPart = {

@@ -1,6 +1,6 @@
 import { Component, type ElementRef, inject, viewChild } from "@angular/core"
-import { createCircuit } from "@engineering-circuit/format"
-import { LESSONS, type Lesson } from "@engineering-circuit/lessons"
+import { createCircuit } from "@ohmwork/format"
+import { LESSONS, type Lesson } from "@ohmwork/lessons"
 import { CircuitStore } from "../circuit/circuit-store"
 
 /** Picks a starter lesson; starting one opens a fresh circuit for it (undo brings the old one back). */

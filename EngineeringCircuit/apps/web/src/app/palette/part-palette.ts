@@ -1,6 +1,6 @@
 import { Component, ElementRef, Injector, afterNextRender, computed, inject, input, output, signal } from "@angular/core"
-import { isDcSimulated } from "@engineering-circuit/engine"
-import { COMPONENT_CATEGORIES, type ComponentType, PIN_OFFSETS } from "@engineering-circuit/format"
+import { isDcSimulated } from "@ohmwork/engine"
+import { COMPONENT_CATEGORIES, type ComponentType, PIN_OFFSETS } from "@ohmwork/format"
 import { type Placing, samePlacing } from "../circuit/circuit-store"
 import { PART_NAMES, SYMBOLS, type SymbolShape, chipSymbol } from "../circuit/symbols"
 

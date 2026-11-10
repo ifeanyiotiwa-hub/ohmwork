@@ -1,4 +1,4 @@
-import type { Circuit, Net, PinRef } from "@engineering-circuit/format"
+import type { Circuit, Net, PinRef } from "@ohmwork/format"
 import { DisjointSets } from "../graph/disjoint-sets"
 import type { Linearization } from "../nonlinear/device"
 import { type Branch, CURRENT_KINDS, VOLTAGE_KINDS } from "./branches"

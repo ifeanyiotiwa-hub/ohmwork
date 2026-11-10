@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal } from "@angular/core"
-import { CircuitDocument, type EditCommand, type LiveState, applyCommand, nextComponentId } from "@engineering-circuit/editing"
+import { CircuitDocument, type EditCommand, type LiveState, applyCommand, nextComponentId } from "@ohmwork/editing"
 import {
 	type DcResult,
 	type SimIssue,
@@ -8,8 +8,8 @@ import {
 	solveDc,
 	stepTransient,
 	wireCurrents,
-} from "@engineering-circuit/engine"
-import { type Circuit, type Component, type ComponentType, type Note, type PinRef, type Point, createCircuit, pinsOfPart } from "@engineering-circuit/format"
+} from "@ohmwork/engine"
+import { type Circuit, type Component, type ComponentType, type Note, type PinRef, type Point, createCircuit, pinsOfPart } from "@ohmwork/format"
 import { LiveLink } from "../live/live-link"
 import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"

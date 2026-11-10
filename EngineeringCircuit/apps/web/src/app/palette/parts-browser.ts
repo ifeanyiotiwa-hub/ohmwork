@@ -1,5 +1,5 @@
 import { DOCUMENT, Component, type ElementRef, computed, inject, output, signal, viewChild } from "@angular/core"
-import type { ComponentType } from "@engineering-circuit/format"
+import type { ComponentType } from "@ohmwork/format"
 import { type ListedPart, partRequestPrompt, searchParts } from "./part-search"
 
 /**

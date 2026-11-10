@@ -1,4 +1,4 @@
-import { createCircuit } from "@engineering-circuit/format"
+import { createCircuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { clientMessageSchema, liveSocketUrl, parseServerMessage } from "../src/live-protocol"
 

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from "@angular/core"
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { UI_CONFIG } from "../circuit/ui-config"
 import type { FromWorker, ScopeSample, ToWorker } from "./simulation-protocol"
 

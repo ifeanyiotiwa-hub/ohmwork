@@ -1,5 +1,5 @@
 import { TestBed } from "@angular/core/testing"
-import { createCircuit } from "@engineering-circuit/format"
+import { createCircuit } from "@ohmwork/format"
 import { beforeEach, expect, test } from "vitest"
 import { CircuitStore } from "../circuit/circuit-store"
 import { LessonProgress } from "./lesson-progress"

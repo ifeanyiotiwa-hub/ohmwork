@@ -1,4 +1,4 @@
-import { CHIP_HALF_WIDTH, type ComponentType, LAYOUT_GRID, type Point, chipPinOffsets } from "@engineering-circuit/format"
+import { CHIP_HALF_WIDTH, type ComponentType, LAYOUT_GRID, type Point, chipPinOffsets } from "@ohmwork/format"
 import type { Box } from "./routing"
 
 /** How a part is drawn. Its pin positions come from the format package (`PIN_OFFSETS`). */

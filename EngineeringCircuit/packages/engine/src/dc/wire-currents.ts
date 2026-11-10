@@ -1,4 +1,4 @@
-import { type Circuit, type Net, buildNets, expandSubcircuits, namedPins, pinKey, pinsOf } from "@engineering-circuit/format"
+import { type Circuit, type Net, buildNets, expandSubcircuits, namedPins, pinKey, pinsOf } from "@ohmwork/format"
 import type { DcSolution } from "./solve-dc"
 
 /** `wireId` undefined: the unseen link between two pins joined by name, which carries current but is no wire. */

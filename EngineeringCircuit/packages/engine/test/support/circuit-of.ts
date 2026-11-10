@@ -1,4 +1,4 @@
-import { type Circuit, type Component, createCircuit, definitionOf, parseCircuit } from "@engineering-circuit/format"
+import { type Circuit, type Component, createCircuit, definitionOf, parseCircuit } from "@ohmwork/format"
 import { expect } from "vitest"
 
 /** A part without layout; params a test doesn't care about (ratings, say) come from the catalog defaults. */

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { type DcSolution, solveDc } from "../../src/dc/solve-dc"
 import { circuitOf, expectClose } from "../support/circuit-of"
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 
 const solved = (circuit: Circuit): DcSolution => {
 	const result = solveDc(circuit)

@@ -1,4 +1,4 @@
-import { type Circuit, parseCircuitJson, serializeCircuit } from "@engineering-circuit/format"
+import { type Circuit, parseCircuitJson, serializeCircuit } from "@ohmwork/format"
 
 export type FileResult = { ok: true; circuit: Circuit } | { ok: false; message: string }
 

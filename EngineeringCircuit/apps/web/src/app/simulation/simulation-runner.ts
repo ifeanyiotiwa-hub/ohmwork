@@ -1,5 +1,5 @@
-import { type DcResult, type TransientState, advanceTransient, initialTransientState } from "@engineering-circuit/engine"
-import type { Circuit } from "@engineering-circuit/format"
+import { type DcResult, type TransientState, advanceTransient, initialTransientState } from "@ohmwork/engine"
+import type { Circuit } from "@ohmwork/format"
 import { type FromWorker, MAX_SAMPLES_PER_FRAME, type ScopeSample, type ToWorker } from "./simulation-protocol"
 
 /** The simulation worker's logic, kept free of worker APIs so it can be tested directly. */

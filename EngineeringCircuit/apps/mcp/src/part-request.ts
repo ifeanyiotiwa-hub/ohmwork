@@ -1,6 +1,6 @@
 // "Request a part": the agent drafts a new part from sources, as structured data; this checks it against the catalog
 // and turns it into what a reviewer needs (the COMPONENTS.md row and the catalog entry as code), so no code is free text.
-import { COMPONENT_CATEGORIES, COMPONENT_DEFINITIONS, UNIT_WORDS, isComponentType } from "@engineering-circuit/format"
+import { COMPONENT_CATEGORIES, COMPONENT_DEFINITIONS, UNIT_WORDS, isComponentType } from "@ohmwork/format"
 import * as z from "zod"
 
 const PARAM_KINDS = ["positive", "number", "boolean", "text", "choice"] as const

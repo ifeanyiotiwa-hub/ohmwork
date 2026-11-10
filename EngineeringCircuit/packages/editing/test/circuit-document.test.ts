@@ -1,4 +1,4 @@
-import { createCircuit } from "@engineering-circuit/format"
+import { createCircuit } from "@ohmwork/format"
 import { describe, expect, test } from "vitest"
 import { CircuitDocument } from "../src/circuit-document"
 

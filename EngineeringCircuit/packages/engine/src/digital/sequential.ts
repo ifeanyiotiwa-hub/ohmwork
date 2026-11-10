@@ -1,4 +1,4 @@
-import type { ComponentType } from "@engineering-circuit/format"
+import type { ComponentType } from "@ohmwork/format"
 import { type LogicMemory, type LogicPart, initialMemory, logicPartOf } from "./logic"
 import { ADC_4BIT, ADC_8BIT, DAC_4BIT, DAC_8BIT, RELAY, TRI_STATE } from "./mixed-parts"
 import { TIMER_555 } from "./timer-555"

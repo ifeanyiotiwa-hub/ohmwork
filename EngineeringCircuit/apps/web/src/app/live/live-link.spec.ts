@@ -1,5 +1,5 @@
 import { TestBed } from "@angular/core/testing"
-import { createCircuit } from "@engineering-circuit/format"
+import { createCircuit } from "@ohmwork/format"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { DEFAULT_UI_CONFIG } from "../circuit/ui-config"
 import { LiveLink, WEBSOCKET_FACTORY } from "./live-link"

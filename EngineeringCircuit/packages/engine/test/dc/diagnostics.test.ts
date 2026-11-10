@@ -1,4 +1,4 @@
-import { createCircuit } from "@engineering-circuit/format"
+import { createCircuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { solveDc } from "../../src/dc/solve-dc"
 import { circuitOf, expectClose } from "../support/circuit-of"

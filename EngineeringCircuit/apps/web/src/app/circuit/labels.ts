@@ -1,4 +1,4 @@
-import type { Component, Point } from "@engineering-circuit/format"
+import type { Component, Point } from "@ohmwork/format"
 import type { SymbolShape } from "./symbols"
 
 export type TextPlacement = { x: number; y: number; anchor: "start" | "middle" }

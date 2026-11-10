@@ -1,4 +1,4 @@
-import type { ComponentType } from "@engineering-circuit/format"
+import type { ComponentType } from "@ohmwork/format"
 
 /**
  * How a part's main value is turned with the value dial: through the E12 series (resistors, capacitors and the like

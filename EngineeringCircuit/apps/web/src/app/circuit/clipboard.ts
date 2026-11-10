@@ -1,5 +1,5 @@
-import { type EditCommand, nextComponentId } from "@engineering-circuit/editing"
-import type { Circuit, Component, Note, Point, Wire } from "@engineering-circuit/format"
+import { type EditCommand, nextComponentId } from "@ohmwork/editing"
+import type { Circuit, Component, Note, Point, Wire } from "@ohmwork/format"
 
 /** What Ctrl/⌘+C keeps: the chosen parts, the wires running between two of them, and the chosen notes. */
 export type Copied = { components: Component[]; wires: Wire[]; notes: Note[] }

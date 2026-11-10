@@ -10,7 +10,7 @@ import {
 	formatSi,
 	pinKey,
 	pinsOf,
-} from "@engineering-circuit/format"
+} from "@ohmwork/format"
 import type { DisjointSets } from "../graph/disjoint-sets"
 import { type LogicMemories, advanceLogic, hasLogic, initialMemories, sameOutputs } from "../digital/advance"
 import { LOGIC_PARTS, logicPartOf } from "../digital/logic"

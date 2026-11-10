@@ -13,7 +13,7 @@ import {
 	definitionOf,
 	idPrefixOf,
 	parseCircuit,
-} from "@engineering-circuit/format"
+} from "@ohmwork/format"
 import type { EditCommand } from "./edit-command"
 import { makeSubcircuit, renameSubcircuitPin, unpackSubcircuit } from "./chip-commands"
 import { storedParam, storedParams } from "./equivalents"

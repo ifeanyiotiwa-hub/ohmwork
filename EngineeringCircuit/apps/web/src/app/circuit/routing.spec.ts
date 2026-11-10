@@ -1,4 +1,4 @@
-import type { Point } from "@engineering-circuit/format"
+import type { Point } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import type { WireEnd } from "./geometry"
 import { type Box, placeBox, routeAround } from "./routing"

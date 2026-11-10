@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from "@angular/core"
-import { solveAc } from "@engineering-circuit/engine"
+import { solveAc } from "@ohmwork/engine"
 import { CircuitStore } from "../circuit/circuit-store"
 import { formatSi } from "../circuit/si-units"
 import { UI_CONFIG } from "../circuit/ui-config"

@@ -1,5 +1,5 @@
 import { Component, computed, inject } from "@angular/core"
-import type { SimIssue } from "@engineering-circuit/engine"
+import type { SimIssue } from "@ohmwork/engine"
 import { CircuitStore } from "../circuit/circuit-store"
 import { CircuitLibrary } from "../library/circuit-library"
 import { formatSi } from "../circuit/si-units"

@@ -1,6 +1,6 @@
 import { DOCUMENT, Component, computed, effect, inject, signal, viewChild } from "@angular/core"
-import { liveSocketUrl } from "@engineering-circuit/editing"
-import type { Circuit } from "@engineering-circuit/format"
+import { liveSocketUrl } from "@ohmwork/editing"
+import type { Circuit } from "@ohmwork/format"
 import { CircuitCanvas } from "./canvas/circuit-canvas"
 import { CircuitStore, type Placing, samePlacing } from "./circuit/circuit-store"
 import { UI_CONFIG } from "./circuit/ui-config"

@@ -1,4 +1,4 @@
-import type { Point } from "@engineering-circuit/format"
+import type { Point } from "@ohmwork/format"
 
 export type View = { x: number; y: number; width: number; height: number }
 export type ZoomLimits = { minWidth: number; maxWidth: number }

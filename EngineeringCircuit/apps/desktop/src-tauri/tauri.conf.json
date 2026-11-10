@@ -7,8 +7,8 @@
   "build": {
     "frontendDist": "../../web/dist/web/browser",
     "devUrl": "http://localhost:4200",
-    "beforeDevCommand": "pnpm --filter @engineering-circuit/web start",
-    "beforeBuildCommand": "pnpm --filter @engineering-circuit/web build"
+    "beforeDevCommand": "pnpm --filter @ohmwork/web start",
+    "beforeBuildCommand": "pnpm --filter @ohmwork/web build"
   },
   "app": {
     "windows": [

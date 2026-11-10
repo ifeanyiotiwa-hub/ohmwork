@@ -71,10 +71,10 @@
 					"options": {
 						"prebundle": {
 							"exclude": [
-								"@engineering-circuit/editing",
-								"@engineering-circuit/engine",
-								"@engineering-circuit/format",
-								"@engineering-circuit/lessons"
+								"@ohmwork/editing",
+								"@ohmwork/engine",
+								"@ohmwork/format",
+								"@ohmwork/lessons"
 							]
 						}
 					}

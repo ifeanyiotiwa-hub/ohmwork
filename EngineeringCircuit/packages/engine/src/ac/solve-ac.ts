@@ -3,7 +3,7 @@
 // are the input (their amplitude and phase); every other source is zero (a voltage source a short, a current source an
 // open). Capacitors are admittances jωC, inductors and transformer windings impedances jωL (with their mutual
 // coupling), and diodes and transistors their small-signal conductances plus the capacitance of their stored charge.
-import { type Circuit, type Component, expandSubcircuits, pinKey } from "@engineering-circuit/format"
+import { type Circuit, type Component, expandSubcircuits, pinKey } from "@ohmwork/format"
 import type { SimIssue } from "../dc/issues"
 import { type OperatingPoint, operatingPoint } from "../dc/solve-dc"
 import type { NetBranch } from "../dc/topology"

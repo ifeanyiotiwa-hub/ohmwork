@@ -1,4 +1,4 @@
-import { createCircuit, serializeCircuit } from "@engineering-circuit/format"
+import { createCircuit, serializeCircuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { fileNameFor, readCircuitFile } from "./circuit-files"
 

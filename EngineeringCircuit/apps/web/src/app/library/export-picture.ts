@@ -1,4 +1,4 @@
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { fileNameFor } from "./circuit-files"
 
 export type Bounds = { x: number; y: number; width: number; height: number }

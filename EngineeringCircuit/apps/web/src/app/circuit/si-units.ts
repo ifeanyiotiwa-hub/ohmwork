@@ -1,1 +1,1 @@
-export { formatSi, parseSi, unitSymbolOf } from "@engineering-circuit/format"
+export { formatSi, parseSi, unitSymbolOf } from "@ohmwork/format"

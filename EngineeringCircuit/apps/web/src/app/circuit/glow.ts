@@ -1,5 +1,5 @@
-import type { DcSolution } from "@engineering-circuit/engine"
-import type { Component } from "@engineering-circuit/format"
+import type { DcSolution } from "@ohmwork/engine"
+import type { Component } from "@ohmwork/format"
 
 /** How a lit part shows: a colour and how strongly (0 to 1). */
 export type Glow = { colour: string; strength: number }

@@ -1,4 +1,4 @@
-import { type Circuit, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, createCircuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { kvlExample } from "../circuit/examples"
 import { MAX_SAMPLES_PER_FRAME } from "./simulation-protocol"

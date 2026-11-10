@@ -1,4 +1,4 @@
-import type { Component } from "@engineering-circuit/format"
+import type { Component } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { meterText, speedText, valueText } from "./part-text"
 

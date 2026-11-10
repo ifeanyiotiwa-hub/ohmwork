@@ -1,5 +1,5 @@
-import type { HistoryItem } from "@engineering-circuit/editing"
-import { type ComponentReading, type DcSolution, isDcSimulated, solveDc } from "@engineering-circuit/engine"
+import type { HistoryItem } from "@ohmwork/editing"
+import { type ComponentReading, type DcSolution, isDcSimulated, solveDc } from "@ohmwork/engine"
 import {
 	COMPONENT_DEFINITIONS,
 	type Circuit,
@@ -14,7 +14,7 @@ import {
 	isChip,
 	pinPosition,
 	pinsOfPart,
-} from "@engineering-circuit/format"
+} from "@ohmwork/format"
 import * as z from "zod"
 
 const SIGNIFICANT_DIGITS = 6

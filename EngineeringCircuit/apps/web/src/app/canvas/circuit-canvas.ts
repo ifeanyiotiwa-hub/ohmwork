@@ -12,8 +12,8 @@ import {
 	isChip,
 	pinsOfPart,
 	rotate,
-} from "@engineering-circuit/format"
-import type { DcSolution } from "@engineering-circuit/engine"
+} from "@ohmwork/format"
+import type { DcSolution } from "@ohmwork/engine"
 import { CircuitStore, type Placing } from "../circuit/circuit-store"
 import { glowOf } from "../circuit/glow"
 import { busLines } from "../circuit/buses"

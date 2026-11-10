@@ -1,4 +1,4 @@
-import { type ComponentType, definitionOf } from "@engineering-circuit/format"
+import { type ComponentType, definitionOf } from "@ohmwork/format"
 
 /**
  * Other forms accepted for a stored quantity (COMPONENTS.md: one stored value per quantity, so they can't disagree).

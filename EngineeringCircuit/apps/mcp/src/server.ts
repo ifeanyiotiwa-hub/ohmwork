@@ -1,6 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
-import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
+import { CircuitDocument, type DocumentChange, type EditCommand } from "@ohmwork/editing"
 import {
 	type Complex,
 	advanceTransient,
@@ -10,7 +10,7 @@ import {
 	solveDc,
 	sweepFrequencies,
 	usesFixedSteps,
-} from "@engineering-circuit/engine"
+} from "@ohmwork/engine"
 import {
 	COMPONENT_DEFINITIONS,
 	type ComponentType,
@@ -22,8 +22,8 @@ import {
 	pinsOfPart,
 	rotationSchema,
 	serializeCircuit,
-} from "@engineering-circuit/format"
-import { LESSONS, RC_CHARGING, checkSolution, lessonById, lessonSchema } from "@engineering-circuit/lessons"
+} from "@ohmwork/format"
+import { LESSONS, RC_CHARGING, checkSolution, lessonById, lessonSchema } from "@ohmwork/lessons"
 import { type CallToolResult, McpServer, completable } from "@modelcontextprotocol/server"
 import * as z from "zod"
 import type { LiveServer } from "./live/live-server"

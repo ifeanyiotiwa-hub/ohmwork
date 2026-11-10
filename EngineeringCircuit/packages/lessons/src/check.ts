@@ -1,5 +1,5 @@
-import { type DcSolution, advanceTransient, gainAndPhase, initialTransientState, solveAc, solveDc } from "@engineering-circuit/engine"
-import { type Circuit, type ComponentType, formatSi } from "@engineering-circuit/format"
+import { type DcSolution, advanceTransient, gainAndPhase, initialTransientState, solveAc, solveDc } from "@ohmwork/engine"
+import { type Circuit, type ComponentType, formatSi } from "@ohmwork/format"
 import type { Check, Lesson } from "./schema"
 
 export type CheckResult = { description: string; passed: boolean; found: string }

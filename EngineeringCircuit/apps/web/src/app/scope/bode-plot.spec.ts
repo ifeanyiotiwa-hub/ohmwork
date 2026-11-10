@@ -1,4 +1,4 @@
-import type { AcPoint } from "@engineering-circuit/engine"
+import type { AcPoint } from "@ohmwork/engine"
 import { expect, test } from "vitest"
 import { bodePlot } from "./bode-plot"
 

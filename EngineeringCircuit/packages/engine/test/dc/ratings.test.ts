@@ -1,4 +1,4 @@
-import { LED_MODELS } from "@engineering-circuit/format"
+import { LED_MODELS } from "@ohmwork/format"
 import { describe, expect, test } from "vitest"
 import { solveDc } from "../../src/dc/solve-dc"
 import { circuitOf } from "../support/circuit-of"

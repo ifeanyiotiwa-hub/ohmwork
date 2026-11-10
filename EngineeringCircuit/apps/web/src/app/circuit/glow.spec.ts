@@ -1,5 +1,5 @@
-import type { DcSolution } from "@engineering-circuit/engine"
-import { COMPONENT_DEFINITIONS, type Component } from "@engineering-circuit/format"
+import type { DcSolution } from "@ohmwork/engine"
+import { COMPONENT_DEFINITIONS, type Component } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { glowOf } from "./glow"
 

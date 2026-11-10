@@ -1,4 +1,4 @@
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 
 export type ChangedIds = { components: ReadonlySet<string>; wires: ReadonlySet<string> }
 

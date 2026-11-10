@@ -1,4 +1,4 @@
-import { applyCommand } from "@engineering-circuit/editing"
+import { applyCommand } from "@ohmwork/editing"
 import { expect, test } from "vitest"
 import { copyParts, pasteCommand } from "./clipboard"
 import { kvlExample } from "./examples"

@@ -1,4 +1,4 @@
-import { type Circuit, type Component, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, type Component, createCircuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { busLines } from "./buses"
 

@@ -1,4 +1,4 @@
-import { type Circuit, type Component, type Point, netLabelKey, rotate } from "@engineering-circuit/format"
+import { type Circuit, type Component, type Point, netLabelKey, rotate } from "@ohmwork/format"
 import { routeWire } from "./geometry"
 
 /** Where the bus leaves a connector, and which way, at rotation 0 (its members are on the other side). */

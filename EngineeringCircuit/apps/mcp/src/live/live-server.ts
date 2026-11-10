@@ -10,8 +10,8 @@ import {
 	LIVE_TOKEN_PARAM,
 	type ServerMessage,
 	clientMessageSchema,
-} from "@engineering-circuit/editing"
-import { parseCircuit } from "@engineering-circuit/format"
+} from "@ohmwork/editing"
+import { parseCircuit } from "@ohmwork/format"
 import { type RawData, type WebSocket, WebSocketServer } from "ws"
 import type { LiveOptions } from "../options"
 

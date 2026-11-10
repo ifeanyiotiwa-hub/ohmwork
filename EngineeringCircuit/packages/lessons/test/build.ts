@@ -1,4 +1,4 @@
-import { type Circuit, type Component, createCircuit, definitionOf, parseCircuit } from "@engineering-circuit/format"
+import { type Circuit, type Component, createCircuit, definitionOf, parseCircuit } from "@ohmwork/format"
 
 /** A part without layout; params a test doesn't care about come from the catalog defaults. */
 type Part = Component extends infer Each

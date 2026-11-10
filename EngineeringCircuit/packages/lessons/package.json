@@ -1,5 +1,5 @@
 {
-	"name": "@engineering-circuit/lessons",
+	"name": "@ohmwork/lessons",
 	"version": "0.1.0",
 	"private": true,
 	"license": "GPL-2.0-or-later",
@@ -8,8 +8,8 @@
 		".": "./src/index.ts"
 	},
 	"dependencies": {
-		"@engineering-circuit/engine": "workspace:*",
-		"@engineering-circuit/format": "workspace:*",
+		"@ohmwork/engine": "workspace:*",
+		"@ohmwork/format": "workspace:*",
 		"zod": "^4.6.7"
 	}
 }

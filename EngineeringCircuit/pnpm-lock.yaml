@@ -26,21 +26,21 @@ importers:
 
   apps/mcp:
     dependencies:
-      '@engineering-circuit/editing':
-        specifier: workspace:*
-        version: link:../../packages/editing
-      '@engineering-circuit/engine':
-        specifier: workspace:*
-        version: link:../../packages/engine
-      '@engineering-circuit/format':
-        specifier: workspace:*
-        version: link:../../packages/format
-      '@engineering-circuit/lessons':
-        specifier: workspace:*
-        version: link:../../packages/lessons
       '@modelcontextprotocol/server':
         specifier: ^2.4.0
         version: 2.4.0
+      '@ohmwork/editing':
+        specifier: workspace:*
+        version: link:../../packages/editing
+      '@ohmwork/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@ohmwork/format':
+        specifier: workspace:*
+        version: link:../../packages/format
+      '@ohmwork/lessons':
+        specifier: workspace:*
+        version: link:../../packages/lessons
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -81,16 +81,16 @@ importers:
       '@angular/service-worker':
         specifier: ^22.2.0
         version: 22.2.4(@angular/core@22.2.4(@angular/compiler@22.2.4)(rxjs@7.8.2))(rxjs@7.8.2)
-      '@engineering-circuit/editing':
+      '@ohmwork/editing':
         specifier: workspace:*
         version: link:../../packages/editing
-      '@engineering-circuit/engine':
+      '@ohmwork/engine':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@engineering-circuit/format':
+      '@ohmwork/format':
         specifier: workspace:*
         version: link:../../packages/format
-      '@engineering-circuit/lessons':
+      '@ohmwork/lessons':
         specifier: workspace:*
         version: link:../../packages/lessons
       '@tauri-apps/api':
@@ -142,7 +142,7 @@ importers:
 
   packages/editing:
     dependencies:
-      '@engineering-circuit/format':
+      '@ohmwork/format':
         specifier: workspace:*
         version: link:../format
       zod:
@@ -151,7 +151,7 @@ importers:
 
   packages/engine:
     dependencies:
-      '@engineering-circuit/format':
+      '@ohmwork/format':
         specifier: workspace:*
         version: link:../format
 
@@ -163,10 +163,10 @@ importers:
 
   packages/lessons:
     dependencies:
-      '@engineering-circuit/engine':
+      '@ohmwork/engine':
         specifier: workspace:*
         version: link:../engine
-      '@engineering-circuit/format':
+      '@ohmwork/format':
         specifier: workspace:*
         version: link:../format
       zod:

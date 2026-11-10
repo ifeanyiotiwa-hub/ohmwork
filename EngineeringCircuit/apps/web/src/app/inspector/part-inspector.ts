@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from "@angular/core"
-import { type ComponentType, chipDefinition, isChip, paramFieldsOf, pinsOfPart } from "@engineering-circuit/format"
+import { type ComponentType, chipDefinition, isChip, paramFieldsOf, pinsOfPart } from "@ohmwork/format"
 import { CircuitStore } from "../circuit/circuit-store"
 import { speedText } from "../circuit/part-text"
 import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"

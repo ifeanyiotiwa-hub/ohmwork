@@ -1,4 +1,4 @@
-import { COMPONENT_CATEGORIES } from "@engineering-circuit/format"
+import { COMPONENT_CATEGORIES } from "@ohmwork/format"
 import { expect, test } from "@playwright/test"
 import { choosePart } from "./support/parts"
 

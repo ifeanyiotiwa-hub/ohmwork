@@ -1,4 +1,4 @@
-import { type Circuit, expandSubcircuits } from "@engineering-circuit/format"
+import { type Circuit, expandSubcircuits } from "@ohmwork/format"
 import { type DcInputs, STATEFUL_TYPES, type StoredState, TIME_DEPENDENT_TYPES } from "../dc/branches"
 import type { SimIssue } from "../dc/issues"
 import { type DcSolution, solveCircuit } from "../dc/solve-dc"

@@ -1,5 +1,5 @@
 import { InjectionToken, Injectable, inject, signal } from "@angular/core"
-import { type ClientMessage, type LiveState, parseServerMessage } from "@engineering-circuit/editing"
+import { type ClientMessage, type LiveState, parseServerMessage } from "@ohmwork/editing"
 import { UI_CONFIG } from "../circuit/ui-config"
 
 export type LiveStatus = "off" | "connecting" | "connected" | "reconnecting" | "closed"

@@ -1,5 +1,5 @@
-import type { DcResult } from "@engineering-circuit/engine"
-import type { Circuit } from "@engineering-circuit/format"
+import type { DcResult } from "@ohmwork/engine"
+import type { Circuit } from "@ohmwork/format"
 
 /** Messages to the simulation worker. `circuitId` lets the app ignore frames solved for an older circuit. */
 export type ToWorker =

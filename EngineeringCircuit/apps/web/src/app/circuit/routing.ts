@@ -1,4 +1,4 @@
-import { type Component, type Point, rotate } from "@engineering-circuit/format"
+import { type Component, type Point, rotate } from "@ohmwork/format"
 import { type WireEnd, routeWire, simplify } from "./geometry"
 
 /** A part's body on the canvas; wires keep at least one grid square away from it. */

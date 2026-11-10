@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, linkedSignal, signal } from "@angular/core"
-import type { Circuit } from "@engineering-circuit/format"
-import { type SolutionResult, checkSolution, lessonById } from "@engineering-circuit/lessons"
+import type { Circuit } from "@ohmwork/format"
+import { type SolutionResult, checkSolution, lessonById } from "@ohmwork/lessons"
 import { CircuitStore } from "../circuit/circuit-store"
 
 const behaviourOf = ({ components, wires, simulation }: Circuit) => JSON.stringify({ components, wires, simulation })

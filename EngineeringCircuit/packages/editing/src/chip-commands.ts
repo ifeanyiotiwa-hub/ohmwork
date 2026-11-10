@@ -11,7 +11,7 @@ import {
 	idPrefixOf,
 	isChip,
 	rotate,
-} from "@engineering-circuit/format"
+} from "@ohmwork/format"
 
 export type MakeSubcircuit = { componentIds: readonly string[]; name: string; pins?: readonly { name: string; to: PinRef }[] | undefined }
 export type Made = { candidate: Circuit; summary: string } | { errors: CircuitError[] }

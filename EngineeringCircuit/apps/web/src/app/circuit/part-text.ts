@@ -1,5 +1,5 @@
-import type { ComponentReading } from "@engineering-circuit/engine"
-import { type Component, type ComponentType, paramFieldsOf } from "@engineering-circuit/format"
+import type { ComponentReading } from "@ohmwork/engine"
+import { type Component, type ComponentType, paramFieldsOf } from "@ohmwork/format"
 import { formatSi, unitSymbolOf } from "./si-units"
 
 /** How a true / false parameter reads on the canvas. */

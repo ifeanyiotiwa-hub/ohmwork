@@ -1,4 +1,4 @@
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { type EditResult, applyCommand } from "./apply-command"
 import type { EditCommand } from "./edit-command"
 

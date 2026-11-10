@@ -1,5 +1,5 @@
-import { CircuitDocument, LIVE_ADDRESS_PARAM, LIVE_TOKEN_PARAM, type ServerMessage } from "@engineering-circuit/editing"
-import { createCircuit } from "@engineering-circuit/format"
+import { CircuitDocument, LIVE_ADDRESS_PARAM, LIVE_TOKEN_PARAM, type ServerMessage } from "@ohmwork/editing"
+import { createCircuit } from "@ohmwork/format"
 import { afterEach, beforeEach, expect, test } from "vitest"
 import { WebSocket } from "ws"
 import { LiveServer } from "../../src/live/live-server"

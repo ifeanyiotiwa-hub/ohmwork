@@ -1,4 +1,4 @@
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { advanceTransient, usesFixedSteps } from "../../src/transient/adaptive"
 import { initialTransientState, stepTransient } from "../../src/transient/step"

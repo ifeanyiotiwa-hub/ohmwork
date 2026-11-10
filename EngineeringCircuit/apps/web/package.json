@@ -1,5 +1,5 @@
 {
-	"name": "@engineering-circuit/web",
+	"name": "@ohmwork/web",
 	"version": "0.0.0",
 	"scripts": {
 		"ng": "ng",
@@ -18,10 +18,10 @@
 		"@angular/platform-browser": "^22.2.0",
 		"@angular/router": "^22.2.0",
 		"@angular/service-worker": "^22.2.0",
-		"@engineering-circuit/editing": "workspace:*",
-		"@engineering-circuit/engine": "workspace:*",
-		"@engineering-circuit/format": "workspace:*",
-		"@engineering-circuit/lessons": "workspace:*",
+		"@ohmwork/editing": "workspace:*",
+		"@ohmwork/engine": "workspace:*",
+		"@ohmwork/format": "workspace:*",
+		"@ohmwork/lessons": "workspace:*",
 		"@tauri-apps/api": "^2.12.4",
 		"@tauri-apps/plugin-dialog": "^2.8.4",
 		"@tauri-apps/plugin-fs": "^2.7.1",

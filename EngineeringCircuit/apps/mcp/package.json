@@ -1,5 +1,5 @@
 {
-	"name": "@engineering-circuit/mcp",
+	"name": "@ohmwork/mcp",
 	"version": "0.1.0",
 	"private": true,
 	"license": "GPL-2.0-or-later",
@@ -8,14 +8,14 @@
 		"start": "tsx src/main.ts"
 	},
 	"dependencies": {
-		"@engineering-circuit/editing": "workspace:*",
-		"@engineering-circuit/engine": "workspace:*",
-		"@engineering-circuit/format": "workspace:*",
+		"@ohmwork/editing": "workspace:*",
+		"@ohmwork/engine": "workspace:*",
+		"@ohmwork/format": "workspace:*",
 		"@modelcontextprotocol/server": "^2.4.0",
 		"tsx": "^4.23.15",
 		"zod": "^4.6.7",
 		"ws": "^8.22.0",
-		"@engineering-circuit/lessons": "workspace:*"
+		"@ohmwork/lessons": "workspace:*"
 	},
 	"devDependencies": {
 		"@modelcontextprotocol/client": "^2.4.0",

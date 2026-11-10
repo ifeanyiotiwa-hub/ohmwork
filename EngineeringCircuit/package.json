@@ -1,19 +1,19 @@
 {
-	"name": "engineering-circuit",
+	"name": "ohmwork",
 	"private": true,
 	"license": "GPL-2.0-or-later",
 	"type": "module",
 	"scripts": {
 		"prepare": "git config core.hooksPath .githooks",
-		"test": "vitest run && pnpm --filter @engineering-circuit/web test",
-		"typecheck": "tsc -p tsconfig.base.json --noEmit && pnpm --filter @engineering-circuit/web build",
+		"test": "vitest run && pnpm --filter @ohmwork/web test",
+		"typecheck": "tsc -p tsconfig.base.json --noEmit && pnpm --filter @ohmwork/web build",
 		"test:core": "vitest run",
-		"test:e2e": "pnpm --filter @engineering-circuit/web test:e2e",
-		"web": "pnpm --filter @engineering-circuit/web start",
-		"desktop": "pnpm --filter @engineering-circuit/desktop dev",
-		"desktop:build": "pnpm --filter @engineering-circuit/desktop build",
-		"android": "pnpm --filter @engineering-circuit/desktop android:dev",
-		"android:build": "pnpm --filter @engineering-circuit/desktop android:build"
+		"test:e2e": "pnpm --filter @ohmwork/web test:e2e",
+		"web": "pnpm --filter @ohmwork/web start",
+		"desktop": "pnpm --filter @ohmwork/desktop dev",
+		"desktop:build": "pnpm --filter @ohmwork/desktop build",
+		"android": "pnpm --filter @ohmwork/desktop android:dev",
+		"android:build": "pnpm --filter @ohmwork/desktop android:build"
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",

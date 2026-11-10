@@ -1,4 +1,4 @@
-import type { ComponentType } from "@engineering-circuit/format"
+import type { ComponentType } from "@ohmwork/format"
 
 /** What a logic part remembers: a stored value (latch or flip-flop Q, counter count) and its last clock level. */
 export type LogicState = { value: number; clock: boolean }

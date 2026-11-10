@@ -1,4 +1,4 @@
-import { type Circuit, parseCircuit } from "@engineering-circuit/format"
+import { type Circuit, parseCircuit } from "@ohmwork/format"
 import * as z from "zod"
 import type { DocumentChange, HistoryItem } from "./circuit-document"
 import { editCommandSchema } from "./edit-command"

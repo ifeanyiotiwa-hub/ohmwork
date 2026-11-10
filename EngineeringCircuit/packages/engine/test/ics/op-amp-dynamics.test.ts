@@ -1,6 +1,6 @@
 // LM741 (TI SNOSC25D, rev. Oct 2015): slew rate 0.5 V/µs, output short-circuit current 25 mA, unity-gain rise
 // time 0.3 µs, so a gain-bandwidth of 0.35 / 0.3 µs = 1.17 MHz (the datasheet's own formula).
-import type { Circuit } from "@engineering-circuit/format"
+import type { Circuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { solveDc } from "../../src/dc/solve-dc"
 import { initialTransientState, stepTransient } from "../../src/transient/step"

@@ -1,4 +1,4 @@
-import { type AcPoint, type Complex, gainAndPhase } from "@engineering-circuit/engine"
+import { type AcPoint, type Complex, gainAndPhase } from "@ohmwork/engine"
 
 export type BodeTrace = { id: string; gain: string; phase: string; peak: number | undefined }
 export type BodePlot = {

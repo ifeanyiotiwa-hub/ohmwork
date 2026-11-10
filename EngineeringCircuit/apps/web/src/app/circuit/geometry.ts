@@ -1,4 +1,4 @@
-import type { Point } from "@engineering-circuit/format"
+import type { Point } from "@ohmwork/format"
 
 /** One end of a wire: where the pin is and the direction it points, away from its part. */
 export type WireEnd = { at: Point; direction: Point }

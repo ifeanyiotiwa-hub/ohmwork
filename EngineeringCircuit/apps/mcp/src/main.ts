@@ -1,5 +1,5 @@
-import { CircuitDocument } from "@engineering-circuit/editing"
-import { createCircuit } from "@engineering-circuit/format"
+import { CircuitDocument } from "@ohmwork/editing"
+import { createCircuit } from "@ohmwork/format"
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio"
 import { LiveServer } from "./live/live-server"
 import { optionsFromEnvironment } from "./options"

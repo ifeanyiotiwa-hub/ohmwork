@@ -1,4 +1,4 @@
-import { type Circuit, LED_MODELS, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, LED_MODELS, createCircuit } from "@ohmwork/format"
 import { describe, expect, test } from "vitest"
 import { applyCommand } from "../src/apply-command"
 import type { EditCommand } from "../src/edit-command"

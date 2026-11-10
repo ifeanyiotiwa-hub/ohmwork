@@ -1,4 +1,4 @@
-import { type Circuit, type Component, type Subcircuit, createCircuit } from "@engineering-circuit/format"
+import { type Circuit, type Component, type Subcircuit, createCircuit } from "@ohmwork/format"
 import { expect, test } from "vitest"
 import { solveDc } from "../../src/dc/solve-dc"
 import { wireCurrents } from "../../src/dc/wire-currents"

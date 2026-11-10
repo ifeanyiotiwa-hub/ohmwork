@@ -1,4 +1,4 @@
-import { COMPONENT_DEFINITIONS, type ComponentType, pinsOf } from "@engineering-circuit/format"
+import { COMPONENT_DEFINITIONS, type ComponentType, pinsOf } from "@ohmwork/format"
 import * as z from "zod"
 
 // An enum, not a custom check, so it has a JSON Schema: the agent drafting a lesson sees every valid type.
