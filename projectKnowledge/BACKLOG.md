@@ -72,7 +72,7 @@ whatever the app is at that point.
 |---|---|
 | ~~Net labels~~ (done, D17: `net-label`, ADR-040) | A `net-label` part: pins with the same label are one node |
 | ~~Subcircuits~~ (done, D17: chips, format v11, ADR-042) | Save a circuit as a reusable part with chosen pins (SPICE `X`); a format change and a migration |
-| Parts browser + "request a part" | Browse all parts; the AI drafts a `COMPONENTS.md` row and `defineComponent` entry from a request with sources, for review |
+| ~~Parts browser + "request a part"~~ (done, D17, ADR-043) | Browse all parts; the AI drafts a `COMPONENTS.md` row and `defineComponent` entry from a request with sources, for review |
 
 ### Assigned to existing deliverables
 | Item | Deliverable | How |

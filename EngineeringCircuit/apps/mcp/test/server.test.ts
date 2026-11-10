@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, readFile, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CircuitDocument } from "@engineering-circuit/editing"
@@ -75,6 +75,7 @@ test("offers the build, inspect and file tools", async () => {
 		"move_component",
 		"open_circuit",
 		"open_in_app",
+		"part_request_guide",
 		"probe",
 		"recent_changes",
 		"redo",
@@ -83,6 +84,7 @@ test("offers the build, inspect and file tools", async () => {
 		"rename_circuit",
 		"rotate_component",
 		"save_circuit",
+		"save_part_request",
 		"set_parameter",
 		"set_simulation",
 		"simulate",
@@ -239,6 +241,33 @@ describe("files", () => {
 
 	afterEach(async () => {
 		await rm(directory, { recursive: true, force: true })
+	})
+
+	test("a part request is checked, then saved for review as Markdown in the workspace", async () => {
+		const guide = await call("part_request_guide")
+		expect(guide.data).toMatchObject({ categories: expect.arrayContaining(["Passive"]), takenPrefixes: expect.arrayContaining(["R"]) })
+
+		const request = {
+			type: "thermistor",
+			name: "Thermistor (NTC)",
+			category: "Passive",
+			idPrefix: "TH",
+			pins: ["a", "b"],
+			params: [{ name: "resistance", kind: "positive", unit: "ohms", description: "at 25 °C", default: 10000 }],
+			model: "resistor that falls as it warms (B equation)",
+			seenIn: "CJS",
+			sources: [{ title: "Vishay NTCLE100E3 datasheet", url: "https://www.vishay.com/docs/29049/ntcle100.pdf" }],
+		}
+		const refused = await call("save_part_request", { request: { ...request, type: "resistor", sources: [] } })
+		expect(refused.isError).toBe(true)
+		expect(refused.text).toContain("already a part")
+		expect(refused.text).toContain("source")
+
+		const saved = await call("save_part_request", { request })
+		expect(saved.isError).toBe(false)
+		const written = await readFile(join(directory, "part-requests", "thermistor.md"), "utf8")
+		expect(written).toContain("# Part request: Thermistor (NTC) (`thermistor`)")
+		expect(written).toContain('resistance: positive("ohms, at 25 °C")')
 	})
 
 	test("save then open restores the circuit", async () => {

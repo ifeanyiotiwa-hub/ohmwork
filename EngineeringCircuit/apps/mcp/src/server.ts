@@ -1,5 +1,5 @@
-import { readFile, stat, writeFile } from "node:fs/promises"
-import { isAbsolute, relative, resolve, sep } from "node:path"
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import { CircuitDocument, type DocumentChange, type EditCommand } from "@engineering-circuit/editing"
 import {
 	type Complex,
@@ -27,6 +27,7 @@ import { LESSONS, checkSolution, lessonById } from "@engineering-circuit/lessons
 import { type CallToolResult, McpServer, completable } from "@modelcontextprotocol/server"
 import * as z from "zod"
 import type { LiveServer } from "./live/live-server"
+import { partRequestErrors, partRequestGuide, partRequestMarkdown, partRequestSchema } from "./part-request"
 import { DEFAULT_OPTIONS, type ServerOptions } from "./options"
 import {
 	componentTypesReport,
@@ -52,6 +53,7 @@ Push buttons are released unless you list them in simulate/probe "pressed"; in t
 Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style.
 Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
 Net labels (net-label, params.name) connect every pin wired to a label of the same name, with no wire between: use them for supplies (VCC) and long or crossing runs.
+A part the app lacks: part_request_guide, then save_part_request (every value from a datasheet, listed as a source) saves a draft for a person to review.
 Chips: make_chip turns parts into a reusable chip (a subcircuit); probe its pins ("X1.out") or the parts inside it ("X1.R1").
 Buses (bus-4, bus-8, params.name): connectors of one name join pin by pin (d3 to d3) and are drawn as one thick line; a net label named <bus name><n> (e.g. "D3") taps member n.
 Filters and amplifiers: frequency_response sweeps an ac-source's frequency and gives gain (dB) and phase at a pin or across a part.
@@ -84,6 +86,8 @@ const pressedSchema = z
 	.array(z.string().min(1))
 	.optional()
 	.describe("Push buttons to hold down for this reading, e.g. [\"PB1\"]; all others are released")
+/** Where drafted parts are saved for review, inside the workspace. */
+const PART_REQUESTS_FOLDER = "part-requests"
 const DEFAULT_SAMPLES = 20
 const MAX_SAMPLES = 200
 const DEFAULT_POINTS_PER_DECADE = 10
@@ -474,6 +478,38 @@ export function createServer(
 			try {
 				await writeFile(fullPath, serializeCircuit(document.circuit), "utf8")
 				return text(`Saved to ${fullPath}`)
+			} catch (error) {
+				return failure(`Could not save ${fullPath}: ${error instanceof Error ? error.message : String(error)}`)
+			}
+		},
+	)
+
+	server.registerTool(
+		"part_request_guide",
+		{
+			description:
+				"Before drafting a part the app lacks (the learner asked for one): the rules for a new part, the categories, the types and id prefixes already taken, and the unit words the app shows with symbols. Use list_component_types to see how similar parts are described.",
+			annotations: READ_ONLY,
+		},
+		() => text(partRequestGuide()),
+	)
+
+	server.registerTool(
+		"save_part_request",
+		{
+			description:
+				"Save a drafted new part for a person to review, as part-requests/<type>.md in the workspace: its COMPONENTS.md row, its catalog entry as code, its sources and the steps to add it. Every value must come from a source you list. Nothing is added to the app.",
+			inputSchema: z.object({ request: partRequestSchema }),
+		},
+		async ({ request }) => {
+			const problems = partRequestErrors(request)
+			if (problems.length > 0) return failure(problems.join("\n"))
+			const fullPath = insideWorkspace(options.workspaceDirectory, join(PART_REQUESTS_FOLDER, `${request.type}.md`))
+			if (!fullPath) return failure(outsideWorkspace(options.workspaceDirectory, PART_REQUESTS_FOLDER))
+			try {
+				await mkdir(dirname(fullPath), { recursive: true })
+				await writeFile(fullPath, partRequestMarkdown(request, new Date()), "utf8")
+				return text(`Saved the request for review: ${fullPath}`)
 			} catch (error) {
 				return failure(`Could not save ${fullPath}: ${error instanceof Error ? error.message : String(error)}`)
 			}

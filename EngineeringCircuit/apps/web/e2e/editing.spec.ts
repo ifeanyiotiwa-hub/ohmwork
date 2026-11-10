@@ -257,3 +257,22 @@ test("parts become a chip: made from a group, placed again from the Chips tab, p
 	await expect(page.locator('[data-part="X1"]')).toHaveCount(0)
 	await expect(page.locator("[data-group-count]")).toHaveText("2 parts selected")
 })
+
+test("the parts browser finds any part to place, and turns a request for a missing one into a message for the agent", async ({ page, context }) => {
+	await context.grantPermissions(["clipboard-read", "clipboard-write"])
+	await page.locator("[data-open-parts]").click()
+	const browser = page.getByRole("dialog", { name: "All parts" })
+	await browser.locator("[data-part-search]").fill("motor")
+	await expect(browser.locator("[data-browse]")).toHaveCount(1)
+	await browser.locator('[data-browse="dc-motor"]').click()
+	await expect(browser).toBeHidden()
+	await canvas(page).click({ position: { x: 640, y: 480 } })
+	await expect(page.locator('[data-part="MOT1"]')).toBeVisible()
+
+	await page.locator("[data-open-parts]").click()
+	await browser.locator("[data-part-request]").fill("an NTC thermistor, 10 kΩ")
+	await expect(browser.locator("[data-request-prompt]")).toContainText("an NTC thermistor, 10 kΩ")
+	await browser.locator("[data-copy-request]").click()
+	await expect(browser.locator("[data-copy-request]")).toHaveText("Copied")
+	expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("save_part_request")
+})

@@ -1,0 +1,39 @@
+<dialog #dialog class="browser" aria-labelledby="browser-title" (cancel)="close()">
+	<header>
+		<h2 id="browser-title">All parts</h2>
+		<button type="button" class="close" aria-label="Close" (click)="close()">×</button>
+	</header>
+
+	<label class="search">
+		<span>Find a part</span>
+		<input type="search" data-part-search placeholder="motor, 8 bit, capacitance…" [value]="query()" (input)="search($event)" />
+	</label>
+	<p class="count" role="status">{{ results().length }} {{ results().length === 1 ? "part" : "parts" }}</p>
+
+	<ul class="results">
+		@for (part of results(); track part.type) {
+			<li>
+				<button type="button" class="result" [attr.data-browse]="part.type" (click)="pick(part.type)">
+					<span class="name">{{ part.name }}</span>
+					<span class="category">{{ part.category }}</span>
+					@if (!part.simulated) {
+						<span class="badge">not simulated yet</span>
+					}
+					@if (part.params.length > 0) {
+						<span class="params">{{ part.params.join(", ") }}</span>
+					}
+				</button>
+			</li>
+		}
+	</ul>
+
+	<section class="request" aria-labelledby="request-title">
+		<h3 id="request-title">Request a part</h3>
+		<p class="hint">Missing one? Describe it (a datasheet link helps) and give the message below to your AI agent: it drafts the part from datasheets, for a person to check before it is added.</p>
+		<textarea data-part-request rows="2" placeholder="e.g. an NTC thermistor, 10 kΩ" [value]="request()" (input)="describe($event)"></textarea>
+		@if (prompt(); as message) {
+			<p class="prompt" data-request-prompt>{{ message }}</p>
+			<button type="button" data-copy-request (click)="copyPrompt()">{{ copied() ? "Copied" : "Copy for the agent" }}</button>
+		}
+	</section>
+</dialog>

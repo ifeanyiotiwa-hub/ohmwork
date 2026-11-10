@@ -9,6 +9,7 @@ import { LibraryPanel } from "./library/library-panel"
 import { LessonsPanel } from "./lessons/lessons-panel"
 import { PartInspector } from "./inspector/part-inspector"
 import { PartPalette } from "./palette/part-palette"
+import { PartsBrowser } from "./palette/parts-browser"
 import { ScopeView } from "./scope/scope-view"
 import { SimStatus } from "./status/sim-status"
 
@@ -16,7 +17,7 @@ const TYPING_ELEMENTS = new Set(["INPUT", "SELECT", "TEXTAREA"])
 
 @Component({
 	selector: "app-root",
-	imports: [CircuitCanvas, LessonsPanel, LibraryPanel, PartInspector, PartPalette, ScopeView, SimStatus],
+	imports: [CircuitCanvas, LessonsPanel, LibraryPanel, PartInspector, PartPalette, PartsBrowser, ScopeView, SimStatus],
 	templateUrl: "./app.html",
 	styleUrl: "./app.scss",
 	host: { "(document:keydown)": "onKey($event)" },
@@ -28,6 +29,7 @@ export class App {
 	private readonly config = inject(UI_CONFIG)
 	private readonly libraryPanel = viewChild.required(LibraryPanel)
 	private readonly lessonsPanel = viewChild.required(LessonsPanel)
+	private readonly partsBrowser = viewChild.required(PartsBrowser)
 	/** Autosave starts only once the last session's circuit has been restored (or found missing). */
 	private readonly restored = signal(false)
 	/**
@@ -49,6 +51,10 @@ export class App {
 			const timer = setTimeout(() => void this.keep(circuit), this.config.library.autosaveDelayMs)
 			onCleanup(() => clearTimeout(timer))
 		})
+	}
+
+	protected openParts(): void {
+		this.partsBrowser().show()
 	}
 
 	protected openLessons(): void {

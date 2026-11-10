@@ -26,6 +26,9 @@ const UNIT_SYMBOLS: Record<string, string> = {
 	degrees: "°",
 }
 
+/** The unit words a parameter's description may start with to be shown with its symbol ("ohms, …" → Ω). */
+export const UNIT_WORDS: readonly string[] = Object.keys(UNIT_SYMBOLS)
+
 const SIGNIFICANT_DIGITS = 3
 const ROUNDING_HEADROOM = 0.9995
 
