@@ -47,7 +47,7 @@ export function searchParts(query: string): ListedPart[] {
 /** What to tell the agent for a part the app lacks: draft it from datasheets, and save it for review (MCP tools). */
 export function partRequestPrompt(request: string): string {
 	return [
-		`Please draft a new part for Sparkbench: ${request.trim()}.`,
+		`Please draft a new part for OhmWork: ${request.trim()}.`,
 		"Use part_request_guide first, take every value from a datasheet or a manufacturer's SPICE model and list it as a source,",
 		"then save it with save_part_request so it can be reviewed before it is added.",
 	].join(" ")

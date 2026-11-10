@@ -90,6 +90,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-10 | Claude (Opus) | Renamed to OhmWork where people read it (owner's choice after a round of names; ADR-045). 651 core + 158 web + 85 e2e + 2 production-build | D18 |
 | 2026-11-10 | Claude (Opus) | D19: five more lessons and challenges (op-amp, flip-flop, 555, 1 Hz, low-pass), checks pin-voltage / frequency / ac-gain, LESSONS.md, agent `lesson_format` / `save_lesson_draft`; ADR-044. 651 core + 158 web + 85 e2e (1 opt-in skip) + 2 production-build | D18 |
 | 2026-11-10 | Claude (Opus) | D17 parts browser: searchable list of every part, "request a part" message for the agent, MCP `part_request_guide` / `save_part_request` (checked draft saved for review); ADR-043. D17 done. 632 core + 158 web + 84 e2e (1 opt-in skip) + 2 production-build | D19 |
 | 2026-11-10 | Claude (Opus) | D17 chips: subcircuits stored in the file (format v11), expanded for the engine (DC, time, AC, logic, nesting), make / unpack / rename pins (app, live link, agent `make_chip`), Chips palette tab; ADR-042. 626 core + 155 web + 83 e2e (1 opt-in skip) + 2 production-build | D17: parts browser |
