@@ -6,6 +6,7 @@ import {
 	RGB_COLOURS,
 	SEGMENT_PINS,
 	buildNets,
+	expandSubcircuits,
 	formatSi,
 	pinKey,
 	pinsOf,
@@ -69,7 +70,9 @@ const MAX_LOGIC_PASSES = 64
  * The DC steady state: capacitors open, inductors shorted, wave sources at their DC value, clocks low. With logic
  * parts, solves repeatedly, feeding each pass's input levels into the next, until no output changes.
  */
-export function solveDc(circuit: Circuit, inputs: DcInputs = {}): DcResult {
+export function solveDc(given: Circuit, inputs: DcInputs = {}): DcResult {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	const base: SolveInputs = inputs.pressed ? { pressed: inputs.pressed } : {}
 	if (!hasLogic(circuit)) return solveCircuit(circuit, base)
 
@@ -106,7 +109,9 @@ export type OperatingPoint = {
 }
 
 /** Builds the circuit's equations and solves them (Newton–Raphson when it has non-linear parts). */
-export function operatingPoint(circuit: Circuit, inputs: SolveInputs): { ok: true; point: OperatingPoint } | { ok: false; errors: SimIssue[] } {
+export function operatingPoint(given: Circuit, inputs: SolveInputs): { ok: true; point: OperatingPoint } | { ok: false; errors: SimIssue[] } {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	const notSimulated = circuit.components
 		.filter((component) => dcModelOf(component) === "not-simulated")
 		.map((component) => ({
@@ -201,7 +206,9 @@ export function operatingPoint(circuit: Circuit, inputs: SolveInputs): { ok: tru
 }
 
 /** Solves the circuit once; with `inputs.transient`, that is one time step. */
-export function solveCircuit(circuit: Circuit, inputs: SolveInputs): DcResult {
+export function solveCircuit(given: Circuit, inputs: SolveInputs): DcResult {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	const solved = operatingPoint(circuit, inputs)
 	if (!solved.ok) return solved
 	const { nets, netOf, branches, mna, openMeters, conductive, referenceWarnings } = solved.point

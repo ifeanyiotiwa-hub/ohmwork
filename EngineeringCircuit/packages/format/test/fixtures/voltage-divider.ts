@@ -1,8 +1,8 @@
-import type { Circuit } from "../../src/schema/circuit"
+import { type Circuit, CURRENT_VERSION } from "../../src/schema/circuit"
 
 export const voltageDivider = (): Circuit => ({
 	format: "engineering-circuit",
-	version: 10,
+	version: CURRENT_VERSION,
 	name: "Voltage divider",
 	description: "10 V split by two equal resistors",
 	simulation: { timeStep: 5e-6, speed: 0.01, logicHigh: 5, temperature: 27, stepping: "adaptive" },
@@ -19,4 +19,5 @@ export const voltageDivider = (): Circuit => ({
 		{ id: "w3", from: { componentId: "R2", pin: "b" }, to: { componentId: "V1", pin: "negative" }, bends: [] },
 		{ id: "w4", from: { componentId: "V1", pin: "negative" }, to: { componentId: "GND", pin: "terminal" }, bends: [] },
 	],
+	subcircuits: [],
 })

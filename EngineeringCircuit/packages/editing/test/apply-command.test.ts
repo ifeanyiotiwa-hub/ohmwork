@@ -371,3 +371,116 @@ describe("split-wire", () => {
 		])
 	})
 })
+
+describe("make-subcircuit", () => {
+	/** V1 → R1 → R2 → ground, with R1 at (160, 0) and R2 at (320, 100). */
+	const divider = () =>
+		run(
+			createCircuit("t"),
+			battery,
+			{ type: "add-component", component: { type: "resistor", position: { x: 160, y: 0 } } },
+			{ type: "add-component", component: { type: "resistor", position: { x: 320, y: 100 } } },
+			{ type: "add-component", component: { type: "ground" } },
+			{ type: "connect", from: { componentId: "V1", pin: "positive" }, to: { componentId: "R1", pin: "a" } },
+			{ type: "connect", from: { componentId: "R1", pin: "b" }, to: { componentId: "R2", pin: "a" } },
+			{ type: "connect", from: { componentId: "R2", pin: "b" }, to: { componentId: "GND1", pin: "terminal" } },
+			{ type: "connect", from: { componentId: "V1", pin: "negative" }, to: { componentId: "GND1", pin: "terminal" } },
+		)
+
+	test("the chosen parts become a chip in their place; wires to the rest now end on its pins", () => {
+		const result = applyCommand(divider(), { type: "make-subcircuit", componentIds: ["R1", "R2"], name: "Divider" })
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.summary).toBe('Made chip "Divider" (X1) from 2 parts')
+		const { circuit } = result
+		expect(circuit.components.map((part) => part.id)).toEqual(["V1", "GND1", "X1"])
+		const [chip] = circuit.subcircuits
+		expect(chip).toMatchObject({ id: "divider", name: "Divider" })
+		// Its pins: every inside pin wired to the outside, named after the part and pin.
+		expect(chip?.pins).toEqual([
+			{ name: "R1_a", to: { componentId: "R1", pin: "a" } },
+			{ name: "R2_b", to: { componentId: "R2", pin: "b" } },
+		])
+		expect(chip?.components.map((part) => [part.id, part.position])).toEqual([
+			["R1", { x: -80, y: -60 }],
+			["R2", { x: 80, y: 40 }],
+		])
+		expect(chip?.wires.map((wire) => wire.id)).toEqual(["w2"])
+		// In the middle of where the parts were (240, 50), on the 20-unit grid.
+		expect(circuit.components.find((part) => part.id === "X1")?.position).toEqual({ x: 240, y: 60 })
+		expect(circuit.wires.find((wire) => wire.id === "w1")?.to).toEqual({ componentId: "X1", pin: "R1_a" })
+		expect(circuit.wires.find((wire) => wire.id === "w3")?.from).toEqual({ componentId: "X1", pin: "R2_b" })
+	})
+
+	test("pins can be named, and a second chip of the same name gets its own id", () => {
+		const named = run(divider(), {
+			type: "make-subcircuit",
+			componentIds: ["R1", "R2"],
+			name: "Divider",
+			pins: [
+				{ name: "top", to: { componentId: "R1", pin: "a" } },
+				{ name: "bottom", to: { componentId: "R2", pin: "b" } },
+			],
+		})
+		expect(named.subcircuits[0]?.pins.map((pin) => pin.name)).toEqual(["top", "bottom"])
+		const again = run(named, { type: "make-subcircuit", componentIds: ["V1"], name: "Divider" })
+		expect(again.subcircuits.map((chip) => chip.id)).toEqual(["divider", "divider-2"])
+	})
+
+	test("a chip needs a part and a connection to the rest of the circuit", () => {
+		expect(errorsOf(divider(), { type: "make-subcircuit", componentIds: ["R9"], name: "None" })[0]?.message).toContain('"R9"')
+		const alone = run(createCircuit("t"), resistor)
+		expect(errorsOf(alone, { type: "make-subcircuit", componentIds: ["R1"], name: "Lonely" })[0]?.message).toContain("connect to nothing")
+	})
+})
+
+describe("unpack-subcircuit and rename-subcircuit-pin", () => {
+	const withChip = () =>
+		run(
+			createCircuit("t"),
+			battery,
+			{ type: "add-component", component: { type: "resistor", position: { x: 160, y: 0 } } },
+			{ type: "add-component", component: { type: "resistor", position: { x: 320, y: 100 } } },
+			{ type: "add-component", component: { type: "ground" } },
+			{ type: "connect", from: { componentId: "V1", pin: "positive" }, to: { componentId: "R1", pin: "a" } },
+			{ type: "connect", from: { componentId: "R1", pin: "b" }, to: { componentId: "R2", pin: "a" } },
+			{ type: "connect", from: { componentId: "R2", pin: "b" }, to: { componentId: "GND1", pin: "terminal" } },
+			{ type: "connect", from: { componentId: "V1", pin: "negative" }, to: { componentId: "GND1", pin: "terminal" } },
+			{ type: "make-subcircuit", componentIds: ["R1", "R2"], name: "Divider" },
+		)
+
+	test("unpacking puts the parts back where the chip is, renumbered, wired as before", () => {
+		const result = applyCommand(withChip(), { type: "unpack-subcircuit", componentId: "X1" })
+		if (!result.ok) throw new Error(JSON.stringify(result.errors))
+		expect(result.summary).toBe('Unpacked X1 ("Divider") into 2 parts')
+		const { circuit } = result
+		expect(circuit.components.map((part) => [part.id, part.position])).toEqual([
+			["V1", { x: 0, y: 0 }],
+			["GND1", { x: 300, y: 0 }],
+			["R1", { x: 160, y: 0 }],
+			["R2", { x: 320, y: 100 }],
+		])
+		const ends = circuit.wires.map((wire) => `${wire.from.componentId}.${wire.from.pin}-${wire.to.componentId}.${wire.to.pin}`).sort()
+		expect(ends).toEqual(["R1.b-R2.a", "R2.b-GND1.terminal", "V1.negative-GND1.terminal", "V1.positive-R1.a"])
+		// The chip stays defined, so other copies of it still work.
+		expect(circuit.subcircuits.map((chip) => chip.id)).toEqual(["divider"])
+	})
+
+	test("parts unpacked beside others of their type get new numbers", () => {
+		const crowded = run(withChip(), resistor)
+		const unpacked = run(crowded, { type: "unpack-subcircuit", componentId: "X1" })
+		expect(unpacked.components.map((part) => part.id).sort()).toEqual(["GND1", "R1", "R2", "R3", "V1"])
+	})
+
+	test("renaming a chip pin renames it on every copy and keeps their wires", () => {
+		const twice = run(
+			withChip(),
+			{ type: "add-component", component: { type: "subcircuit", params: { definition: "divider" } } },
+			{ type: "connect", from: { componentId: "X2", pin: "R1_a" }, to: { componentId: "V1", pin: "positive" } },
+		)
+		const renamed = run(twice, { type: "rename-subcircuit-pin", definition: "divider", pin: "R1_a", name: "top" })
+		expect(renamed.subcircuits[0]?.pins.map((pin) => pin.name)).toEqual(["top", "R2_b"])
+		expect(renamed.wires.filter((wire) => wire.to.pin === "top" || wire.from.pin === "top")).toHaveLength(2)
+		expect(errorsOf(renamed, { type: "rename-subcircuit-pin", definition: "divider", pin: "top", name: "R2_b" })[0]?.message).toContain("R2_b")
+		expect(errorsOf(renamed, { type: "rename-subcircuit-pin", definition: "divider", pin: "top", name: "1st" }).length).toBeGreaterThan(0)
+	})
+})

@@ -364,3 +364,21 @@ test("a group turns a quarter turn clockwise about its middle, as one change", (
 	store.undo()
 	expect(part("R1")).toMatchObject({ position: { x: 160, y: 0 }, rotation: 0 })
 })
+
+test("a group becomes a chip that works the same, selected; unpacking it brings the parts back, selected", () => {
+	// The example: 6 V over R1 (1 Ω) and R2 (2 Ω); R2 gets 4 V.
+	store.toggleInSelection("R1")
+	store.toggleInSelection("R2")
+	store.makeChip("Pair")
+	expect(store.circuit().components.map((part) => part.id)).toEqual(["V1", "GND1", "X1"])
+	expect(store.selectedComponent()?.id).toBe("X1")
+	expect(store.solution()?.readings["X1.R2"]?.voltage).toBeCloseTo(4, 9)
+
+	store.renameChipPin("pair", "R1_a", "top")
+	expect(store.circuit().subcircuits[0]?.pins.map((pin) => pin.name)).toContain("top")
+
+	store.unpackChip("X1")
+	expect(store.circuit().components.map((part) => part.id).sort()).toEqual(["GND1", "R1", "R2", "V1"])
+	expect([...store.multiSelection()].sort()).toEqual(["R1", "R2"])
+	expect(store.solution()?.readings["R2"]?.voltage).toBeCloseTo(4, 9)
+})

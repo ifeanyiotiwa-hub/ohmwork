@@ -1,4 +1,6 @@
+import type { Subcircuit } from "../schema/circuit"
 import type { Component, ComponentType } from "../schema/components/catalog"
+import { chipDefinition, isChip } from "../schema/subcircuits"
 import type { Point } from "../schema/geometry"
 
 /**
@@ -82,6 +84,8 @@ export const PIN_OFFSETS: { [Type in ComponentType]: Record<string, Point> } = {
 	// Members on the left, 20 apart as on the counters and converters; the bus leaves the right side.
 	"bus-4": Object.fromEntries(["d0", "d1", "d2", "d3"].map((pin, index) => [pin, { x: -20, y: -30 + index * 20 }])),
 	"bus-8": Object.fromEntries(EIGHT_BITS.map((pin, index) => [pin, { x: -20, y: -70 + index * 20 }])),
+	// A chip's pins depend on its definition: chipPinOffsets.
+	subcircuit: {},
 	"scope-probe": POLARISED_LEADS,
 	"seven-segment": Object.fromEntries(["a", "b", "c", "d", "e", "f", "g", "dp"].map((pin, index) => [pin, { x: -40, y: -70 + index * 20 }])),
 	"seven-segment-led": {
@@ -182,15 +186,43 @@ export function rotate({ x, y }: Point, degrees: Component["rotation"]): Point {
 	}
 }
 
-export function pinPosition(component: Component, pin: string, at: Point = component.position): Point {
-	const local = PIN_OFFSETS[component.type][pin] ?? { x: 0, y: 0 }
+/** The grid parts are placed on; every pin offset is a multiple of half of it. */
+export const LAYOUT_GRID = 20
+
+/** Half a chip's width: its pins stand out this far on each side. */
+export const CHIP_HALF_WIDTH = 40
+const CHIP_PIN_SPACING = 20
+
+/** A chip's pins: the first half (rounded up) down its left side, the rest down its right, 20 apart, centred. */
+export function chipPinOffsets(pinNames: readonly string[]): Record<string, Point> {
+	const leftCount = Math.ceil(pinNames.length / 2)
+	const side = (count: number, x: number, index: number): Point => ({ x, y: (index - (count - 1) / 2) * CHIP_PIN_SPACING })
+	return Object.fromEntries(
+		pinNames.map((name, index) => [
+			name,
+			index < leftCount ? side(leftCount, -CHIP_HALF_WIDTH, index) : side(pinNames.length - leftCount, CHIP_HALF_WIDTH, index - leftCount),
+		]),
+	)
+}
+
+/** Where a pin is on its part before turning; a chip's needs the circuit's chips. */
+function pinOffset(component: Component, pin: string, subcircuits: readonly Subcircuit[]): Point | undefined {
+	if (isChip(component)) {
+		const definition = chipDefinition({ subcircuits }, component)
+		return definition ? chipPinOffsets(definition.pins.map((candidate) => candidate.name))[pin] : undefined
+	}
+	return PIN_OFFSETS[component.type][pin]
+}
+
+export function pinPosition(component: Component, pin: string, at: Point = component.position, subcircuits: readonly Subcircuit[] = []): Point {
+	const local = pinOffset(component, pin, subcircuits) ?? { x: 0, y: 0 }
 	const turned = rotate(local, component.rotation)
 	return { x: at.x + turned.x, y: at.y + turned.y }
 }
 
 /** The unit direction a pin points, away from its part: along the offset's longer axis (x on a tie). */
-export function pinDirection(component: Component, pin: string): Point {
-	const turned = rotate(PIN_OFFSETS[component.type][pin] ?? { x: 0, y: 0 }, component.rotation)
+export function pinDirection(component: Component, pin: string, subcircuits: readonly Subcircuit[] = []): Point {
+	const turned = rotate(pinOffset(component, pin, subcircuits) ?? { x: 0, y: 0 }, component.rotation)
 	return Math.abs(turned.x) >= Math.abs(turned.y)
 		? { x: Math.sign(turned.x) || 0, y: 0 }
 		: { x: 0, y: Math.sign(turned.y) || 0 }

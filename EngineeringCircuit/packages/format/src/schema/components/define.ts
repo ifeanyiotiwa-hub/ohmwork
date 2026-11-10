@@ -12,7 +12,7 @@ type Definition<Pins, Params extends z.ZodRawShape> = {
 
 export function defineComponent<
 	Type extends string,
-	const Pins extends readonly [string, ...string[]],
+	const Pins extends readonly string[],
 	Params extends z.ZodRawShape,
 >(type: Type, { idPrefix, pins, params, defaults }: Definition<Pins, Params>) {
 	return {

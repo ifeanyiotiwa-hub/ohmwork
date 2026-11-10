@@ -3,7 +3,7 @@
 // are the input (their amplitude and phase); every other source is zero (a voltage source a short, a current source an
 // open). Capacitors are admittances jωC, inductors and transformer windings impedances jωL (with their mutual
 // coupling), and diodes and transistors their small-signal conductances plus the capacitance of their stored charge.
-import { type Circuit, type Component, pinKey } from "@engineering-circuit/format"
+import { type Circuit, type Component, expandSubcircuits, pinKey } from "@engineering-circuit/format"
 import type { SimIssue } from "../dc/issues"
 import { type OperatingPoint, operatingPoint } from "../dc/solve-dc"
 import type { NetBranch } from "../dc/topology"
@@ -33,7 +33,9 @@ export function sweepFrequencies({ start, stop, pointsPerDecade }: AcSweep): num
 	return Array.from({ length: count + 1 }, (_, index) => start * 10 ** ((decades * index) / count))
 }
 
-export function solveAc(circuit: Circuit, sweep: AcSweep | { frequencies: readonly number[] }): AcResult {
+export function solveAc(given: Circuit, sweep: AcSweep | { frequencies: readonly number[] }): AcResult {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	const inputs = circuit.components.filter((component) => component.type === "ac-source").map((component) => component.id)
 	if (inputs.length === 0) {
 		return { ok: false, errors: [{ componentIds: [], message: "A frequency response needs an AC source as its input." }] }

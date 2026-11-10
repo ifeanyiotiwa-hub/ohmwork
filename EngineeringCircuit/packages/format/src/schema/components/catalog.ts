@@ -1,4 +1,5 @@
 import * as z from "zod"
+import { CHIPS } from "./chips"
 import { ICS } from "./ics"
 import { LOGIC } from "./logic"
 import { MEASUREMENT } from "./measurement"
@@ -7,7 +8,7 @@ import { SEMICONDUCTORS } from "./semiconductors"
 import { SOURCES } from "./sources"
 import { SWITCHES } from "./switches"
 
-export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS, ...LOGIC, ...ICS, ...MEASUREMENT] as const
+export const COMPONENT_DEFINITIONS = [...SOURCES, ...PASSIVES, ...SWITCHES, ...SEMICONDUCTORS, ...LOGIC, ...ICS, ...MEASUREMENT, ...CHIPS] as const
 
 /** The category files, in palette order. */
 export const COMPONENT_CATEGORIES: readonly { name: string; types: readonly ComponentType[] }[] = [

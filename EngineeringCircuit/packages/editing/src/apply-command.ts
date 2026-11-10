@@ -15,6 +15,7 @@ import {
 	parseCircuit,
 } from "@engineering-circuit/format"
 import type { EditCommand } from "./edit-command"
+import { makeSubcircuit, renameSubcircuitPin, unpackSubcircuit } from "./chip-commands"
 import { storedParam, storedParams } from "./equivalents"
 
 const GRID_SPACING = 100
@@ -71,6 +72,13 @@ function propose(draft: Circuit, command: Exclude<EditCommand, { type: "batch" }
 				summary: `Removed ${target.type} "${target.id}"`,
 			}
 		}
+
+		case "make-subcircuit":
+			return makeSubcircuit(draft, command)
+		case "unpack-subcircuit":
+			return unpackSubcircuit(draft, command.componentId)
+		case "rename-subcircuit-pin":
+			return renameSubcircuitPin(draft, command.definition, command.pin, command.name)
 
 		case "connect": {
 			const existing = draft.wires.find(

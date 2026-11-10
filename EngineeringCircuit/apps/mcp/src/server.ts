@@ -16,9 +16,10 @@ import {
 	type ComponentType,
 	type PinRef,
 	createCircuit,
+	expandSubcircuits,
 	parseCircuitJson,
 	pinKey,
-	pinsOf,
+	pinsOfPart,
 	rotationSchema,
 	serializeCircuit,
 } from "@engineering-circuit/format"
@@ -51,6 +52,7 @@ Push buttons are released unless you list them in simulate/probe "pressed"; in t
 Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style.
 Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
 Net labels (net-label, params.name) connect every pin wired to a label of the same name, with no wire between: use them for supplies (VCC) and long or crossing runs.
+Chips: make_chip turns parts into a reusable chip (a subcircuit); probe its pins ("X1.out") or the parts inside it ("X1.R1").
 Buses (bus-4, bus-8, params.name): connectors of one name join pin by pin (d3 to d3) and are drawn as one thick line; a net label named <bus name><n> (e.g. "D3") taps member n.
 Filters and amplifiers: frequency_response sweeps an ac-source's frequency and gives gain (dB) and phase at a pin or across a part.
 open_in_app gives the learner a link to watch and edit this same circuit in the app; while they do, call recent_changes before explaining so you know what they changed.`
@@ -198,6 +200,30 @@ export function createServer(
 			const toRef = pinRef(to)
 			if (!fromRef || !toRef) return failure('Pins are written "<componentId>.<pin>", e.g. "R1.a"')
 			return edit({ type: "connect", from: fromRef, to: toRef })
+		},
+	)
+
+	server.registerTool(
+		"make_chip",
+		{
+			description:
+				'Turn parts into a chip (a subcircuit), placed where they were: the wires between them go inside, and each wire to the rest of the circuit ends on a chip pin. Name the pins after what they do (pins: [{ name: "in", pin: "R1.a" }]); unnamed ones are named after the part and pin. Place more of it with add_component type "subcircuit", params { definition: <chip id> }.',
+			inputSchema: z.object({
+				componentIds: z.array(z.string().min(1)).min(1),
+				name: z.string().min(1).max(40).describe("shown on the chip"),
+				pins: z.array(z.object({ name: z.string().min(1), pin: pinLabelSchema })).optional(),
+			}),
+		},
+		({ componentIds, name, pins }) => {
+			const named = (pins ?? []).map(({ name: pinName, pin }) => ({ name: pinName, to: pinRef(pin) }))
+			const unreadable = named.find((pin) => !pin.to)
+			if (unreadable) return failure(`Pins are written "<componentId>.<pin>", e.g. "R1.a" (pin "${unreadable.name}")`)
+			return edit({
+				type: "make-subcircuit",
+				componentIds,
+				name,
+				pins: named.flatMap(({ name: pinName, to }) => (to ? [{ name: pinName, to }] : [])),
+			})
 		},
 	)
 
@@ -368,13 +394,12 @@ export function createServer(
 
 			const phase = (source.params.phase * Math.PI) / 180
 			const inputPhasor: Complex = { re: source.params.amplitude * Math.cos(phase), im: source.params.amplitude * Math.sin(phase) }
-			// A pin from ground, or across a two-pin part from its first pin to its second.
+			// A pin from ground, or across a two-pin part (perhaps inside a chip) from its first pin to its second.
+			const across = found.kind === "pin" ? undefined : expandSubcircuits(circuit).components.find((part) => part.id === found.componentId)
 			const keys =
 				found.kind === "pin"
 					? [pinKey(found.pin)]
-					: pinsOf(circuit.components.find((part) => part.id === found.componentId)?.type ?? "ground").map((pin) =>
-							pinKey({ componentId: found.componentId, pin }),
-						)
+					: (across ? pinsOfPart(across, circuit) : []).map((pin) => pinKey({ componentId: found.componentId, pin }))
 			const zero: Complex = { re: 0, im: 0 }
 			const points = result.points.map((point) => {
 				const [high = zero, low = zero] = keys.map((key) => point.pinVoltages[key] ?? zero)

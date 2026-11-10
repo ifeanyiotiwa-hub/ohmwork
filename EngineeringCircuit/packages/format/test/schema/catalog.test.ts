@@ -8,7 +8,10 @@ test("every component type is defined once", () => {
 	expect(new Set(types).size).toBe(types.length)
 })
 
-test.each(COMPONENT_DEFINITIONS)("$type has unique, non-empty pin names", (definition) => {
+// A chip's pins come from its definition (pinsOfPart), so its type has none.
+const FIXED_PIN_TYPES = COMPONENT_DEFINITIONS.filter((definition) => definition.type !== "subcircuit")
+
+test.each(FIXED_PIN_TYPES)("$type has unique, non-empty pin names", (definition) => {
 	expect(definition.pins.length).toBeGreaterThan(0)
 	expect(new Set(definition.pins).size).toBe(definition.pins.length)
 	expect(definition.pins.every((pin) => pin.length > 0)).toBe(true)
@@ -44,9 +47,9 @@ test("wave sources need a positive frequency and a duty cycle between 0 and 1", 
 	expect(ac.schema.shape.params.safeParse({ ...ac.defaults, amplitude: -1 }).success).toBe(true)
 })
 
-test("every type belongs to exactly one palette category", () => {
+test("every type belongs to exactly one palette category, except chips (the palette lists the circuit's own)", () => {
 	const listed = COMPONENT_CATEGORIES.flatMap((category) => category.types)
-	expect([...listed].sort()).toEqual([...types].sort())
+	expect([...listed].sort()).toEqual(types.filter((type) => type !== "subcircuit").sort())
 	expect(COMPONENT_CATEGORIES.map((category) => category.name)).toEqual(["Sources", "Passive", "Switches", "Semiconductors", "Logic", "ICs", "Meters"])
 })
 

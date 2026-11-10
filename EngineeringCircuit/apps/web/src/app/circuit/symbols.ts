@@ -1,4 +1,4 @@
-import type { ComponentType, Point } from "@engineering-circuit/format"
+import { CHIP_HALF_WIDTH, type ComponentType, LAYOUT_GRID, type Point, chipPinOffsets } from "@engineering-circuit/format"
 import type { Box } from "./routing"
 
 /** How a part is drawn. Its pin positions come from the format package (`PIN_OFFSETS`). */
@@ -8,10 +8,32 @@ export type SymbolShape = {
 	paths: string[]
 	label: Point
 	labelAnchor: "start" | "middle"
-	marks?: { text: string; at: Point }[]
+	/** Text drawn with the part (turning with it, but upright); `small` for a chip's pin names. */
+	marks?: { text: string; at: Point; small?: boolean }[]
 }
 
 const LABEL_ABOVE = { x: 0, y: -24 }
+
+/** A chip's box stops this far short of its pins; its pin names sit this far in from the box's sides. */
+const CHIP_STUB = 10
+const CHIP_PIN_NAME_INSET = 14
+
+/** A chip: a box between its two rows of pins (chipPinOffsets), each pin's name inside the box beside it. */
+export function chipSymbol(pinNames: readonly string[]): SymbolShape {
+	const offsets = Object.entries(chipPinOffsets(pinNames))
+	const half = Math.max(LAYOUT_GRID, ...offsets.map(([, at]) => Math.abs(at.y) + LAYOUT_GRID / 2))
+	const side = CHIP_HALF_WIDTH - CHIP_STUB
+	return {
+		body: { left: -CHIP_HALF_WIDTH, top: -half, right: CHIP_HALF_WIDTH, bottom: half },
+		paths: [
+			`M${-side} ${-half} H${side} V${half} H${-side} Z`,
+			offsets.map(([, at]) => `M${at.x} ${at.y} H${Math.sign(at.x) * side}`).join(" "),
+		],
+		marks: offsets.map(([text, at]) => ({ text, at: { x: Math.sign(at.x) * (side - CHIP_PIN_NAME_INSET), y: at.y }, small: true })),
+		label: { x: 0, y: -half - 8 },
+		labelAnchor: "middle",
+	}
+}
 
 /** Members 20 apart from the top, centred on the part (as `PIN_OFFSETS` for bus-4 and bus-8). */
 function busConnectorSymbol(width: number): SymbolShape {
@@ -179,6 +201,8 @@ export const SYMBOLS: { [Type in ComponentType]: SymbolShape } = {
 		label: LABEL_ABOVE,
 		labelAnchor: "middle",
 	},
+	// A placed chip is drawn from its definition's pins (chipSymbol); this is only for one whose definition is missing.
+	subcircuit: chipSymbol([]),
 	// A tag with its pin on the left; the canvas shows the label's name beside it, not its id.
 	"net-label": {
 		body: { left: -20, top: -9, right: 34, bottom: 9 },
@@ -584,6 +608,7 @@ export const PART_NAMES: { [Type in ComponentType]: string } = {
 	resistor: "Resistor",
 	junction: "Junction",
 	"net-label": "Net label",
+	subcircuit: "Chip",
 	"bus-4": "Bus (4 lines)",
 	"bus-8": "Bus (8 lines)",
 	capacitor: "Capacitor",

@@ -9,7 +9,7 @@ import {
 	stepTransient,
 	wireCurrents,
 } from "@engineering-circuit/engine"
-import { type Circuit, type Component, type ComponentType, type Note, type PinRef, type Point, createCircuit, pinsOf } from "@engineering-circuit/format"
+import { type Circuit, type Component, type ComponentType, type Note, type PinRef, type Point, createCircuit, pinsOfPart } from "@engineering-circuit/format"
 import { LiveLink } from "../live/live-link"
 import { SimulationClock } from "../simulation/simulation-clock"
 import { type ChangedIds, NO_CHANGES, changedIds } from "./changes"
@@ -23,6 +23,12 @@ import { UI_CONFIG } from "./ui-config"
 const NOTE_GAP_BELOW = 100
 
 export type Selection = { kind: "component" | "wire" | "note"; id: string }
+
+/** What a click on the canvas places: a part of a type, or a copy of one of the circuit's chips. */
+export type Placing = ComponentType | { chip: string }
+
+export const samePlacing = (first: Placing | undefined, second: Placing | undefined): boolean =>
+	typeof first === "object" && typeof second === "object" ? first.chip === second.chip : first === second
 
 /** One oscilloscope trace: a part and the two pins its voltage is measured between (first minus second). */
 export type ScopeTraceSource = { id: string; pins: readonly [string, string] }
@@ -97,7 +103,7 @@ export class CircuitStore {
 		const probes = components.filter((component) => component.type === "scope-probe")
 		const watched = this.watched().flatMap((id) => {
 			const part = components.find((component) => component.id === id)
-			const [first, second] = part ? pinsOf(part.type) : []
+			const [first, second] = part ? pinsOfPart(part, this.circuit()) : []
 			return part && part.type !== "scope-probe" && first && second ? [{ id, pins: [first, second] as const }] : []
 		})
 		return [...probes.map((probe) => ({ id: probe.id, pins: ["positive", "negative"] as const })), ...watched]
@@ -153,7 +159,7 @@ export class CircuitStore {
 	/** The last dial step from a click, wheel or key, to tell whether the next one continues the same turn. */
 	private lastNudge: { componentId: string; gesture: string; at: number } | undefined
 
-	readonly placing = signal<ComponentType | undefined>(undefined)
+	readonly placing = signal<Placing | undefined>(undefined)
 	readonly wiringFrom = signal<PinRef | undefined>(undefined)
 	readonly paused = signal(false)
 	readonly editError = signal<string | undefined>(undefined)
@@ -385,6 +391,29 @@ export class CircuitStore {
 					? this.apply({ type: "remove-note", noteId: selection.id })
 					: this.apply({ type: "disconnect", wireId: selection.id })
 		if (removed) this.selection.set(undefined)
+	}
+
+	/** The group's parts become a chip in their place (one undo step), which is then selected. */
+	makeChip(name: string): void {
+		const before = new Set(this.circuit().components.map((part) => part.id))
+		const result = this.apply({ type: "make-subcircuit", componentIds: [...this.selectedParts()], name })
+		const chip = result?.components.find((part) => !before.has(part.id))
+		if (!chip) return
+		this.clearSelection()
+		this.selection.set({ kind: "component", id: chip.id })
+	}
+
+	/** The chip's parts come back where it is, selected together, to move, change or make into a chip again. */
+	unpackChip(componentId: string): void {
+		const before = new Set(this.circuit().components.map((part) => part.id))
+		const result = this.apply({ type: "unpack-subcircuit", componentId })
+		if (!result) return
+		this.clearSelection()
+		this.multiSelection.set(new Set(result.components.filter((part) => !before.has(part.id)).map((part) => part.id)))
+	}
+
+	renameChipPin(definition: string, pin: string, name: string): void {
+		this.apply({ type: "rename-subcircuit-pin", definition, pin, name })
 	}
 
 	/** R: the selected part turns a quarter turn clockwise; a group turns about its middle. */

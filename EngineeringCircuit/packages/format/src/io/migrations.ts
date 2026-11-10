@@ -94,6 +94,8 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
 	}),
 	// Version 10 chose the stepping: old circuits keep the fixed step they were made with.
 	9: (document) => ({ ...document, simulation: { ...(isObject(document.simulation) ? document.simulation : {}), stepping: "fixed" } }),
+	// Version 11 added chips (subcircuits): old circuits have none.
+	10: (document) => ({ ...document, subcircuits: [] }),
 }
 
 export type MigrationResult = { ok: true; document: JsonObject } | { ok: false; message: string }

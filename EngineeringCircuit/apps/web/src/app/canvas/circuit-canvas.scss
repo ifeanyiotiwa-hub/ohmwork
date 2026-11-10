@@ -335,6 +335,13 @@
 	pointer-events: none;
 }
 
+/* A chip's pin names, small inside its box. */
+.polarity.pin-name {
+	fill: var(--text-muted);
+	font-size: 9px;
+	font-weight: 400;
+}
+
 .part-reading.meter-reading {
 	fill: var(--text);
 	font-size: 13px;

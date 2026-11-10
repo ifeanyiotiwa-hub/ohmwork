@@ -71,6 +71,7 @@ test("offers the build, inspect and file tools", async () => {
 		"list_component_types",
 		"list_lessons",
 		"load_lesson",
+		"make_chip",
 		"move_component",
 		"open_circuit",
 		"open_in_app",
@@ -119,6 +120,28 @@ describe("a voltage divider built through the tools", () => {
 			components: expect.arrayContaining([{ id: "R1", type: "resistor", voltage: 5, current: 0.005, power: 0.025 }]),
 			warnings: [],
 		})
+	})
+
+	test("make_chip turns parts into a chip that works the same; parts inside read by path, and more copies can be placed", async () => {
+		await buildVoltageDivider()
+		const made = await call("make_chip", {
+			componentIds: ["R1", "R2"],
+			name: "Divider",
+			pins: [
+				{ name: "top", pin: "R1.a" },
+				{ name: "bottom", pin: "R2.b" },
+			],
+		})
+		expect(made.isError).toBe(false)
+		expect(made.text).toContain('Made chip "Divider" (X1)')
+		expect((await call("probe", { target: "X1.R1" })).data).toMatchObject({ voltage: 5, current: 0.005 })
+		expect((await call("probe", { target: "X1.R1.b" })).data).toMatchObject({ voltage: 5 })
+		expect((await call("probe", { target: "X1.top" })).data).toMatchObject({ voltage: 10 })
+		expect((await call("probe", { target: "X1.side" })).text).toContain("valid: top, bottom")
+
+		expect((await call("add_component", { type: "subcircuit", params: { definition: "divider" } })).isError).toBe(false)
+		expect((await call("connect", { from: "X2.top", to: "V1.positive" })).isError).toBe(false)
+		expect((await call("add_component", { type: "subcircuit", params: { definition: "nope" } })).text).toContain('No chip "nope"')
 	})
 
 	test("net labels of the same name connect, with no wire between them", async () => {

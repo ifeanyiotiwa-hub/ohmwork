@@ -16,6 +16,16 @@ const singleCommandSchema = z.discriminatedUnion("type", [
 	z.strictObject({ type: z.literal("add-component"), component: newComponentSchema }),
 	z.strictObject({ type: z.literal("remove-component"), componentId: idSchema }),
 	z.strictObject({ type: z.literal("connect"), from: pinRefSchema, to: pinRefSchema }),
+	// The chosen parts become a chip in their place (chip-commands.ts); pins not named here are named after the part and pin.
+	z.strictObject({
+		type: z.literal("make-subcircuit"),
+		componentIds: z.array(idSchema).min(1),
+		name: z.string().min(1).max(40),
+		pins: z.array(z.strictObject({ name: z.string(), to: pinRefSchema })).optional(),
+	}),
+	// Its parts come back where it is (chip-commands.ts); the chip stays defined for other copies.
+	z.strictObject({ type: z.literal("unpack-subcircuit"), componentId: idSchema }),
+	z.strictObject({ type: z.literal("rename-subcircuit-pin"), definition: idSchema, pin: idSchema, name: z.string() }),
 	z.strictObject({ type: z.literal("disconnect"), wireId: idSchema }),
 	z.strictObject({ type: z.literal("set-parameter"), componentId: idSchema, name: idSchema, value: z.unknown() }),
 	z.strictObject({ type: z.literal("move-component"), componentId: idSchema, position: pointSchema }),

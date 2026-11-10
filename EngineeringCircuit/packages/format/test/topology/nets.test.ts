@@ -62,10 +62,10 @@ test("named pins: each label, and each bus member as its bus name and number", (
 	const circuit = createCircuit("Named")
 	circuit.components.push(label("NL1", " Vcc "), bus("BUS1", "bus-4", "DATA"))
 	expect(namedPins(circuit).map(({ ref, key }) => `${pinKey(ref)}=${key}`)).toEqual([
-		"NL1:terminal=vcc",
-		"BUS1:d0=data0",
-		"BUS1:d1=data1",
-		"BUS1:d2=data2",
-		"BUS1:d3=data3",
+		"NL1:terminal=label:vcc",
+		"BUS1:d0=label:data0",
+		"BUS1:d1=label:data1",
+		"BUS1:d2=label:data2",
+		"BUS1:d3=label:data3",
 	])
 })

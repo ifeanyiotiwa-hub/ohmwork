@@ -113,7 +113,7 @@
 			}
 		</g>
 		@for (mark of item.marks; track $index) {
-			<text class="polarity" [attr.x]="mark.x" [attr.y]="mark.y">{{ mark.text }}</text>
+			<text class="polarity" [class.pin-name]="mark.small" [attr.x]="mark.x" [attr.y]="mark.y">{{ mark.text }}</text>
 		}
 		<text class="part-label" [attr.x]="item.label.x" [attr.y]="item.label.y" [attr.text-anchor]="item.label.anchor">
 			@if (item.namedByValue) {

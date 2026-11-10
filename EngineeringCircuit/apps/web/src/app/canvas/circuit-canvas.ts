@@ -8,11 +8,13 @@ import {
 	pinDirection,
 	pinKey,
 	pinPosition,
-	pinsOf,
+	chipDefinition,
+	isChip,
+	pinsOfPart,
 	rotate,
 } from "@engineering-circuit/format"
 import type { DcSolution } from "@engineering-circuit/engine"
-import { CircuitStore } from "../circuit/circuit-store"
+import { CircuitStore, type Placing } from "../circuit/circuit-store"
 import { glowOf } from "../circuit/glow"
 import { busLines } from "../circuit/buses"
 import { pathThrough, snap } from "../circuit/geometry"
@@ -28,6 +30,7 @@ import {
 	potentiometerWiper,
 	SYMBOLS,
 	type SymbolShape,
+	chipSymbol,
 	pushButtonPath,
 	relayLeverPath,
 	spdtLeverPath,
@@ -195,6 +198,13 @@ export class CircuitCanvas {
 	private readonly touches = new Map<number, Point>()
 	private longPress: { timer: ReturnType<typeof setTimeout>; start: Point } | undefined
 
+	/** A part's symbol; a chip's is drawn from its definition's pins. */
+	private symbolOf(part: Part): SymbolShape {
+		if (!isChip(part)) return SYMBOLS[part.type]
+		const definition = chipDefinition(this.store.circuit(), part)
+		return definition ? chipSymbol(definition.pins.map((pin) => pin.name)) : SYMBOLS.subcircuit
+	}
+
 	private positionOf(part: Part): Point {
 		const preview = this.dragPreview()
 		return preview?.ids.has(part.id) ? { x: part.position.x + preview.delta.x, y: part.position.y + preview.delta.y } : part.position
@@ -219,9 +229,11 @@ export class CircuitCanvas {
 		const { logicHigh, speed } = this.store.circuit().simulation
 		const largest = Math.max(0, ...Object.values(solution?.pinVoltages ?? {}).map(Math.abs))
 		const overheated = new Set(this.store.warnings().flatMap((warning) => (warning.kind === "burn-out" ? warning.componentIds : [])))
-		return this.store.circuit().components.map((part) => {
+		const circuit = this.store.circuit()
+		return circuit.components.map((part) => {
 			const at = this.positionOf(part)
-			const symbol = SYMBOLS[part.type]
+			const symbol = this.symbolOf(part)
+			const chip = isChip(part) ? chipDefinition(circuit, part) : undefined
 			const current = solution?.readings[part.id]?.current ?? 0
 			return {
 				part,
@@ -242,9 +254,10 @@ export class CircuitCanvas {
 				readingAt: readingPlacement(symbol, part.rotation, at, isMeter(part)),
 				marks: (symbol.marks ?? []).map((mark) => {
 					const offset = rotate(mark.at, part.rotation)
-					return { text: mark.text, x: at.x + offset.x, y: at.y + offset.y }
+					return { text: mark.text, x: at.x + offset.x, y: at.y + offset.y, small: mark.small === true }
 				}),
-				value: valueText(part),
+				// A chip is shown by the name of the chip it places.
+				value: chip ? chip.name : valueText(part),
 				namedByValue: NAMED_BY_VALUE.has(part.type),
 				reading:
 					speedText(solution?.readings[part.id]) ??
@@ -255,12 +268,12 @@ export class CircuitCanvas {
 				glow: glowOf(part, solution, logicHigh),
 				selected: (selection?.kind === "component" && selection.id === part.id) || group.has(part.id),
 				agentChanged: agentChanged.has(part.id),
-				pins: pinsOf(part.type).map((pin) => {
+				pins: pinsOfPart(part, circuit).map((pin) => {
 					const ref = { componentId: part.id, pin }
 					return {
 						ref,
 						key: pinKey(ref),
-						at: pinPosition(part, pin, at),
+						at: pinPosition(part, pin, at, circuit.subcircuits),
 						pending: wiringFrom?.componentId === part.id && wiringFrom.pin === pin,
 					}
 				}),
@@ -278,21 +291,21 @@ export class CircuitCanvas {
 		const selection = this.store.selection()
 		const dragged = this.dragPreview()?.ids ?? new Set<string>()
 		const agentChanged = this.store.agentChanges().wires
-		const bodies = circuit.components.map((part) => placeBox(SYMBOLS[part.type].body, this.positionOf(part), part.rotation))
+		const bodies = circuit.components.map((part) => placeBox(this.symbolOf(part).body, this.positionOf(part), part.rotation))
 
 		return circuit.wires.flatMap((wire) => {
 			const from = partsById.get(wire.from.componentId)
 			const to = partsById.get(wire.to.componentId)
 			if (!from || !to) return []
 			const bends = dragged.has(from.id) || dragged.has(to.id) ? [] : wire.bends
-			const start = pinPosition(from, wire.from.pin, this.positionOf(from))
-			const end = pinPosition(to, wire.to.pin, this.positionOf(to))
+			const start = pinPosition(from, wire.from.pin, this.positionOf(from), circuit.subcircuits)
+			const end = pinPosition(to, wire.to.pin, this.positionOf(to), circuit.subcircuits)
 			const points =
 				bends.length > 0
 					? [start, ...bends, end]
 					: routeAround(
-							{ at: start, direction: pinDirection(from, wire.from.pin) },
-							{ at: end, direction: pinDirection(to, wire.to.pin) },
+							{ at: start, direction: pinDirection(from, wire.from.pin, circuit.subcircuits) },
+							{ at: end, direction: pinDirection(to, wire.to.pin, circuit.subcircuits) },
 							bodies,
 							this.config.gridSize,
 						)
@@ -324,7 +337,7 @@ export class CircuitCanvas {
 			})
 			const part = first ? partsById.get(first.componentId) : undefined
 			if (!first || !part || net.pins.length < 2) return []
-			const at = pinPosition(part, first.pin, this.positionOf(part))
+			const at = pinPosition(part, first.pin, this.positionOf(part), circuit.subcircuits)
 			const voltage = solution.pinVoltages[pinKey(first)] ?? 0
 			return [{ key: pinKey(first), x: at.x + NODE_LABEL_OFFSET.x, y: at.y + NODE_LABEL_OFFSET.y, text: formatSi(voltage, "V") }]
 		})
@@ -332,9 +345,10 @@ export class CircuitCanvas {
 
 	protected readonly rubberBand = computed(() => {
 		const from = this.store.wiringFrom()
-		const part = from && this.store.circuit().components.find((candidate) => candidate.id === from.componentId)
+		const circuit = this.store.circuit()
+		const part = from && circuit.components.find((candidate) => candidate.id === from.componentId)
 		if (!from || !part) return undefined
-		const start = pinPosition(part, from.pin)
+		const start = pinPosition(part, from.pin, part.position, circuit.subcircuits)
 		const end = this.pointer()
 		return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
 	})
@@ -609,7 +623,7 @@ export class CircuitCanvas {
 		}
 		if (event.key === "p" || event.key === "P") {
 			// To its pins, for wiring from the keyboard.
-			const [first] = pinsOf(part.type)
+			const [first] = pinsOfPart(part, this.store.circuit())
 			if (!first) return
 			event.preventDefault()
 			this.focusPin(pinKey({ componentId: part.id, pin: first }))
@@ -733,11 +747,13 @@ export class CircuitCanvas {
 		return undefined
 	}
 
-	private place(type: ComponentType, point: Point): void {
+	private place(placing: Placing, point: Point): void {
 		const grid = this.config.gridSize
+		const position = { x: snap(point.x, grid), y: snap(point.y, grid) }
 		const placed = this.store.apply({
 			type: "add-component",
-			component: { type, position: { x: snap(point.x, grid), y: snap(point.y, grid) } },
+			component:
+				typeof placing === "object" ? { type: "subcircuit", params: { definition: placing.chip }, position } : { type: placing, position },
 		})
 		this.store.placing.set(undefined)
 		const added = placed?.components.at(-1)

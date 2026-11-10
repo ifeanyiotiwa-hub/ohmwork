@@ -94,6 +94,7 @@ Half and full adders are not parts. Learners build them from gates (lessons in D
 ## ICs, converters and displays
 | Type | Pins | Params | Model | Seen in | Deliverable | Status |
 |---|---|---|---|---|---|---|
+| `subcircuit` (chip) | its definition's pins | definition (the chip's id in the circuit's `subcircuits`) | its parts, expanded under its id ("X1.R1") with each pin joined to the pin inside it stands for; made from selected parts (`make-subcircuit`), unpacked back (`unpack-subcircuit`); chips inside chips | EC (custom chips), SPICE `X` | D17 | simulated |
 | `op-amp` | nonInverting, inverting, output | gain (CJS 100000), supplyHigh/Low (±15 V), gainBandwidth (1.17 MHz), slewRate (0.5 V/µs), maxOutputCurrent (25 mA): LM741 | smooth rail limit; over time one pole (GBW, vs ngspice within 1%) and a slew limit; output current limit as a mode switch | EC, CJS, TI | D9, D16 | simulated |
 | `timer-555` | ground, trigger, output, reset, control, threshold, discharge, vcc | – | comparators + SR latch + discharge transistor | EC, CJS | D9 | simulated |
 | `seven-segment` | a, b, c, d, e, f, g, dp | – | logic display (CJS default): a segment lights at logic 1. LED-accurate version: `seven-segment-led` | EC, CJS | D9 | simulated |

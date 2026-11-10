@@ -1,5 +1,5 @@
 import type { Circuit, PinRef } from "../schema/circuit"
-import { pinsOf } from "../schema/components/catalog"
+import { CHIP_PATH_SEPARATOR, chipDefinition, isChip, pinsOfPart } from "../schema/subcircuits"
 
 export type Net = { index: number; pins: PinRef[]; isGround: boolean }
 
@@ -10,20 +10,35 @@ export const netLabelKey = (name: string): string => name.trim().toLowerCase()
 
 /**
  * Pins joined by name rather than by wire: a net label's pin under its name, and each member of a bus connector
- * under its bus name and number (bus "D", pin d3: "d3"), so a label named "D3" taps it. Pins with the same key are
- * one node.
+ * under its bus name and number (bus "D", pin d3: "d3"), so a label named "D3" taps it. And in an expanded circuit
+ * (expandSubcircuits), each chip pin with the pin inside it stands for. Pins with the same key are one node; label
+ * and chip keys are kept apart ("label:", "chip:"), so no name can join a chip's pin by accident.
  */
 export function namedPins(circuit: Circuit): { ref: PinRef; key: string }[] {
+	const ids = new Set(circuit.components.map((component) => component.id))
 	return circuit.components.flatMap((component) => {
 		switch (component.type) {
 			case "net-label":
-				return [{ ref: { componentId: component.id, pin: "terminal" }, key: netLabelKey(component.params.name) }]
+				return [{ ref: { componentId: component.id, pin: "terminal" }, key: `label:${netLabelKey(component.params.name)}` }]
 			case "bus-4":
 			case "bus-8":
-				return pinsOf(component.type).map((pin) => ({
+				return pinsOfPart(component, circuit).map((pin) => ({
 					ref: { componentId: component.id, pin },
-					key: netLabelKey(`${component.params.name.trim()}${pin.slice(1)}`),
+					key: `label:${netLabelKey(`${component.params.name.trim()}${pin.slice(1)}`)}`,
 				}))
+			case "subcircuit": {
+				// Only once its insides are in the circuit: a pin with nothing to join stays as it is.
+				const definition = isChip(component) ? chipDefinition(circuit, component) : undefined
+				return (definition?.pins ?? []).flatMap((pin) => {
+					const inner = `${component.id}${CHIP_PATH_SEPARATOR}${pin.to.componentId}`
+					if (!ids.has(inner)) return []
+					const key = `chip:${component.id}:${pin.name}`
+					return [
+						{ ref: { componentId: component.id, pin: pin.name }, key },
+						{ ref: { componentId: inner, pin: pin.to.pin }, key },
+					]
+				})
+			}
 			default:
 				return []
 		}
@@ -43,7 +58,7 @@ export function buildNets(circuit: Circuit): Net[] {
 	}
 
 	const allPins: PinRef[] = circuit.components.flatMap((component) =>
-		pinsOf(component.type).map((pin) => ({ componentId: component.id, pin })),
+		pinsOfPart(component, circuit).map((pin) => ({ componentId: component.id, pin })),
 	)
 	allPins.forEach((ref) => parent.set(pinKey(ref), pinKey(ref)))
 	circuit.wires.forEach((wire) => parent.set(root(pinKey(wire.from)), root(pinKey(wire.to))))

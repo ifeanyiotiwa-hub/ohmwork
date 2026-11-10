@@ -1,8 +1,8 @@
-import { DOCUMENT, Component, effect, inject, signal, viewChild } from "@angular/core"
+import { DOCUMENT, Component, computed, effect, inject, signal, viewChild } from "@angular/core"
 import { liveSocketUrl } from "@engineering-circuit/editing"
-import type { Circuit, ComponentType } from "@engineering-circuit/format"
+import type { Circuit } from "@engineering-circuit/format"
 import { CircuitCanvas } from "./canvas/circuit-canvas"
-import { CircuitStore } from "./circuit/circuit-store"
+import { CircuitStore, type Placing, samePlacing } from "./circuit/circuit-store"
 import { UI_CONFIG } from "./circuit/ui-config"
 import { CURRENT_WORKSPACE, CircuitLibrary, liveWorkspaceSlot } from "./library/circuit-library"
 import { LibraryPanel } from "./library/library-panel"
@@ -90,9 +90,14 @@ export class App {
 		this.library.problem.set(`Your circuit isn't being kept in this browser (${reason}). Download it from the Library to keep it.`)
 	}
 
-	protected choosePart(type: ComponentType): void {
+	/** The circuit's chips, for the palette. */
+	protected readonly chips = computed(() =>
+		this.store.circuit().subcircuits.map((chip) => ({ id: chip.id, name: chip.name, pins: chip.pins.map((pin) => pin.name) })),
+	)
+
+	protected choosePart(placing: Placing): void {
 		this.store.wiringFrom.set(undefined)
-		this.store.placing.update((current) => (current === type ? undefined : type))
+		this.store.placing.update((current) => (samePlacing(current, placing) ? undefined : placing))
 	}
 
 	/**

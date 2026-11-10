@@ -1,6 +1,6 @@
 <nav class="palette" aria-label="Parts">
 	<div class="categories" role="tablist" aria-label="Part categories">
-		@for (category of categories; track category.name; let index = $index) {
+		@for (category of categories(); track category.name; let index = $index) {
 			<button
 				type="button"
 				role="tab"
@@ -20,16 +20,16 @@
 		}
 	</div>
 	<div class="parts" role="tabpanel" id="palette-parts" [attr.aria-labelledby]="'palette-tab-' + currentCategory()">
-		@for (item of items(); track item.type; let index = $index) {
+		@for (item of items(); track item.key; let index = $index) {
 			<button
 				type="button"
 				class="part-button"
 				(keydown)="onPartKey($event, index)"
-				[class.active]="active() === item.type"
-				[attr.aria-pressed]="active() === item.type"
-				[attr.data-palette]="item.type"
+				[class.active]="isActive(item)"
+				[attr.aria-pressed]="isActive(item)"
+				[attr.data-palette]="item.key"
 				[title]="item.simulated ? 'Add ' + item.name : item.name + ' (shown, not simulated yet)'"
-				(click)="choose.emit(item.type)"
+				(click)="choose.emit(item.placing)"
 			>
 				<svg class="icon" [attr.viewBox]="item.viewBox" aria-hidden="true">
 					@for (d of item.paths; track $index) {
@@ -44,6 +44,9 @@
 					<span class="badge">soon</span>
 				}
 			</button>
+		}
+		@if (currentCategory() === chipsCategory && items().length === 0) {
+			<p class="hint" data-chips-hint>Select parts, then Make chip in the inspector: it becomes a part you can place again.</p>
 		}
 	</div>
 </nav>

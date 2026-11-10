@@ -68,7 +68,8 @@ test("the palette works from the keyboard: arrows change category and move betwe
 	await expect(passive).toHaveAttribute("aria-selected", "true")
 	await expect(sources).toHaveAttribute("tabindex", "-1")
 	await page.keyboard.press("End")
-	await expect(page.locator('[data-category="Meters"]')).toBeFocused()
+	// The last tab is the circuit's own chips.
+	await expect(page.locator('[data-category="Chips"]')).toBeFocused()
 	await page.keyboard.press("ArrowRight")
 	await expect(sources).toBeFocused()
 

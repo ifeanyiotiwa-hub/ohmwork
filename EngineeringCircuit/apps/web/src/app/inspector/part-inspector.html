@@ -12,11 +12,32 @@
 			<button type="button" (click)="store.clearSelection()" title="Clear the selection (Esc)">Clear</button>
 			<button type="button" class="danger" (click)="store.removeSelected()" title="Delete (Del)">Delete</button>
 		</div>
+		<!-- Make chip: the parts become one part with pins where wires leave them, placeable again from the Chips tab. -->
+		<label class="field">
+			<span class="field-name">chip name</span>
+			<input type="text" data-chip-name maxlength="40" [value]="chipName()" (input)="onChipName($event)" />
+		</label>
+		<div class="actions">
+			<button type="button" data-make-chip [disabled]="chipName().trim() === ''" (click)="store.makeChip(chipName().trim())">Make chip</button>
+		</div>
 	} @else if (store.selectedComponent(); as part) {
 		<header>
 			<h2>{{ part.id }}</h2>
-			<span class="kind">{{ partNames[part.type] }}</span>
+			<span class="kind">{{ chip()?.name ?? partNames[part.type] }}</span>
 		</header>
+
+		@if (chip(); as selected) {
+			<p class="description">A chip: its parts are inside, joined to these pins. Unpack it to see or change them.</p>
+			@for (pin of selected.pins; track pin) {
+				<label class="field">
+					<span class="field-name">pin</span>
+					<input type="text" maxlength="16" [attr.data-chip-pin]="pin" [value]="pin" (change)="renamePin(selected.definition, pin, $event)" />
+				</label>
+			}
+			<div class="actions">
+				<button type="button" data-unpack (click)="store.unpackChip(selected.id)">Unpack</button>
+			</div>
+		}
 
 		@for (field of fields(); track field.name) {
 			<label class="field">

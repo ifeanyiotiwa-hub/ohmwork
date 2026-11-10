@@ -223,3 +223,37 @@ test("a bus carries several signals as one drawn line between connectors of one 
 	await expect(page.locator("[data-bus]")).toHaveCount(0)
 	await expect.poll(lit("OUT2")).toBe(0)
 })
+
+test("parts become a chip: made from a group, placed again from the Chips tab, pins renamed, unpacked", async ({ page }) => {
+	const chipsTab = page.locator('[data-category="Chips"]')
+	await chipsTab.click()
+	await expect(page.locator("[data-chips-hint]")).toBeVisible()
+
+	await page.locator('[data-part="R1"]').click({ modifiers: ["Shift"] })
+	await page.locator('[data-part="R2"]').click({ modifiers: ["Shift"] })
+	await page.locator("[data-chip-name]").fill("Pair")
+	await page.locator("[data-make-chip]").click()
+	const chip = page.locator('[data-part="X1"]')
+	await expect(chip).toBeVisible()
+	await expect(page.locator('[data-part="R1"]')).toHaveCount(0)
+	const inspector = page.getByRole("complementary", { name: "Inspector" })
+	await expect(inspector).toContainText("Pair")
+	// It still works: the supply's 6 V reaches the chip's pin (the 4 V node is now inside it).
+	await expect(page.locator(".node-label", { hasText: "6 V" })).toBeVisible()
+
+	const pin = page.locator('[data-chip-pin="R1_a"]')
+	await pin.fill("top")
+	await pin.press("Enter")
+	await expect(page.locator('[data-pin="X1:top"]')).toHaveCount(1)
+
+	await page.locator('[data-palette="chip:pair"]').click()
+	await canvas(page).click({ position: { x: 640, y: 480 } })
+	await expect(page.locator('[data-part="X2"]')).toBeVisible()
+
+	await chip.click()
+	await page.locator("[data-unpack]").click()
+	await expect(page.locator('[data-part="R1"]')).toBeVisible()
+	await expect(page.locator('[data-part="R2"]')).toBeVisible()
+	await expect(page.locator('[data-part="X1"]')).toHaveCount(0)
+	await expect(page.locator("[data-group-count]")).toHaveText("2 parts selected")
+})

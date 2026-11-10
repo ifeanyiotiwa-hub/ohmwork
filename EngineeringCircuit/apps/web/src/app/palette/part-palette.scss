@@ -91,3 +91,11 @@
 	color: var(--warning);
 	font-size: 9px;
 }
+
+/* The Chips tab before any chip is made: how to make one. */
+.hint {
+	margin: 0;
+	padding: 8px 4px;
+	font-size: 12px;
+	color: var(--text-muted);
+}

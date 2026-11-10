@@ -39,6 +39,7 @@ Device (works offline)                     Server (optional, later)
 - Diodes and transistors are `device` branches linearized each Newton–Raphson iteration (ADR-017); a circuit without them is one linear solve.
 - Logic parts are ideal sources to ground (an internal ground if none is placed) whose outputs change between solves, never within one: one time step of delay per gate (ADR-018).
 - Floating sections are solved relative to a stated reference pin and produce a warning; they are not silently tied to ground with a hidden resistor.
+- Chips (subcircuits) never reach the models: every public engine function first takes `expandSubcircuits(circuit)` (format; cached), so a chip is its parts renamed "X1.R1" and its pins are joined to the pins inside by name (`namedPins`). Pin lookups that may meet a chip use `pinsOfPart(part, circuit)`, not `pinsOf(type)` (ADR-042).
 
 ## Live link (D8)
 ```
@@ -47,7 +48,7 @@ Claude Code ──stdio──► apps/mcp: CircuitDocument ◄── MCP tools (
                             ▼
                        apps/web CircuitStore ── edits (author "learner") ──► server
 ```
-- App → server: `edit` (an `EditCommand`), `undo`, `replace`. Server → every app: `state` (revision, whole circuit, history, the change and its author) or `rejected` (why).
+- App → server: `edit` (an `EditCommand`), `undo`, `redo`, `replace`. Server → every app: `state` (revision, whole circuit, history, the change and its author) or `rejected` (why).
 - The app validates an edit locally first, shows the predicted result, and replaces it with the server's state when it arrives.
 - Selection, zoom, pause stay local to each app.
 

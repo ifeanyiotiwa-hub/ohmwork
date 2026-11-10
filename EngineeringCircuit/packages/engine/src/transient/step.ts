@@ -1,4 +1,4 @@
-import type { Circuit } from "@engineering-circuit/format"
+import { type Circuit, expandSubcircuits } from "@engineering-circuit/format"
 import { type DcInputs, STATEFUL_TYPES, type StoredState, TIME_DEPENDENT_TYPES } from "../dc/branches"
 import type { SimIssue } from "../dc/issues"
 import { type DcSolution, solveCircuit } from "../dc/solve-dc"
@@ -33,13 +33,15 @@ export type TransientResult = { ok: true; state: TransientState; solution: DcSol
 export const initialTransientState = (): TransientState => ({ time: 0, memory: {}, pinVoltages: {} })
 
 export const isTimeDependent = (circuit: Circuit): boolean =>
-	circuit.components.some((component) => TIME_DEPENDENT_TYPES.has(component.type))
+	expandSubcircuits(circuit).components.some((component) => TIME_DEPENDENT_TYPES.has(component.type))
 
 /**
  * Advances the circuit by one time step. The circuit may change between steps (an edit, a switch flip): stored
  * states are matched by component id, so a capacitor keeps its charge when the parts around it change.
  */
-export function stepTransient(circuit: Circuit, previous: TransientState, { timeStep, pressed }: TransientOptions): TransientResult {
+export function stepTransient(given: Circuit, previous: TransientState, { timeStep, pressed }: TransientOptions): TransientResult {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	const time = previous.time + timeStep
 	const logicNow = previous.logic ?? initialMemories(circuit)
 	const switching = switchingOf(circuit, pressed, logicNow)

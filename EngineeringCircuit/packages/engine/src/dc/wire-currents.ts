@@ -1,10 +1,12 @@
-import { type Circuit, type Net, buildNets, namedPins, pinKey, pinsOf } from "@engineering-circuit/format"
+import { type Circuit, type Net, buildNets, expandSubcircuits, namedPins, pinKey, pinsOf } from "@engineering-circuit/format"
 import type { DcSolution } from "./solve-dc"
 
 /** `wireId` undefined: the unseen link between two pins joined by name, which carries current but is no wire. */
 type Edge = { id: string; wireId: string | undefined; neighbour: string; forward: boolean }
 
-export function wireCurrents(circuit: Circuit, solution: DcSolution): Record<string, number> {
+export function wireCurrents(given: Circuit, solution: DcSolution): Record<string, number> {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	const outflow = partOutflows(circuit, solution)
 	const groundIds = new Set(circuit.components.filter((c) => c.type === "ground").map((c) => c.id))
 	const currents: Record<string, number> = Object.fromEntries(circuit.wires.map((wire) => [wire.id, 0]))

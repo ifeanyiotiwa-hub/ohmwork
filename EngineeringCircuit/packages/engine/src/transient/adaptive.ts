@@ -3,7 +3,7 @@
 // second-order method's error is about a third of it). A step whose error is within SPICE's usual tolerances is kept
 // (the two half steps, the more accurate answer) and the next step grows; otherwise it is taken again, smaller.
 // Steps never cross a square wave's edge (a breakpoint, as in SPICE), and never exceed the circuit's time step.
-import type { Circuit, ComponentType } from "@engineering-circuit/format"
+import { type Circuit, type ComponentType, expandSubcircuits } from "@engineering-circuit/format"
 import type { DcInputs, StoredState } from "../dc/branches"
 import type { SimIssue } from "../dc/issues"
 import type { DcSolution } from "../dc/solve-dc"
@@ -42,10 +42,12 @@ const stepsTheTiming = (type: ComponentType) => type === "clock" || sequentialOf
 
 /** Fixed steps when the circuit asks for them, or when it has parts whose timing is one step per change. */
 export const usesFixedSteps = (circuit: Circuit): boolean =>
-	circuit.simulation.stepping === "fixed" || circuit.components.some((component) => stepsTheTiming(component.type))
+	circuit.simulation.stepping === "fixed" || expandSubcircuits(circuit).components.some((component) => stepsTheTiming(component.type))
 
 /** Moves the circuit on from `state` to the time `until` (or until `maxSteps` steps have been kept). */
-export function advanceTransient(circuit: Circuit, state: TransientState, until: number, options: AdvanceOptions): AdvanceResult {
+export function advanceTransient(given: Circuit, state: TransientState, until: number, options: AdvanceOptions): AdvanceResult {
+	// Chips are seen as their parts (format expandSubcircuits; cached, so calling it again costs nothing).
+	const circuit = expandSubcircuits(given)
 	return usesFixedSteps(circuit) ? advanceFixed(circuit, state, until, options) : advanceAdaptive(circuit, state, until, options)
 }
 

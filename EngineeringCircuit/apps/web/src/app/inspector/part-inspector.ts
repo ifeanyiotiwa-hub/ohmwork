@@ -1,5 +1,5 @@
-import { Component, computed, inject } from "@angular/core"
-import { type ComponentType, paramFieldsOf, pinsOf } from "@engineering-circuit/format"
+import { Component, computed, inject, signal } from "@angular/core"
+import { type ComponentType, chipDefinition, isChip, paramFieldsOf, pinsOfPart } from "@engineering-circuit/format"
 import { CircuitStore } from "../circuit/circuit-store"
 import { speedText } from "../circuit/part-text"
 import { formatSi, parseSi, unitSymbolOf } from "../circuit/si-units"
@@ -40,7 +40,8 @@ export class PartInspector {
 
 	protected readonly fields = computed<FieldView[]>(() => {
 		const part = this.store.selectedComponent()
-		if (!part) return []
+		// A chip's only parameter is which chip it places; its pins are shown instead.
+		if (!part || isChip(part)) return []
 		const params: Record<string, unknown> = part.params
 		return paramFieldsOf(part.type).map((field): FieldView => {
 			const value = params[field.name]
@@ -70,8 +71,36 @@ export class PartInspector {
 	/** A part whose voltage (first pin to second) can go on the oscilloscope without a probe; probes are already on it. */
 	protected readonly watchable = computed(() => {
 		const part = this.store.selectedComponent()
-		return part && part.type !== "scope-probe" && pinsOf(part.type).length >= 2 ? part.id : undefined
+		// A chip has no voltage of its own across two pins to plot (its pins can be probed).
+		return part && part.type !== "scope-probe" && !isChip(part) && pinsOfPart(part, this.store.circuit()).length >= 2 ? part.id : undefined
 	})
+
+	/** The selected chip: which chip it places, and its pins (renamed here, for every copy). */
+	protected readonly chip = computed(() => {
+		const part = this.store.selectedComponent()
+		if (!part || !isChip(part)) return undefined
+		const definition = chipDefinition(this.store.circuit(), part)
+		return definition && { id: part.id, definition: definition.id, name: definition.name, pins: definition.pins.map((pin) => pin.name) }
+	})
+
+	/** The name a new chip gets (Make chip, with a group selected). */
+	protected readonly chipName = signal("Chip")
+
+	protected onChipName(event: Event): void {
+		this.chipName.set((event.target as HTMLInputElement).value)
+	}
+
+	protected renamePin(definition: string, pin: string, event: Event): void {
+		const input = event.target as HTMLInputElement
+		const name = input.value.trim()
+		if (name === "" || name === pin) {
+			input.value = pin
+			return
+		}
+		this.store.renameChipPin(definition, pin, name)
+		// A refused name (taken, or not a name) is explained; the field shows the pin's name again.
+		if (this.store.editError()) input.value = pin
+	}
 
 	protected readonly reading = computed(() => {
 		const part = this.store.selectedComponent()

@@ -10,8 +10,10 @@ import {
 	buildNets,
 	definitionOf,
 	pinKey,
+	expandSubcircuits,
+	isChip,
 	pinPosition,
-	pinsOf,
+	pinsOfPart,
 } from "@engineering-circuit/format"
 import * as z from "zod"
 
@@ -45,7 +47,7 @@ export function componentTypesReport() {
 export function pinPositionsReport(circuit: Circuit): Record<string, Point> {
 	return Object.fromEntries(
 		circuit.components.flatMap((component) =>
-			pinsOf(component.type).map((pin) => [`${component.id}.${pin}`, pinPosition(component, pin)]),
+			pinsOfPart(component, circuit).map((pin) => [`${component.id}.${pin}`, pinPosition(component, pin, component.position, circuit.subcircuits)]),
 		),
 	)
 }
@@ -104,10 +106,14 @@ export type ProbeTarget =
 	| { kind: "ports"; componentId: string }
 	| { kind: "pin"; pin: PinRef }
 
-export function findProbeTarget(circuit: Circuit, target: string): ProbeTarget | { error: string } {
+/** A part ("R1", or inside a chip "X1.R1") or a pin ("R1.a", "X1.mid", "X1.R1.a"). */
+export function findProbeTarget(given: Circuit, target: string): ProbeTarget | { error: string } {
+	// Parts inside chips are found by their path (the engine reads them under it too).
+	const circuit = expandSubcircuits(given)
 	const component = circuit.components.find((candidate) => candidate.id === target)
 	if (component) {
-		return pinsOf(component.type).length === 2
+		// A chip has no reading of its own: its pins do (as a multi-pin part's ports).
+		return !isChip(component) && pinsOfPart(component, circuit).length === 2
 			? { kind: "component", componentId: component.id }
 			: { kind: "ports", componentId: component.id }
 	}
@@ -117,8 +123,9 @@ export function findProbeTarget(circuit: Circuit, target: string): ProbeTarget |
 	const pin = target.slice(separator + 1)
 	const owner = circuit.components.find((candidate) => candidate.id === componentId)
 	if (!owner) return { error: `No component with id "${componentId}"` }
-	if (separator <= 0 || !pinsOf(owner.type).includes(pin)) {
-		return { error: `${owner.type} "${componentId}" has no pin "${pin}" (valid: ${pinsOf(owner.type).join(", ")})` }
+	const pins = pinsOfPart(owner, circuit)
+	if (separator <= 0 || !pins.includes(pin)) {
+		return { error: `${owner.type} "${componentId}" has no pin "${pin}" (valid: ${pins.join(", ")})` }
 	}
 	return { kind: "pin", pin: { componentId, pin } }
 }
