@@ -86,7 +86,7 @@ whatever the app is at that point.
 | Item | How |
 |---|---|
 | Public repo and hosting | A git remote (GitHub), the PWA hosted (static hosting), the licence and contribution notes |
-| ~~Rename the code to OhmWork~~ (done, ADR-046) | Before the first public release, once: the `@engineering-circuit/*` package scope, the `EngineeringCircuit/` folder (CI paths, `.mcp.json`), the MCP server id `engineering-circuit`, the desktop/Android identifier `dev.engineeringcircuit.app` (an installed copy treats a new identifier as a new app, so only before anyone has installed it) and the domain |
+| ~~Rename the code to OhmWork~~ (done, ADR-046) | Before the first public release, once: the package scope, the folder (CI paths, `.mcp.json`), the MCP server id, the desktop/Android identifier (an installed copy treats a new identifier as a new app, so only before anyone has installed it) and the domain |
 | Desktop CI and signing | Run the existing workflow; macOS notarization and Windows signing when accounts exist |
 | Android release | A signed release APK/AAB (key kept outside the repo), store listing |
 | iOS | Needs full Xcode; same Tauri app |
