@@ -40,8 +40,9 @@
 	display: grid;
 	justify-items: center;
 	gap: 2px;
+	flex-shrink: 0;
 	min-width: 72px;
-	padding: 6px 4px;
+	padding: 3px 8px;
 	border: 1px solid transparent;
 	border-radius: 10px;
 	background: transparent;
@@ -89,6 +90,11 @@
 		text-anchor: middle;
 		dominant-baseline: central;
 	}
+}
+
+/* One line, so every tile is the same height and the names sit on one baseline. */
+.name {
+	white-space: nowrap;
 }
 
 .badge {

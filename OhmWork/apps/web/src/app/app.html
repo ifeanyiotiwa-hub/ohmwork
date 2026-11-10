@@ -2,19 +2,27 @@
 	<h1 class="brand"><img class="logo" src="icons/icon.svg" alt="" /><span><span class="accent">Ohm</span>Work</span></h1>
 	<app-part-palette [active]="store.placing()" [chips]="chips()" (choose)="choosePart($event)" />
 	<div class="actions">
-		<button type="button" (click)="store.undo()" title="Undo (Ctrl/⌘+Z)">Undo</button>
-		<button type="button" (click)="store.redo()" title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)">Redo</button>
-		<button type="button" [attr.aria-pressed]="store.paused()" (click)="store.paused.set(!store.paused())">
-			{{ store.paused() ? "Resume" : "Pause" }}
-		</button>
-		@if (store.timeDependent()) {
-			<button type="button" (click)="store.restartTime()" title="Start again from rest: capacitors empty">Restart</button>
-		}
-		<button type="button" data-open-parts (click)="openParts()" title="Find any part, or ask for one the app lacks">Parts</button>
-		<button type="button" (click)="openLessons()">Lessons</button>
-		<button type="button" (click)="openLibrary()" title="Save and open circuits (Ctrl/⌘+S)">Library</button>
-		<button type="button" (click)="store.newCircuit()">New</button>
-		<button type="button" (click)="store.loadExample()">Example</button>
+		<div class="group" role="group" aria-label="Edit">
+			<button type="button" (click)="store.undo()" title="Undo (Ctrl/⌘+Z)">Undo</button>
+			<button type="button" (click)="store.redo()" title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)">Redo</button>
+		</div>
+		<div class="group" role="group" aria-label="Simulation">
+			<button type="button" [attr.aria-pressed]="store.paused()" (click)="store.paused.set(!store.paused())">
+				{{ store.paused() ? "Resume" : "Pause" }}
+			</button>
+			@if (store.timeDependent()) {
+				<button type="button" (click)="store.restartTime()" title="Start again from rest: capacitors empty">Restart</button>
+			}
+		</div>
+		<div class="group" role="group" aria-label="Browse">
+			<button type="button" data-open-parts (click)="openParts()" title="Find any part, or ask for one the app lacks">Parts</button>
+			<button type="button" (click)="openLessons()">Lessons</button>
+			<button type="button" (click)="openLibrary()" title="Save and open circuits (Ctrl/⌘+S)">Library</button>
+		</div>
+		<div class="group" role="group" aria-label="Start">
+			<button type="button" (click)="store.newCircuit()">New</button>
+			<button type="button" (click)="store.loadExample()">Example</button>
+		</div>
 	</div>
 </header>
 <main class="workspace">

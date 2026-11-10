@@ -16,6 +16,11 @@ header {
 	gap: 8px;
 }
 
+/* No lesson open: the card takes no row, so no empty gap under the title. */
+app-lesson-card {
+	display: contents;
+}
+
 h2 {
 	margin: 0;
 	font-size: 18px;

@@ -10,17 +10,23 @@
 	background: var(--ambient);
 }
 
+/* Two rows at every width: the name and the actions, then the parts palette across the whole width (so no tab or part is cut off). */
 .toolbar {
 	@include surfaces.glass-panel;
 
-	display: flex;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-areas:
+		"brand actions"
+		"palette palette";
 	align-items: center;
-	gap: 12px;
+	gap: 4px 16px;
 	min-width: 0;
-	padding: 6px 12px;
+	padding: 6px 12px 2px;
 }
 
 .brand {
+	grid-area: brand;
 	display: flex;
 	align-items: center;
 	gap: 6px;
@@ -42,13 +48,37 @@
 }
 
 app-part-palette {
-	flex: 1;
+	grid-area: palette;
 	min-width: 0;
+	padding-top: 4px;
+	border-top: 1px solid var(--glass-edge);
 }
 
+/* Grouped by what they act on, with a hairline between groups; one row that scrolls sideways if the window is narrow. */
 .actions {
+	grid-area: actions;
+	justify-self: end;
 	display: flex;
-	gap: 6px;
+	gap: 8px;
+	max-width: 100%;
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+.group {
+	display: flex;
+	flex-shrink: 0;
+	gap: 4px;
+
+	& + & {
+		padding-left: 8px;
+		border-left: 1px solid var(--glass-edge);
+	}
+
+	button {
+		padding: 3px 10px;
+		font-size: 13px;
+	}
 }
 
 .workspace {
@@ -62,8 +92,9 @@ app-part-palette {
 
 .stage {
 	display: grid;
-	/* The canvas takes what the oscilloscope leaves. */
-	grid-template-rows: minmax(0, 1fr) auto;
+	/* The canvas takes what the oscilloscope leaves; the oscilloscope's row (and its gap) exists only while it is shown. */
+	grid-template-rows: minmax(0, 1fr);
+	grid-auto-rows: auto;
 	gap: var(--panel-gap);
 	min-width: 0;
 	min-height: 0;
@@ -91,23 +122,12 @@ app-circuit-canvas {
 	}
 
 	.toolbar {
-		flex-wrap: wrap;
+		column-gap: 10px;
+		padding: 6px 8px 4px;
 	}
 
-	app-part-palette {
-		order: 3;
-		flex-basis: 100%;
-	}
-
-	/* One row that scrolls sideways, not two: the circuit keeps the height. */
 	.actions {
-		overflow-x: auto;
-		scrollbar-width: thin;
 		padding-bottom: 2px;
-	}
-
-	.actions button {
-		flex-shrink: 0;
 	}
 
 	.workspace {
