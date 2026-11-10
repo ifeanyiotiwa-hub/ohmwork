@@ -116,7 +116,7 @@ export function createServer(
 	options: ServerOptions = { ...DEFAULT_OPTIONS, workspaceDirectory: process.cwd() },
 	context: ServerContext = {},
 ): McpServer {
-	const server = new McpServer({ name: "engineering-circuit", version: "0.1.0" }, { instructions: INSTRUCTIONS })
+	const server = new McpServer({ name: "ohmwork", version: "0.1.0" }, { instructions: INSTRUCTIONS })
 	const document =
 		context.document ?? new CircuitDocument(createCircuit("Untitled"), { historyLimit: options.historyLimit })
 

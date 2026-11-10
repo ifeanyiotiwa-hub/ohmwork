@@ -29,7 +29,7 @@ async function startAgent(env: Record<string, string>): Promise<Client> {
 }
 
 test.beforeEach(async ({ baseURL }) => {
-	agent = await startAgent({ EC_APP_URL: baseURL ?? "" })
+	agent = await startAgent({ OHMWORK_APP_URL: baseURL ?? "" })
 })
 
 test.afterEach(async () => {
@@ -81,7 +81,7 @@ test("after the agent restarts, the app reconnects and the new agent gets the le
 	test.setTimeout(RESTART_TEST_MS)
 	await agent.close()
 	// A fixed port and token, so the restarted server is at the same link.
-	const env = { EC_APP_URL: baseURL ?? "", EC_LIVE_PORT: "4391", EC_LIVE_TOKEN: "e2e-reconnect-token-0123456789" }
+	const env = { OHMWORK_APP_URL: baseURL ?? "", OHMWORK_LIVE_PORT: "4391", OHMWORK_LIVE_TOKEN: "e2e-reconnect-token-0123456789" }
 	agent = await startAgent(env)
 	await page.goto((await call("open_in_app")).split("\n").at(-1) ?? "")
 	const status = page.locator("[data-live]")
@@ -104,7 +104,7 @@ test("after the agent restarts, the app reconnects and the new agent gets the le
 test("work from a live session survives a reload after the agent has gone, and reaches the agent when it is back", async ({ page, baseURL }) => {
 	test.setTimeout(RESTART_TEST_MS)
 	await agent.close()
-	const env = { EC_APP_URL: baseURL ?? "", EC_LIVE_PORT: "4392", EC_LIVE_TOKEN: "e2e-reload-token-0123456789ab" }
+	const env = { OHMWORK_APP_URL: baseURL ?? "", OHMWORK_LIVE_PORT: "4392", OHMWORK_LIVE_TOKEN: "e2e-reload-token-0123456789ab" }
 	agent = await startAgent(env)
 	const link = (await call("open_in_app")).split("\n").at(-1) ?? ""
 	await page.goto(link)

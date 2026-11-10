@@ -8,7 +8,7 @@ test("defaults apply when nothing is set", () => {
 test("environment overrides limits and the workspace folder", () => {
 	expect(
 		optionsFromEnvironment(
-			{ EC_HISTORY_LIMIT: "50", EC_MAX_FILE_BYTES: "1024", EC_MAX_TRANSIENT_STEPS: "1000", EC_WORKSPACE_DIR: "/circuits" },
+			{ OHMWORK_HISTORY_LIMIT: "50", OHMWORK_MAX_FILE_BYTES: "1024", OHMWORK_MAX_TRANSIENT_STEPS: "1000", OHMWORK_WORKSPACE_DIR: "/circuits" },
 			"/work",
 		),
 	).toMatchObject({ historyLimit: 50, maxFileBytes: 1024, maxTransientSteps: 1000, workspaceDirectory: "/circuits" })
@@ -19,7 +19,7 @@ test("pnpm's launch folder is used when no workspace is set", () => {
 })
 
 test("invalid numbers fall back to defaults", () => {
-	const options = optionsFromEnvironment({ EC_HISTORY_LIMIT: "-3", EC_MAX_FILE_BYTES: "lots" }, "/work")
+	const options = optionsFromEnvironment({ OHMWORK_HISTORY_LIMIT: "-3", OHMWORK_MAX_FILE_BYTES: "lots" }, "/work")
 	expect(options.historyLimit).toBe(DEFAULT_OPTIONS.historyLimit)
 	expect(options.maxFileBytes).toBe(DEFAULT_OPTIONS.maxFileBytes)
 })
@@ -30,14 +30,14 @@ test("the live link defaults to any free port and the local app", () => {
 		appUrl: "http://localhost:4200/",
 		allowedOrigins: ["http://localhost:4200"],
 	})
-	expect(optionsFromEnvironment({ EC_LIVE_TOKEN: "kept-across-restarts-0123456789" }, "/work").live.token).toBe(
+	expect(optionsFromEnvironment({ OHMWORK_LIVE_TOKEN: "kept-across-restarts-0123456789" }, "/work").live.token).toBe(
 		"kept-across-restarts-0123456789",
 	)
 })
 
 test("the live link port, app address and extra origins come from the environment", () => {
 	const { live } = optionsFromEnvironment(
-		{ EC_LIVE_PORT: "4380", EC_APP_URL: "http://localhost:4310", EC_LIVE_ORIGINS: "http://127.0.0.1:4310, https://app.example" },
+		{ OHMWORK_LIVE_PORT: "4380", OHMWORK_APP_URL: "http://localhost:4310", OHMWORK_LIVE_ORIGINS: "http://127.0.0.1:4310, https://app.example" },
 		"/work",
 	)
 	expect(live).toEqual({
@@ -48,7 +48,7 @@ test("the live link port, app address and extra origins come from the environmen
 })
 
 test("a fixed live token shorter than 16 characters is refused: another program on this computer could guess it", () => {
-	expect(() => optionsFromEnvironment({ EC_LIVE_TOKEN: "short" }, "/work")).toThrow(
-		"EC_LIVE_TOKEN must be at least 16 characters",
+	expect(() => optionsFromEnvironment({ OHMWORK_LIVE_TOKEN: "short" }, "/work")).toThrow(
+		"OHMWORK_LIVE_TOKEN must be at least 16 characters",
 	)
 })

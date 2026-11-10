@@ -5,9 +5,9 @@ Free, open-source circuit simulator for learning and creative building: web, des
 Project docs: `../projectKnowledge/`. License: GPL-2.0-or-later.
 
 ## Use it with an AI agent (MCP)
-The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `engineering-circuit` server (approve it once). Other MCP clients: run `pnpm --silent --dir apps/mcp start` from this folder (or `--dir EngineeringCircuit/apps/mcp` from `circuitProject/`) as a stdio server.
+The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `ohmwork` server (approve it once). Other MCP clients: run `pnpm --silent --dir apps/mcp start` from this folder (or `--dir EngineeringCircuit/apps/mcp` from `circuitProject/`) as a stdio server.
 
-Server settings (environment variables): `EC_WORKSPACE_DIR` (the folder `open_circuit` / `save_circuit` read and write; default: where it was started), `EC_HISTORY_LIMIT` (undo steps kept, default 200), `EC_MAX_FILE_BYTES` (largest circuit file, default 5 MB), `EC_MAX_TRANSIENT_STEPS` (most steps one `simulate_over_time` call runs, default 200000). The agent's files stay inside the workspace folder.
+Server settings (environment variables): `OHMWORK_WORKSPACE_DIR` (the folder `open_circuit` / `save_circuit` read and write; default: where it was started), `OHMWORK_HISTORY_LIMIT` (undo steps kept, default 200), `OHMWORK_MAX_FILE_BYTES` (largest circuit file, default 5 MB), `OHMWORK_MAX_TRANSIENT_STEPS` (most steps one `simulate_over_time` call runs, default 200000). The agent's files stay inside the workspace folder.
 
 Try: "Build a 9 V battery with two resistors in series, simulate it, and explain where the voltage goes."
 
@@ -19,7 +19,7 @@ Ask the agent "tutor me through light-an-led" (or use the MCP prompt **tutor**).
 2. Ask the agent: "Give me the link to open this circuit in the app" (it calls `open_in_app`). Open the link.
 3. The status bar shows "Live with agent". What the agent changes appears and glows briefly; what you change, the agent sees (`recent_changes`, `simulate`). Undo works from either side.
 
-The link only accepts this computer, the app's own address and the session token in the link. Settings: `EC_APP_URL` (default `http://localhost:4200`), `EC_LIVE_ORIGINS` (extra allowed app addresses, comma-separated), `EC_LIVE_PORT` (default: any free port), `EC_LIVE_TOKEN` (default: a new random token each start; at least 16 characters if set). Set the port and the token so the app reconnects by itself after Claude Code restarts; keep the token secret.
+The link only accepts this computer, the app's own address and the session token in the link. Settings: `OHMWORK_APP_URL` (default `http://localhost:4200`), `OHMWORK_LIVE_ORIGINS` (extra allowed app addresses, comma-separated), `OHMWORK_LIVE_PORT` (default: any free port), `OHMWORK_LIVE_TOKEN` (default: a new random token each start; at least 16 characters if set). Set the port and the token so the app reconnects by itself after Claude Code restarts; keep the token secret.
 
 ## Run the app
 ```

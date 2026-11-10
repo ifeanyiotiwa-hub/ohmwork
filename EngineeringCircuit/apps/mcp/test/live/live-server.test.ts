@@ -152,7 +152,7 @@ test("a connection from another website is refused", async () => {
 	expect(await refusal(open(undefined, "https://evil.example"))).toBe(403)
 })
 
-test("a fixed token (EC_LIVE_TOKEN) lets a restarted server be found at the same link", async () => {
+test("a fixed token (OHMWORK_LIVE_TOKEN) lets a restarted server be found at the same link", async () => {
 	const token = "the-same-after-a-restart-0123456789"
 	const fixed = await LiveServer.start(document, {
 		port: 0,

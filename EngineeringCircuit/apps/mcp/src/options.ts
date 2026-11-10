@@ -29,17 +29,17 @@ export const DEFAULT_OPTIONS: Omit<ServerOptions, "workspaceDirectory"> = {
 
 export function optionsFromEnvironment(environment: NodeJS.ProcessEnv, currentDirectory: string): ServerOptions {
 	return {
-		historyLimit: positiveInteger(environment.EC_HISTORY_LIMIT) ?? DEFAULT_OPTIONS.historyLimit,
-		maxFileBytes: positiveInteger(environment.EC_MAX_FILE_BYTES) ?? DEFAULT_OPTIONS.maxFileBytes,
-		maxTransientSteps: positiveInteger(environment.EC_MAX_TRANSIENT_STEPS) ?? DEFAULT_OPTIONS.maxTransientSteps,
-		workspaceDirectory: environment.EC_WORKSPACE_DIR || environment.INIT_CWD || currentDirectory,
+		historyLimit: positiveInteger(environment.OHMWORK_HISTORY_LIMIT) ?? DEFAULT_OPTIONS.historyLimit,
+		maxFileBytes: positiveInteger(environment.OHMWORK_MAX_FILE_BYTES) ?? DEFAULT_OPTIONS.maxFileBytes,
+		maxTransientSteps: positiveInteger(environment.OHMWORK_MAX_TRANSIENT_STEPS) ?? DEFAULT_OPTIONS.maxTransientSteps,
+		workspaceDirectory: environment.OHMWORK_WORKSPACE_DIR || environment.INIT_CWD || currentDirectory,
 		live: {
 			...liveOptions(
-				positiveInteger(environment.EC_LIVE_PORT) ?? ANY_FREE_PORT,
-				environment.EC_APP_URL || DEFAULT_APP_URL,
-				(environment.EC_LIVE_ORIGINS ?? "").split(","),
+				positiveInteger(environment.OHMWORK_LIVE_PORT) ?? ANY_FREE_PORT,
+				environment.OHMWORK_APP_URL || DEFAULT_APP_URL,
+				(environment.OHMWORK_LIVE_ORIGINS ?? "").split(","),
 			),
-			...(environment.EC_LIVE_TOKEN ? { token: fixedToken(environment.EC_LIVE_TOKEN) } : {}),
+			...(environment.OHMWORK_LIVE_TOKEN ? { token: fixedToken(environment.OHMWORK_LIVE_TOKEN) } : {}),
 		},
 	}
 }
@@ -51,7 +51,7 @@ function liveOptions(port: number, appUrl: string, extraOrigins: string[]): Live
 }
 
 function fixedToken(token: string): string {
-	if (token.length < MIN_TOKEN_LENGTH) throw new Error(`EC_LIVE_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters`)
+	if (token.length < MIN_TOKEN_LENGTH) throw new Error(`OHMWORK_LIVE_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters`)
 	return token
 }
 
