@@ -63,7 +63,7 @@ test("under the desktop app's security policy, the app is styled, simulates and 
 
 		await page.getByRole("button", { name: "Library" }).click()
 		// A component style, which Angular adds as a <style> tag at run time.
-		await expect(page.getByRole("dialog", { name: "Your circuits" })).toHaveCSS("border-radius", "10px")
+		await expect(page.getByRole("dialog", { name: "Your circuits" })).toHaveCSS("border-radius", "16px")
 		const download = page.waitForEvent("download")
 		await page.locator("[data-picture-png]").click()
 		expect((await download).suggestedFilename()).toBe("kvl-and-voltage-divider.png")

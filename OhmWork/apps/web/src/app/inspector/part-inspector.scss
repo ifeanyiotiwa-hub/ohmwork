@@ -1,3 +1,5 @@
+@use "../shared/surfaces";
+
 .inspector {
 	display: grid;
 	align-content: start;
@@ -5,8 +7,7 @@
 	height: 100%;
 	padding: 16px;
 	overflow-y: auto;
-	border-left: 1px solid var(--border);
-	background: var(--surface);
+	@include surfaces.glass-panel;
 }
 
 header {
@@ -48,10 +49,12 @@ h3 {
 input[type="text"],
 textarea,
 select {
+	@include surfaces.field-well;
+
+	/* Within the panel's width (a field's own minimum width used to push it past the edge). */
+	min-width: 0;
+	width: 100%;
 	padding: 6px 8px;
-	border: 1px solid var(--border);
-	border-radius: 6px;
-	background: var(--canvas-bg);
 	color: var(--text);
 	font: inherit;
 
@@ -74,8 +77,7 @@ input[type="checkbox"] {
 	gap: 4px 12px;
 	margin: 0;
 	padding: 10px 12px;
-	border-radius: 8px;
-	background: var(--canvas-bg);
+	@include surfaces.field-well;
 
 	dt {
 		color: var(--text-muted);

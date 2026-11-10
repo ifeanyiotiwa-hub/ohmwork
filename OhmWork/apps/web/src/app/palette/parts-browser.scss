@@ -1,15 +1,11 @@
+@use "../shared/surfaces";
+
 .browser {
+	@include surfaces.glass-dialog;
+
 	width: min(560px, calc(100vw - 32px));
 	max-height: calc(100dvh - 48px);
 	padding: 16px;
-	border: 1px solid var(--border);
-	border-radius: 10px;
-	background: var(--surface);
-	color: var(--text);
-
-	&::backdrop {
-		background: rgb(0 0 0 / 55%);
-	}
 }
 
 header {
@@ -37,11 +33,10 @@ h3 {
 
 input,
 textarea {
+	@include surfaces.field-well;
+
 	width: 100%;
 	padding: 6px 8px;
-	border: 1px solid var(--border);
-	border-radius: 6px;
-	background: var(--canvas-bg);
 	color: var(--text);
 	font: inherit;
 }

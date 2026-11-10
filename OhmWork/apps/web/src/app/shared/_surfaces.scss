@@ -1,0 +1,53 @@
+// The app's surfaces (ADR-047): glass panels floating over the softly lit background, dialogs of the same glass,
+// and recessed fields. Values are CSS custom properties in styles.scss; these mixins say how they combine.
+
+/// A panel over the still background: frosted glass, a light top edge, lifted by a shadow. Blur is only used where
+/// nothing moves underneath (the background is static), so it is computed once, not every animation frame.
+@mixin glass-panel {
+	border: 1px solid var(--glass-edge);
+	border-radius: var(--radius-panel);
+	background: var(--glass);
+	box-shadow:
+		var(--glass-highlight),
+		var(--elevation-2);
+	-webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+	backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+
+	@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+		background: var(--glass-solid);
+	}
+
+	@media (prefers-reduced-transparency: reduce) {
+		background: var(--surface);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+}
+
+/// A dialog: the same glass look, but nearly opaque instead of blurred, as it sits over the animated circuit (a live
+/// blur there would be recomputed every frame).
+@mixin glass-dialog {
+	border: 1px solid var(--glass-edge);
+	border-radius: calc(var(--radius-panel) + 2px);
+	background: var(--glass-solid);
+	box-shadow:
+		var(--glass-highlight),
+		var(--elevation-4);
+	color: var(--text);
+
+	&::backdrop {
+		background: rgb(0 0 0 / 55%);
+	}
+
+	@media (prefers-reduced-transparency: reduce) {
+		background: var(--surface);
+	}
+}
+
+/// A field set into its panel: darker, with a shadow at its top edge.
+@mixin field-well {
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--well);
+	box-shadow: inset 0 1px 2px rgb(0 0 0 / 40%);
+}

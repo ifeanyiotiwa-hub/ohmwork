@@ -1,17 +1,23 @@
+@use "shared/surfaces";
+
+/* The layers (ADR-047): a still, softly lit background; the circuit as the bench on it; glass panels around it. */
 :host {
 	display: grid;
 	grid-template-rows: auto 1fr auto;
+	gap: var(--panel-gap);
 	height: 100dvh;
+	padding: var(--panel-gap);
+	background: var(--ambient);
 }
 
 .toolbar {
+	@include surfaces.glass-panel;
+
 	display: flex;
 	align-items: center;
 	gap: 12px;
 	min-width: 0;
 	padding: 6px 12px;
-	border-bottom: 1px solid var(--border);
-	background: var(--surface);
 }
 
 .brand {
@@ -48,6 +54,7 @@ app-part-palette {
 .workspace {
 	display: grid;
 	grid-template-columns: 1fr 280px;
+	gap: var(--panel-gap);
 	/* One row the height of the space left, so the stage fits it instead of growing to its content. */
 	grid-template-rows: minmax(0, 1fr);
 	min-height: 0;
@@ -57,11 +64,32 @@ app-part-palette {
 	display: grid;
 	/* The canvas takes what the oscilloscope leaves. */
 	grid-template-rows: minmax(0, 1fr) auto;
+	gap: var(--panel-gap);
 	min-width: 0;
 	min-height: 0;
 }
 
+/* The dialogs open in the top layer: their elements take no row (or gap) in the page grid. */
+app-library-panel,
+app-lessons-panel,
+app-parts-browser {
+	display: contents;
+}
+
+/* The circuit: the base layer, flat for legibility, framed and set slightly into the bench. */
+app-circuit-canvas {
+	overflow: hidden;
+	border: 1px solid var(--glass-edge);
+	border-radius: var(--radius-panel);
+	box-shadow: var(--elevation-1);
+}
+
 @media (max-width: 760px) {
+	:host {
+		--panel-gap: 6px;
+		--radius-panel: 12px;
+	}
+
 	.toolbar {
 		flex-wrap: wrap;
 	}
@@ -71,8 +99,15 @@ app-part-palette {
 		flex-basis: 100%;
 	}
 
+	/* One row that scrolls sideways, not two: the circuit keeps the height. */
 	.actions {
-		flex-wrap: wrap;
+		overflow-x: auto;
+		scrollbar-width: thin;
+		padding-bottom: 2px;
+	}
+
+	.actions button {
+		flex-shrink: 0;
 	}
 
 	.workspace {
