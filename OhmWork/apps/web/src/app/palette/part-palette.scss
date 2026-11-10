@@ -1,15 +1,29 @@
+/*
+ * No box of its own: the tabs and the parts are laid out by the toolbar, in its "tabs" and "parts" areas (app.scss), so the
+ * tabs sit beside the name and the parts get the whole width.
+ */
 .palette {
-	display: grid;
-	gap: 2px;
-	min-width: 0;
+	display: contents;
 }
 
 .categories,
 .parts {
 	display: flex;
-	gap: 4px;
+	min-width: 0;
 	overflow-x: auto;
 	scrollbar-width: thin;
+}
+
+.categories {
+	grid-area: tabs;
+	gap: 4px;
+}
+
+.parts {
+	grid-area: parts;
+	gap: 2px;
+	padding-top: 4px;
+	border-top: 1px solid var(--glass-edge);
 }
 
 .category {
@@ -40,9 +54,10 @@
 	display: grid;
 	justify-items: center;
 	gap: 2px;
-	flex-shrink: 0;
-	min-width: 72px;
-	padding: 3px 8px;
+	/* One width for every part, so the tiles form a steady grid and a part keeps its place when you come back to a tab. */
+	flex: 0 0 92px;
+	align-content: start;
+	padding: 3px 6px;
 	border: 1px solid transparent;
 	border-radius: 10px;
 	background: transparent;
@@ -92,9 +107,12 @@
 	}
 }
 
-/* One line, so every tile is the same height and the names sit on one baseline. */
+/* Up to two balanced lines, always two lines tall, so every tile is the same size and the names start on one line. */
 .name {
-	white-space: nowrap;
+	min-height: 2.4em;
+	line-height: 1.2;
+	text-align: center;
+	text-wrap: balance;
 }
 
 .badge {

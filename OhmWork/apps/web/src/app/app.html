@@ -2,18 +2,6 @@
 	<h1 class="brand"><img class="logo" src="icons/icon.svg" alt="" /><span><span class="accent">Ohm</span>Work</span></h1>
 	<app-part-palette [active]="store.placing()" [chips]="chips()" (choose)="choosePart($event)" />
 	<div class="actions">
-		<div class="group" role="group" aria-label="Edit">
-			<button type="button" (click)="store.undo()" title="Undo (Ctrl/⌘+Z)">Undo</button>
-			<button type="button" (click)="store.redo()" title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)">Redo</button>
-		</div>
-		<div class="group" role="group" aria-label="Simulation">
-			<button type="button" [attr.aria-pressed]="store.paused()" (click)="store.paused.set(!store.paused())">
-				{{ store.paused() ? "Resume" : "Pause" }}
-			</button>
-			@if (store.timeDependent()) {
-				<button type="button" (click)="store.restartTime()" title="Start again from rest: capacitors empty">Restart</button>
-			}
-		</div>
 		<div class="group" role="group" aria-label="Browse">
 			<button type="button" data-open-parts (click)="openParts()" title="Find any part, or ask for one the app lacks">Parts</button>
 			<button type="button" (click)="openLessons()">Lessons</button>
@@ -28,6 +16,34 @@
 <main class="workspace">
 	<div class="stage">
 		<app-circuit-canvas />
+		<div class="canvas-controls" role="toolbar" aria-label="Edit and simulation">
+			<button type="button" class="tool" aria-label="Undo" title="Undo (Ctrl/⌘+Z)" (click)="store.undo()">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 L4 9 L9 4" /><path d="M4 9 H14.5 A5.5 5.5 0 0 1 14.5 20 H10" /></svg>
+			</button>
+			<button type="button" class="tool" aria-label="Redo" title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)" (click)="store.redo()">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14 L20 9 L15 4" /><path d="M20 9 H9.5 A5.5 5.5 0 0 0 9.5 20 H14" /></svg>
+			</button>
+			<span class="divider" aria-hidden="true"></span>
+			<button
+				type="button"
+				class="tool"
+				[attr.aria-label]="store.paused() ? 'Resume' : 'Pause'"
+				[title]="store.paused() ? 'Resume the simulation' : 'Pause the simulation'"
+				[attr.aria-pressed]="store.paused()"
+				(click)="store.paused.set(!store.paused())"
+			>
+				@if (store.paused()) {
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path class="solid" d="M8 5.5 L18.5 12 L8 18.5 Z" /></svg>
+				} @else {
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path class="solid" d="M7 5 H10 V19 H7 Z M14 5 H17 V19 H14 Z" /></svg>
+				}
+			</button>
+			@if (store.timeDependent()) {
+				<button type="button" class="tool" aria-label="Restart" title="Start again from rest: capacitors empty" (click)="store.restartTime()">
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12 A7 7 0 1 0 7.05 7.05" /><path d="M6.5 3 V7.5 H11" /></svg>
+				</button>
+			}
+		</div>
 		@if (store.scopeTraces().length > 0) {
 			<app-scope-view />
 		}

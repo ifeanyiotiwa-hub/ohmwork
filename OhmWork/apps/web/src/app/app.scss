@@ -10,15 +10,18 @@
 	background: var(--ambient);
 }
 
-/* Two rows at every width: the name and the actions, then the parts palette across the whole width (so no tab or part is cut off). */
+/*
+ * Two rows: the name, the palette's category tabs and the actions; then the parts across the whole width, so no part is
+ * cut off. The palette's tabs and parts take the "tabs" and "parts" areas themselves (its elements are display: contents).
+ */
 .toolbar {
 	@include surfaces.glass-panel;
 
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-columns: auto minmax(0, 1fr) auto;
 	grid-template-areas:
-		"brand actions"
-		"palette palette";
+		"brand tabs actions"
+		"parts parts parts";
 	align-items: center;
 	gap: 4px 16px;
 	min-width: 0;
@@ -48,10 +51,7 @@
 }
 
 app-part-palette {
-	grid-area: palette;
-	min-width: 0;
-	padding-top: 4px;
-	border-top: 1px solid var(--glass-edge);
+	display: contents;
 }
 
 /* Grouped by what they act on, with a hairline between groups; one row that scrolls sideways if the window is narrow. */
@@ -107,6 +107,12 @@ app-parts-browser {
 	display: contents;
 }
 
+/* The circuit and its controls share the first cell; the oscilloscope, when shown, takes the next row. */
+app-circuit-canvas,
+.canvas-controls {
+	grid-area: 1 / 1;
+}
+
 /* The circuit: the base layer, flat for legibility, framed and set slightly into the bench. */
 app-circuit-canvas {
 	overflow: hidden;
@@ -122,6 +128,11 @@ app-circuit-canvas {
 	}
 
 	.toolbar {
+		grid-template-columns: auto minmax(0, 1fr);
+		grid-template-areas:
+			"brand actions"
+			"tabs tabs"
+			"parts parts";
 		column-gap: 10px;
 		padding: 6px 8px 4px;
 	}
@@ -134,4 +145,77 @@ app-circuit-canvas {
 		grid-template-columns: 1fr;
 		grid-template-rows: 1fr minmax(0, 40%);
 	}
+}
+
+/*
+ * Undo, redo and pause float on the circuit's top-left corner, where the hand already is. Near-solid glass, no blur:
+ * the circuit under it animates, and a live blur would be recomputed every frame (ADR-047).
+ */
+.canvas-controls {
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	align-self: start;
+	justify-self: start;
+	gap: 2px;
+	margin: 10px;
+	padding: 4px;
+	border: 1px solid var(--glass-edge);
+	border-radius: 12px;
+	background: var(--glass-solid);
+	box-shadow:
+		var(--glass-highlight),
+		var(--elevation-3);
+}
+
+.tool {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+
+	&:hover {
+		border-color: var(--glass-edge);
+		background: var(--surface-hover);
+		color: var(--text);
+	}
+
+	&[aria-pressed="true"] {
+		border-color: rgb(76 194 255 / 35%);
+		background: var(--accent-soft);
+		color: var(--accent);
+	}
+
+	svg {
+		width: 20px;
+		height: 20px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.solid {
+		fill: currentColor;
+		stroke: none;
+	}
+
+	/* Finger-sized on touch screens. */
+	@media (pointer: coarse) {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+.divider {
+	width: 1px;
+	height: 20px;
+	margin: 0 3px;
+	background: var(--glass-edge);
 }

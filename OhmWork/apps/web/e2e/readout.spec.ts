@@ -38,7 +38,8 @@ test.describe("on a touch screen", () => {
 		await expect(readout(page)).toContainText("2 A")
 		const canvas = await page.locator("svg.canvas").boundingBox()
 		if (!canvas) throw new Error("no canvas")
-		await tap(canvas.x + 20, canvas.y + 20)
+		// Empty background at the left edge, below the undo and pause controls in the top-left corner.
+		await tap(canvas.x + 20, canvas.y + 100)
 		await expect(readout(page)).toHaveCount(0)
 	})
 })

@@ -63,7 +63,8 @@ test("Pause stops simulated time and says so; Resume goes on", async ({ page }) 
 })
 
 test("Ctrl/⌘+A selects every part, Escape clears; the group panel copies, pastes and clears", async ({ page }) => {
-	await page.locator("svg.canvas").click({ position: { x: 20, y: 20 } })
+	// Empty background, below the undo and pause controls in the top-left corner.
+	await page.locator("svg.canvas").click({ position: { x: 20, y: 100 } })
 	await page.keyboard.press("ControlOrMeta+a")
 	await expect(page.locator("[data-group-count]")).toHaveText("4 parts selected")
 	await page.keyboard.press("Escape")

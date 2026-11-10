@@ -45,7 +45,8 @@ test("wires and notes can be reached and selected from the keyboard", async ({ p
 
 	await page.keyboard.press("Escape")
 	await page.locator("[data-add-note]").click()
-	await page.locator("svg.canvas").click({ position: { x: 20, y: 20 } })
+	// Empty background, below the undo and pause controls in the top-left corner.
+	await page.locator("svg.canvas").click({ position: { x: 20, y: 100 } })
 	await page.locator("[data-note]").first().focus()
 	await page.keyboard.press("Enter")
 	await expect(inspector(page).getByText("Note", { exact: true })).toBeVisible()
