@@ -4,6 +4,7 @@ export const RC_CHARGING: Lesson = {
 	id: "rc-charging",
 	title: "Charge a capacitor in one millisecond",
 	level: "beginner",
+	kind: "lesson",
 	summary: "A capacitor charges through a resistor; R × C (the time constant) sets how fast.",
 	goal: "Charge a capacitor from 5 V through a resistor so that after 1 ms it holds about 63% of the supply (2.9–3.4 V).",
 	steps: [

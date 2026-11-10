@@ -24,7 +24,7 @@ A deliverable is `done` only when every acceptance criterion passes and is verif
 | D17 | Building bigger | Net labels; subcircuits (custom chips, format change + migration); parts browser with AI-drafted "request a part". See `BACKLOG.md`. Also bus connectors (moved from D16e). ADR-040–043 | D15 | done |
 | D18 | Release | Public repo + hosted PWA, desktop CI run, accessibility audit, languages. Code signing, a signed Android release and native iOS are set aside for now (owner, 2026-11-09): unsigned builds and the installable web app (which also covers iPhone/iPad) serve until there are users. See `BACKLOG.md` | D15c | todo |
 | D20 | Hands-on circuits | **D20a** value dial: a selected part's value is swept live (drag, wheel, +/−) through standard steps, one undo step per turn, also over the live link. **D20b** touch-to-read: hover or tap a wire or pin for its live voltage and current, and watch it on the scope. **D20c** visible state: capacitor charge, overheating parts glow and smoke, potentiometer wiper dragged on the canvas. Behaviours observed in learning simulators, our own design (ADR-001). ADR-030 | D15c | done |
-| D19 | Curriculum | More lessons (levels 2–3) and challenges, each tested like the starters; a documented lesson format and agent-drafted lessons. See `BACKLOG.md` | D12 | todo |
+| D19 | Curriculum | More lessons (levels 2–3) and challenges, each tested like the starters; a documented lesson format and agent-drafted lessons. See `BACKLOG.md` | D12 | done |
 | D13 (opt) | Microcontrollers | AVR emulation running user code connected to circuit pins | D9 | todo |
 | D14 (opt) | Backend | Spring Boot 4: accounts, community sharing | D10 | todo |
 

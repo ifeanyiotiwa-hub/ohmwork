@@ -68,6 +68,7 @@ test("offers the build, inspect and file tools", async () => {
 		"explain_circuit",
 		"frequency_response",
 		"get_circuit",
+		"lesson_format",
 		"list_component_types",
 		"list_lessons",
 		"load_lesson",
@@ -84,6 +85,7 @@ test("offers the build, inspect and file tools", async () => {
 		"rename_circuit",
 		"rotate_component",
 		"save_circuit",
+		"save_lesson_draft",
 		"save_part_request",
 		"set_parameter",
 		"set_simulation",
@@ -268,6 +270,35 @@ describe("files", () => {
 		const written = await readFile(join(directory, "part-requests", "thermistor.md"), "utf8")
 		expect(written).toContain("# Part request: Thermistor (NTC) (`thermistor`)")
 		expect(written).toContain('resistance: positive("ohms, at 25 °C")')
+	})
+
+	test("a drafted lesson is saved for review only when the agent's circuit passes it and an empty one does not", async () => {
+		const format = await call("lesson_format")
+		expect(format.data).toMatchObject({ schema: { type: "object" }, rules: expect.arrayContaining([expect.stringContaining("reference")]) })
+
+		await buildVoltageDivider()
+		const lesson = {
+			id: "divide-by-two",
+			title: "Halve a voltage",
+			level: "beginner",
+			kind: "lesson",
+			summary: "Two equal resistors split a voltage in half.",
+			goal: "Make 5 V from a 10 V source.",
+			steps: [{ text: "Use two equal resistors.", hint: "The middle sits at R2 ÷ (R1 + R2) of the supply." }],
+			checks: [{ kind: "node-voltage", between: [4.9, 5.1], description: "Some point sits at 5 V" }],
+		}
+		const saved = await call("save_lesson_draft", { lesson })
+		expect(saved.isError).toBe(false)
+		const written = JSON.parse(await readFile(join(directory, "lesson-drafts", "divide-by-two.json"), "utf8"))
+		expect(written).toMatchObject({ lesson: { id: "divide-by-two" }, referenceSolution: { components: expect.any(Array) } })
+
+		const wrong = await call("save_lesson_draft", { lesson: { ...lesson, checks: [{ kind: "node-voltage", between: [7, 8], description: "Some point sits at 7.5 V" }] } })
+		expect(wrong.isError).toBe(true)
+		expect(wrong.text).toContain("Some point sits at 7.5 V")
+
+		const trivial = await call("save_lesson_draft", { lesson: { ...lesson, checks: [{ kind: "no-errors", description: "It simulates" }] } })
+		expect(trivial.text).toContain("empty circuit")
+		expect((await call("save_lesson_draft", { lesson: { ...lesson, id: "half-adder" } })).text).toContain("already a lesson")
 	})
 
 	test("save then open restores the circuit", async () => {
@@ -564,15 +595,15 @@ test("the agent can watch a counter count with simulate_over_time", async () => 
 })
 
 describe("lessons and tutoring", () => {
-	test("list_lessons shows the starter lessons in teaching order", async () => {
+	test("list_lessons shows the lessons and challenges in teaching order", async () => {
 		const { data } = await call("list_lessons")
-		expect(data).toEqual([
-			expect.objectContaining({ id: "light-an-led", title: "Light an LED safely", level: "beginner" }),
-			expect.objectContaining({ id: "voltage-divider" }),
-			expect.objectContaining({ id: "rc-charging" }),
-			expect.objectContaining({ id: "transistor-switch" }),
-			expect.objectContaining({ id: "half-adder" }),
-		])
+		expect(data).toHaveLength(10)
+		expect(data).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ id: "light-an-led", title: "Light an LED safely", level: "beginner", kind: "lesson" }),
+				expect.objectContaining({ id: "low-pass-filter", level: "advanced", kind: "challenge" }),
+			]),
+		)
 	})
 
 	test("load_lesson starts a fresh circuit and gives the goal, steps, checks and the hints for the tutor", async () => {

@@ -8,7 +8,7 @@
 		@for (lesson of lessons; track lesson.id) {
 			<li [attr.data-lesson-entry]="lesson.id">
 				<span class="entry-name" [title]="lesson.summary">{{ lesson.title }}</span>
-				<span class="entry-date">{{ lesson.level }}</span>
+				<span class="entry-date">{{ lesson.kind === "challenge" ? "challenge, " + lesson.level : lesson.level }}</span>
 				<span></span>
 				<button type="button" (click)="start(lesson)">Start</button>
 			</li>

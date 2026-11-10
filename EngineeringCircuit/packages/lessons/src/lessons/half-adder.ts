@@ -4,6 +4,7 @@ export const HALF_ADDER: Lesson = {
 	id: "half-adder",
 	title: "Build a half adder",
 	level: "intermediate",
+	kind: "lesson",
 	summary: "Adding two bits needs two gates: XOR gives the sum, AND gives the carry.",
 	goal: "With two logic inputs, light one logic output for the sum and another for the carry of A + B.",
 	steps: [

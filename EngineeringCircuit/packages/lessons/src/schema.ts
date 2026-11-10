@@ -1,7 +1,8 @@
-import { type ComponentType, isComponentType } from "@engineering-circuit/format"
+import { COMPONENT_DEFINITIONS, type ComponentType, pinsOf } from "@engineering-circuit/format"
 import * as z from "zod"
 
-const partType = z.custom<ComponentType>(isComponentType, "Unknown component type")
+// An enum, not a custom check, so it has a JSON Schema: the agent drafting a lesson sees every valid type.
+const partType = z.enum(COMPONENT_DEFINITIONS.map((definition) => definition.type) as [ComponentType, ...ComponentType[]])
 const range = z.tuple([z.number(), z.number()]).describe("lowest and highest accepted value")
 const quantity = z.enum(["voltage", "current", "power"])
 /** Every check says, in plain words, what it is looking for: the learner and the tutor read it. */
@@ -37,18 +38,43 @@ export const checkSchema = z.discriminatedUnion("kind", [
 		description,
 	}),
 	z.strictObject({ kind: z.literal("no-errors"), description }),
+	/** Some part of the type has the named pin at a DC voltage in range (from ground): an op-amp's output, a 555's. */
+	z.strictObject({ kind: z.literal("pin-voltage"), type: partType, pin: z.string().min(1), between: range, description }),
+	/**
+	 * Running from rest, after `after` seconds and for `for` more, some part of the type has the named pin going up and
+	 * down `between` times a second (rising through the middle of its swing).
+	 */
+	z.strictObject({
+		kind: z.literal("frequency"),
+		type: partType,
+		pin: z.string().min(1),
+		after: z.number().nonnegative().describe("seconds to settle first"),
+		for: z.number().positive().describe("seconds to measure over"),
+		between: range.describe("lowest and highest accepted hertz"),
+		description,
+	}),
+	/** At `at` hertz, some scope probe sees a gain in range (decibels), relative to the circuit's first AC source. */
+	z.strictObject({ kind: z.literal("ac-gain"), at: z.number().positive(), between: range.describe("lowest and highest accepted dB"), description }),
 ])
 export type Check = z.infer<typeof checkSchema>
 
 export const lessonSchema = z.strictObject({
 	id: z.string().regex(/^[a-z0-9-]+$/),
 	title: z.string().min(1),
-	level: z.enum(["beginner", "intermediate"]),
+	level: z.enum(["beginner", "intermediate", "advanced"]),
+	/** A lesson guides with steps and hints; a challenge gives the goal and leaves the how to the learner. */
+	kind: z.enum(["lesson", "challenge"]),
 	summary: z.string(),
 	/** What the learner should end up with, in one or two sentences. */
 	goal: z.string(),
 	/** Suggested steps; `hint` is held back for when the learner is stuck. */
 	steps: z.array(z.strictObject({ text: z.string().min(1), hint: z.string().optional() })),
 	checks: z.array(checkSchema).min(1),
+}).superRefine((lesson, context) => {
+	lesson.checks.forEach((check, index) => {
+		if ((check.kind === "pin-voltage" || check.kind === "frequency") && !pinsOf(check.type).includes(check.pin)) {
+			context.addIssue({ code: "custom", path: ["checks", index, "pin"], message: `${check.type} has no pin "${check.pin}" (valid: ${pinsOf(check.type).join(", ")})` })
+		}
+	})
 })
 export type Lesson = z.infer<typeof lessonSchema>

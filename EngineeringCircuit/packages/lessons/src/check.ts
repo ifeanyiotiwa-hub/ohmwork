@@ -1,4 +1,4 @@
-import { type DcSolution, advanceTransient, initialTransientState, solveDc } from "@engineering-circuit/engine"
+import { type DcSolution, advanceTransient, gainAndPhase, initialTransientState, solveAc, solveDc } from "@engineering-circuit/engine"
 import { type Circuit, type ComponentType, formatSi } from "@engineering-circuit/format"
 import type { Check, Lesson } from "./schema"
 
@@ -65,6 +65,102 @@ function run(circuit: Circuit, check: Check): Omit<CheckResult, "description"> {
 			const result = solveDc(circuit)
 			return result.ok ? { passed: true, found: "It simulates without errors." } : { passed: false, found: errorsOf(result) }
 		}
+		case "pin-voltage": {
+			const result = solveDc(circuit)
+			if (!result.ok) return { passed: false, found: errorsOf(result) }
+			const parts = partsOf(circuit, check.type)
+			if (parts.length === 0) return { passed: false, found: `There is no ${nameOf(check.type)} in the circuit.` }
+			const values = parts.map((id) => ({ id, value: result.solution.pinVoltages[`${id}:${check.pin}`] ?? 0 }))
+			return {
+				passed: values.some(({ value }) => inRange(value, check.between)),
+				found: `${values.map(({ id, value }) => `${id} ${check.pin} is at ${formatSi(value, "V")}`).join("; ")}.`,
+			}
+		}
+		case "frequency":
+			return frequency(circuit, check)
+		case "ac-gain":
+			return acGain(circuit, check)
+	}
+}
+
+const partsOf = (circuit: Circuit, type: ComponentType) => circuit.components.filter((component) => component.type === type).map((part) => part.id)
+
+/** A pin swinging less than this (volts) is taken as not changing. */
+const MIN_SWING = 0.1
+/**
+ * A frequency check steps no finer than it needs to cover its time in this many steps, whatever the circuit's own
+ * (viewing) time step: a 10 Hz blinker checked over 0.7 s steps every 35 µs, an error of 0.04% a cycle, in a moment.
+ */
+const FREQUENCY_STEPS = 20_000
+
+/** Rising crossings through the middle of a pin's swing, over the measured time; frequency from first to last. */
+function frequency(circuit: Circuit, check: Extract<Check, { kind: "frequency" }>): Omit<CheckResult, "description"> {
+	const parts = partsOf(circuit, check.type)
+	if (parts.length === 0) return { passed: false, found: `There is no ${nameOf(check.type)} in the circuit.` }
+	const samples: { time: number; voltages: number[] }[] = []
+	const until = check.after + check.for
+	const result = advanceTransient(circuit, initialTransientState(), until, {
+		maxStep: Math.max(circuit.simulation.timeStep, until / FREQUENCY_STEPS),
+		maxSteps: MAX_STEPS,
+		onStep: (state, solution) => {
+			if (state.time >= check.after) samples.push({ time: state.time, voltages: parts.map((id) => solution.pinVoltages[`${id}:${check.pin}`] ?? 0) })
+		},
+	})
+	if (!result.ok) return { passed: false, found: errorsOf(result) }
+	if (!result.reachedUntil) return { passed: false, found: `Checking needs more than ${MAX_STEPS} time steps; raise the time step.` }
+	const measured = parts.map((id, index) => {
+		const trace = samples.map((sample) => ({ time: sample.time, voltage: sample.voltages[index] ?? 0 }))
+		// A loop, not Math.min(...): a long run has more samples than a call can take arguments.
+		let low = Number.POSITIVE_INFINITY
+		let high = Number.NEGATIVE_INFINITY
+		for (const point of trace) {
+			low = Math.min(low, point.voltage)
+			high = Math.max(high, point.voltage)
+		}
+		if (trace.length < 2 || high - low < MIN_SWING) return { id, hertz: undefined, text: `${id} ${check.pin} does not change` }
+		const middle = (low + high) / 2
+		const rises = trace.flatMap((point, at) => {
+			const before = trace[at - 1]
+			return before && before.voltage < middle && point.voltage >= middle ? [point.time] : []
+		})
+		const first = rises[0]
+		const last = rises.at(-1)
+		if (rises.length < 2 || first === undefined || last === undefined || last === first) {
+			return { id, hertz: undefined, text: `${id} ${check.pin} changes too slowly to measure in ${formatSi(check.for, "s")}` }
+		}
+		const hertz = (rises.length - 1) / (last - first)
+		return { id, hertz, text: `${id} ${check.pin} goes up and down at ${formatSi(hertz, "Hz")}` }
+	})
+	return {
+		passed: measured.some(({ hertz }) => hertz !== undefined && inRange(hertz, check.between)),
+		found: `${measured.map((entry) => entry.text).join("; ")}.`,
+	}
+}
+
+/** Decibels as read out, with a true minus sign: "−3 dB". */
+const decibels = (value: number) => {
+	const rounded = Math.round(value * 10) / 10
+	return `${rounded < 0 ? "−" : ""}${Math.abs(rounded)} dB`
+}
+
+function acGain(circuit: Circuit, check: Extract<Check, { kind: "ac-gain" }>): Omit<CheckResult, "description"> {
+	const probes = partsOf(circuit, "scope-probe")
+	if (probes.length === 0) return { passed: false, found: "There is no scope probe: put one across the output." }
+	const result = solveAc(circuit, { frequencies: [check.at] })
+	if (!result.ok) return { passed: false, found: errorsOf(result) }
+	const source = circuit.components.find((component) => component.type === "ac-source")
+	const [point] = result.points
+	if (!source || source.type !== "ac-source" || !point) return { passed: false, found: "There is no AC source to measure against." }
+	const phase = (source.params.phase * Math.PI) / 180
+	const input = { re: source.params.amplitude * Math.cos(phase), im: source.params.amplitude * Math.sin(phase) }
+	const gains = probes.map((id) => {
+		const high = point.pinVoltages[`${id}:positive`] ?? { re: 0, im: 0 }
+		const low = point.pinVoltages[`${id}:negative`] ?? { re: 0, im: 0 }
+		return { id, gain: gainAndPhase({ re: high.re - low.re, im: high.im - low.im }, input).decibels }
+	})
+	return {
+		passed: gains.some(({ gain }) => inRange(gain, check.between)),
+		found: `At ${formatSi(check.at, "Hz")}, ${gains.map(({ id, gain }) => `${id} is at ${decibels(gain)}`).join("; ")}.`,
 	}
 }
 

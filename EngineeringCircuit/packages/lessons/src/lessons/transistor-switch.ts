@@ -4,6 +4,7 @@ export const TRANSISTOR_SWITCH: Lesson = {
 	id: "transistor-switch",
 	title: "Switch an LED with a transistor",
 	level: "intermediate",
+	kind: "lesson",
 	summary: "A small base current lets a much bigger collector current flow: the transistor as a switch.",
 	goal: "Light an LED through an NPN transistor: pressing a push button feeds the base, and only then does the LED carry at least 2 mA.",
 	steps: [

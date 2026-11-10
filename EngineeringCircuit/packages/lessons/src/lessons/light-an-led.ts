@@ -4,6 +4,7 @@ export const LIGHT_AN_LED: Lesson = {
 	id: "light-an-led",
 	title: "Light an LED safely",
 	level: "beginner",
+	kind: "lesson",
 	summary: "Ohm's law in practice: a resistor sets how much current an LED gets.",
 	goal: "Light an LED from a 5 V source with a resistor in series, so it carries between 5 mA and 20 mA.",
 	steps: [

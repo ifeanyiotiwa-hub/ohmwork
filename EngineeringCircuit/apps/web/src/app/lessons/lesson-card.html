@@ -1,21 +1,26 @@
 @if (progress.lesson(); as lesson) {
 	<section class="lesson" data-lesson [attr.data-lesson-id]="lesson.id">
-		<h3>Lesson</h3>
+		<h3>{{ lesson.kind === "challenge" ? "Challenge" : "Lesson" }}</h3>
 		<p class="goal">{{ lesson.goal }}</p>
-		<ol class="steps">
-			@for (step of lesson.steps; track $index) {
-				<li>
-					{{ step.text }}
-					@if (step.hint) {
-						@if (progress.shownHints().has($index)) {
-							<p class="hint">{{ step.hint }}</p>
-						} @else {
-							<button type="button" class="link" (click)="progress.showHint($index)">Hint</button>
+		@if (lesson.kind === "challenge") {
+			<p class="hint" data-challenge>No steps this time: design it your own way. The AI can help if you ask.</p>
+		}
+		@if (lesson.steps.length > 0) {
+			<ol class="steps">
+				@for (step of lesson.steps; track $index) {
+					<li>
+						{{ step.text }}
+						@if (step.hint) {
+							@if (progress.shownHints().has($index)) {
+								<p class="hint">{{ step.hint }}</p>
+							} @else {
+								<button type="button" class="link" (click)="progress.showHint($index)">Hint</button>
+							}
 						}
-					}
-				</li>
-			}
-		</ol>
+					</li>
+				}
+			</ol>
+		}
 		<button type="button" class="check" data-lesson-check (click)="progress.check()">Check my circuit</button>
 		@if (progress.result(); as result) {
 			@if (result.passed) {

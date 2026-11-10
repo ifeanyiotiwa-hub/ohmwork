@@ -4,6 +4,7 @@ export const VOLTAGE_DIVIDER: Lesson = {
 	id: "voltage-divider",
 	title: "Make 2.5 V from 5 V",
 	level: "beginner",
+	kind: "lesson",
 	summary: "Two resistors in series share a voltage in proportion to their resistances.",
 	goal: "With a 5 V source and two resistors, make a point in the circuit that sits at 2.5 V (2.4–2.6 V).",
 	steps: [

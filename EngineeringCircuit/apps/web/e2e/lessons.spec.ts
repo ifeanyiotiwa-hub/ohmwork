@@ -67,3 +67,48 @@ test("a note can be added, written, seen on the canvas and deleted", async ({ pa
 	await page.getByRole("button", { name: "Delete" }).click()
 	await expect(note).toHaveCount(0)
 })
+
+test("a challenge has a goal and no steps; a learner's RC filter passes the low-pass challenge", async ({ page }) => {
+	await page.getByRole("button", { name: "Lessons" }).click()
+	const entry = page.locator('[data-lesson-entry="low-pass-filter"]')
+	await expect(entry).toContainText("challenge, advanced")
+	await entry.getByRole("button", { name: "Start" }).click()
+	const card = page.locator('[data-lesson-id="low-pass-filter"]')
+	await expect(card.locator("h3")).toHaveText("Challenge")
+	await expect(card.locator("[data-challenge]")).toBeVisible()
+	await expect(card.locator(".steps")).toHaveCount(0)
+
+	const canvas = page.getByRole("application", { name: "Circuit canvas" })
+	for (const [type, x, y] of [
+		["ac-source", 120, 280],
+		["resistor", 300, 160],
+		["capacitor", 460, 280],
+		["ground", 300, 440],
+		["scope-probe", 640, 280],
+	] as const) {
+		await choosePart(page, type)
+		await canvas.click({ position: { x, y } })
+	}
+	for (const [from, to] of [
+		["AC1:positive", "R1:a"],
+		["R1:b", "C1:a"],
+		["C1:b", "GND1:terminal"],
+		["AC1:negative", "GND1:terminal"],
+		["C1:a", "P1:positive"],
+		["P1:negative", "GND1:terminal"],
+	]) {
+		await page.locator(`[data-pin="${from}"]`).click()
+		await page.locator(`[data-pin="${to}"]`).click()
+	}
+	await page.keyboard.press("Escape")
+	// 1 kΩ and 159 nF: a corner at 1 kHz.
+	await page.locator('[data-part="C1"]').click()
+	const capacitance = page.locator('[data-field="capacitance"]')
+	await capacitance.fill("159n")
+	await capacitance.press("Enter")
+	// Escape in a text box is the box's own; clicking empty canvas deselects, bringing the lesson back.
+	await canvas.click({ position: { x: 760, y: 120 } })
+
+	await card.locator("[data-lesson-check]").click()
+	await expect(card.locator("[data-lesson-verdict]")).toHaveText("All checks pass. Well done!")
+})

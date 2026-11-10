@@ -35,6 +35,7 @@
 - D8 done: live link (ADR-014, ARCHITECTURE "Live link").
   - `packages/editing`: `edit-command.ts` (`editCommandSchema`; `EditCommand` is inferred from it), `CircuitDocument` gained `revision`, `subscribe(listener)` and `undo(author)`; `live-protocol.ts` (`clientMessageSchema`, `ServerMessage`, `parseServerMessage`, `liveSocketUrl`, link params `live` + `token`).
   - `apps/mcp`: `src/live/live-server.ts` (`LiveServer.start(document, options)`, `.link`, `.address`, `.close()`; 127.0.0.1, origin + token checked on upgrade, `maxPayload` = `EC_MAX_FILE_BYTES`). `main.ts` creates the shared document and the live server (if it fails to start, the MCP still runs; message on stderr). `createServer(options, { document, live })`. New tools `open_in_app`, `recent_changes`.
+- D19 done (ADR-044): lessons `level` advanced, `kind` lesson | challenge; checks `pin-voltage`, `frequency` (`FREQUENCY_STEPS`), `ac-gain`; lessons op-amp-amplifier, clock-divider, timer-555-blinker, blink-once-a-second, low-pass-filter (test solutions `amplifier`, `halvedClock`, `astable`, `lowPass`); part types in checks an enum (JSON Schema); MCP `lesson_format`, `save_lesson_draft` (workspace `lesson-drafts/`); app challenge display; LESSONS.md.
 - D17 parts browser (ADR-043): app `palette/part-search.ts` (`PART_LIST`, `searchParts`, `partRequestPrompt`), `palette/parts-browser.*` (toolbar Parts, `data-part-search`, `data-browse`, `data-part-request`, `data-copy-request`); MCP `part-request.ts` (`partRequestSchema`, `partRequestErrors`, `partRequestMarkdown`, `partRequestGuide`), tools `part_request_guide` / `save_part_request` (workspace `part-requests/`); format `UNIT_WORDS`. D17 is complete.
 - D17 chips (ADR-042): format v11 `subcircuits` (`subcircuitSchema`, migration 10→11), part `subcircuit` (`schema/components/chips.ts`, no palette category), `schema/subcircuits.ts` (`expandSubcircuits`, `pinsOfPart`, `chipDefinition`, `isChip`), `chipPinOffsets` / `pinPosition(…, subcircuits)` / `LAYOUT_GRID`, `namedPins` joins chip pins ("chip:" / "label:" keys), parse checks (no "." in ids, chip references, loops); engine entry points expand; editing `chip-commands.ts` (`make-subcircuit`, `unpack-subcircuit`, `rename-subcircuit-pin`); MCP `make_chip`, probes inside chips; app `chipSymbol`, `Placing` (part or `{ chip }`), palette Chips tab, inspector Make chip / pins / Unpack.
 - D17 buses (ADR-041): format `bus-4` / `bus-8` (BUSQ, BUSO), `namedPins` (used by `buildNets` and engine wire currents); engine models `[]`, read-only pins for labels and buses; app `circuit/buses.ts` (`busLines`, `BUS_EXIT`), `NAMED_BY_VALUE`, `.bus-line`, node readings on real pins; MCP instructions.
@@ -69,7 +70,7 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries the hands-on features (select a part and turn its dial; hover wires; overload an LED). Next: D19 (curriculum), D18 (public repo + hosted web app; signing and iOS set aside). Optional: D13, D14.
+Owner tries the hands-on features (select a part and turn its dial; hover wires; overload an LED). Next: D18 (public repo + hosted web app; signing and iOS set aside). Optional: D13, D14.
 
 ## Blockers / open questions
 - None.
@@ -89,6 +90,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-10 | Claude (Opus) | D19: five more lessons and challenges (op-amp, flip-flop, 555, 1 Hz, low-pass), checks pin-voltage / frequency / ac-gain, LESSONS.md, agent `lesson_format` / `save_lesson_draft`; ADR-044. 651 core + 158 web + 85 e2e (1 opt-in skip) + 2 production-build | D18 |
 | 2026-11-10 | Claude (Opus) | D17 parts browser: searchable list of every part, "request a part" message for the agent, MCP `part_request_guide` / `save_part_request` (checked draft saved for review); ADR-043. D17 done. 632 core + 158 web + 84 e2e (1 opt-in skip) + 2 production-build | D19 |
 | 2026-11-10 | Claude (Opus) | D17 chips: subcircuits stored in the file (format v11), expanded for the engine (DC, time, AC, logic, nesting), make / unpack / rename pins (app, live link, agent `make_chip`), Chips palette tab; ADR-042. 626 core + 155 web + 83 e2e (1 opt-in skip) + 2 production-build | D17: parts browser |
 | 2026-11-09 | Claude (Opus) | D17 buses: `bus-4` / `bus-8` join by name pin by pin, drawn as one line, tapped by labels; `namedPins` shared; ADR-041. 606 core + 154 web + 82 e2e (1 opt-in skip) | D17: subcircuits |

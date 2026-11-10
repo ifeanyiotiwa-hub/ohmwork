@@ -23,7 +23,7 @@ import {
 	rotationSchema,
 	serializeCircuit,
 } from "@engineering-circuit/format"
-import { LESSONS, checkSolution, lessonById } from "@engineering-circuit/lessons"
+import { LESSONS, RC_CHARGING, checkSolution, lessonById, lessonSchema } from "@engineering-circuit/lessons"
 import { type CallToolResult, McpServer, completable } from "@modelcontextprotocol/server"
 import * as z from "zod"
 import type { LiveServer } from "./live/live-server"
@@ -50,7 +50,7 @@ A wire leaves each pin in the direction the pin points (away from its part) and 
 get_circuit lists every pin's position; use move_component / rotate_component to tidy up.
 Meters are ideal: a voltmeter goes across a part, an ammeter in series (across a battery it is a short circuit), an ohmmeter across an unpowered part.
 Push buttons are released unless you list them in simulate/probe "pressed"; in the app the learner holds them with the mouse.
-Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style.
+Lessons: list_lessons, load_lesson, then let the learner build; check_solution tells you what passes and what the circuit actually does. Use the "tutor" prompt for the coaching style. To write a new lesson or challenge: lesson_format, build a correct circuit, then save_lesson_draft.
 Logic parts need no supply pins: outputs are 0 V or logic high (default 5 V) from ground, inputs read 1 above half of it, and each gate or flip-flop takes one time step to respond. Clocks, flip-flops and counters need simulate_over_time; simulate settles static logic and reports oscillators.
 Net labels (net-label, params.name) connect every pin wired to a label of the same name, with no wire between: use them for supplies (VCC) and long or crossing runs.
 A part the app lacks: part_request_guide, then save_part_request (every value from a datasheet, listed as a source) saves a draft for a person to review.
@@ -88,6 +88,17 @@ const pressedSchema = z
 	.describe("Push buttons to hold down for this reading, e.g. [\"PB1\"]; all others are released")
 /** Where drafted parts are saved for review, inside the workspace. */
 const PART_REQUESTS_FOLDER = "part-requests"
+/** Where drafted lessons are saved for review, inside the workspace. */
+const LESSON_DRAFTS_FOLDER = "lesson-drafts"
+/** What makes a good lesson, for the agent drafting one (lesson_format). */
+const LESSON_RULES = [
+	"Build a correct circuit first: it is saved as the reference solution, and the draft is refused unless it passes every check.",
+	"Check what the circuit does (readings, pin voltages, frequencies, gains), never part ids or positions, so any correct layout passes.",
+	"Give every check a plain description of what it looks for, with the numbers: the learner reads it.",
+	"Ranges, not exact values: allow for the parts a learner might choose (E12 values, ±5%).",
+	"A lesson has steps with hints held back; a challenge (kind challenge) has a goal and no steps.",
+	"Levels: beginner (one idea, a few parts), intermediate (op-amps, logic, flip-flops), advanced (timing, filters, design).",
+]
 const DEFAULT_SAMPLES = 20
 const MAX_SAMPLES = 200
 const DEFAULT_POINTS_PER_DECADE = 10
@@ -485,6 +496,50 @@ export function createServer(
 	)
 
 	server.registerTool(
+		"lesson_format",
+		{
+			description:
+				"Before drafting a lesson or challenge: the lesson format as JSON Schema (every kind of check and what it measures), the rules for a good lesson, and an example.",
+			annotations: READ_ONLY,
+		},
+		() =>
+			text({
+				rules: LESSON_RULES,
+				schema: z.toJSONSchema(lessonSchema),
+				example: RC_CHARGING,
+			}),
+	)
+
+	server.registerTool(
+		"save_lesson_draft",
+		{
+			description:
+				"Save a drafted lesson or challenge for a person to review, as lesson-drafts/<id>.json in the workspace with the current circuit as its reference solution. Build a correct circuit first: the draft is saved only if that circuit passes every check and an empty circuit does not.",
+			inputSchema: z.object({ lesson: lessonSchema }),
+		},
+		async ({ lesson }) => {
+			if (lessonById(lesson.id)) return failure(`"${lesson.id}" is already a lesson; choose another id.`)
+			const solved = checkSolution(document.circuit, lesson)
+			if (!solved.passed) {
+				const failed = solved.results.filter((result) => !result.passed).map((result) => `${result.description}: ${result.found}`)
+				return failure(`The current circuit, the reference solution, does not pass every check:\n${failed.join("\n")}`)
+			}
+			if (checkSolution(createCircuit("Empty"), lesson).passed) {
+				return failure("An empty circuit passes every check too: add checks that only a working circuit passes.")
+			}
+			const fullPath = insideWorkspace(options.workspaceDirectory, join(LESSON_DRAFTS_FOLDER, `${lesson.id}.json`))
+			if (!fullPath) return failure(outsideWorkspace(options.workspaceDirectory, LESSON_DRAFTS_FOLDER))
+			try {
+				await mkdir(dirname(fullPath), { recursive: true })
+				await writeFile(fullPath, JSON.stringify({ lesson, referenceSolution: document.circuit }, null, 2), "utf8")
+				return text(`Saved the draft for review: ${fullPath}`)
+			} catch (error) {
+				return failure(`Could not save ${fullPath}: ${error instanceof Error ? error.message : String(error)}`)
+			}
+		},
+	)
+
+	server.registerTool(
 		"part_request_guide",
 		{
 			description:
@@ -544,8 +599,8 @@ export function createServer(
 
 	server.registerTool(
 		"list_lessons",
-		{ description: "The starter lessons, in teaching order.", annotations: READ_ONLY },
-		() => text(LESSONS.map(({ id, title, level, summary }) => ({ id, title, level, summary }))),
+		{ description: "The lessons and challenges (a goal, no steps), in teaching order.", annotations: READ_ONLY },
+		() => text(LESSONS.map(({ id, title, level, kind, summary }) => ({ id, title, level, kind, summary }))),
 	)
 
 	server.registerTool(
@@ -566,6 +621,7 @@ export function createServer(
 			return text({
 				id: lesson.id,
 				title: lesson.title,
+				kind: lesson.kind,
 				goal: lesson.goal,
 				steps: lesson.steps.map((step) => step.text),
 				checks: lesson.checks.map((check) => check.description),

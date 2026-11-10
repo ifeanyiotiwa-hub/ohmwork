@@ -4,10 +4,24 @@ import { checkSolution } from "../src/check"
 import { LESSONS, lessonById } from "../src/lessons"
 import { lessonSchema } from "../src/schema"
 import { build } from "./build"
-import { SOLUTIONS } from "./solutions"
+import { SOLUTIONS, amplifier, astable, halvedClock, lowPass } from "./solutions"
 
-test("there are five starter lessons, each valid and with a reference solution", () => {
-	expect(LESSONS.map((lesson) => lesson.id)).toEqual(["light-an-led", "voltage-divider", "rc-charging", "transistor-switch", "half-adder"])
+test("there are ten lessons and challenges, from beginner to advanced, each valid and with a reference solution", () => {
+	expect(LESSONS.map((lesson) => lesson.id)).toEqual([
+		"light-an-led",
+		"voltage-divider",
+		"rc-charging",
+		"transistor-switch",
+		"half-adder",
+		"op-amp-amplifier",
+		"clock-divider",
+		"timer-555-blinker",
+		"blink-once-a-second",
+		"low-pass-filter",
+	])
+	expect(LESSONS.filter((lesson) => lesson.kind === "challenge").map((lesson) => lesson.id)).toEqual(["blink-once-a-second", "low-pass-filter"])
+	// A challenge leaves the how to the learner: no steps, so no hints to hold back.
+	expect(LESSONS.filter((lesson) => lesson.kind === "challenge").every((lesson) => lesson.steps.length === 0)).toBe(true)
 	for (const lesson of LESSONS) {
 		expect(lessonSchema.safeParse(lesson).success, lesson.id).toBe(true)
 		expect(SOLUTIONS[lesson.id], lesson.id).toBeDefined()
@@ -127,5 +141,38 @@ describe("typical mistakes are caught, with what went wrong", () => {
 		)
 		const table = failedCheck(withOr, "half-adder", "truth-table")
 		expect(table).toMatchObject({ passed: false, found: "With IN1, IN2 as inputs, OUT1, OUT2 gave: 00→00, 01→10, 10→10, 11→11." })
+	})
+})
+
+describe("typical mistakes in the later lessons are caught", () => {
+	const failing = (id: string, circuit: Parameters<typeof checkSolution>[0]) => {
+		const lesson = lessonById(id)
+		if (!lesson) throw new Error(`missing lesson ${id}`)
+		return checkSolution(circuit, lesson).results.filter((result) => !result.passed)
+	}
+
+	test("op-amp: the resistors swapped give a gain of 1.1, and the output check says 0.22 V", () => {
+		const [wrong] = failing("op-amp-amplifier", amplifier(1000, 9000))
+		expect(wrong?.found).toBe("U1 output is at 222 mV.")
+	})
+
+	test("clock divider: the clock wired straight to the output blinks at 10 Hz, not 5", () => {
+		const [wrong] = failing("clock-divider", halvedClock(true))
+		expect(wrong?.found).toBe("OUT1 in goes up and down at 10 Hz.")
+	})
+
+	test("555: a capacitor ten times too small blinks at about 100 Hz, not 10", () => {
+		const [wrong] = failing("timer-555-blinker", astable(1000, 68000, 0.1e-6))
+		expect(wrong?.found).toMatch(/^IC1 output goes up and down at 10\d Hz\.$/)
+	})
+
+	test("1 Hz challenge: the 10 Hz blinker of the lesson before is ten times too fast", () => {
+		const [wrong] = failing("blink-once-a-second", astable(1000, 68000, 1e-6))
+		expect(wrong?.found).toMatch(/^IC1 output goes up and down at 10\.\d Hz\.$/)
+	})
+
+	test("low-pass challenge: a corner at 10 kHz lets 10 kHz through", () => {
+		const wrong = failing("low-pass-filter", lowPass(1000, 15.9e-9))
+		expect(wrong.map((result) => result.description)).toEqual(["At 1 kHz the output is 3 dB down (the corner)", "At 10 kHz the output is at least 15 dB down"])
 	})
 })

@@ -94,8 +94,8 @@ whatever the app is at that point.
 ### D19 Curriculum (new, from the audit)
 | Item | How |
 |---|---|
-| More lessons and challenges | Lessons for levels 2–3 (op-amp, 555, flip-flops) and open challenges ("make it blink at 1 Hz"), each tested like the starters |
-| Writing lessons | A documented lesson format and an MCP tool for the agent to draft one for review |
+| ~~More lessons and challenges~~ (done, D19: op-amp, clock divider, 555; challenges 1 Hz and low-pass) | Lessons for levels 2–3 (op-amp, 555, flip-flops) and open challenges ("make it blink at 1 Hz"), each tested like the starters |
+| ~~Writing lessons~~ (done, D19: LESSONS.md, `lesson_format`, `save_lesson_draft`) | A documented lesson format and an MCP tool for the agent to draft one for review |
 
 ### Assigned by the audit to existing deliverables
 | Item | Deliverable |
