@@ -11,7 +11,7 @@ Device (works offline)                     Server (optional, later)
 └────────────────────────────────┘
 ```
 
-## Repo layout (`EngineeringCircuit/`, pnpm workspace)
+## Repo layout (`OhmWork/`, pnpm workspace)
 | Path | Purpose | Depends on |
 |---|---|---|
 | `packages/format` | Circuit JSON format: types, validation, version migrations | none |

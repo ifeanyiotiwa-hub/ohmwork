@@ -2,7 +2,7 @@
 
 ## Current state
 - D0 done: folders, docs, git, pnpm workspace, strict TS 7, Vitest 5.
-- D1 done: `EngineeringCircuit/packages/format` (`@engineering-circuit/format`, zod 4).
+- D1 done: `OhmWork/packages/format` (`@engineering-circuit/format`, zod 4).
   - `src/schema/components/`: one file per category (`sources`, `passives`, `switches`, `semiconductors`) of `defineComponent(type, { pins, params })` entries. `catalog.ts` combines them into `COMPONENT_DEFINITIONS`, `componentSchema`, `Component`, `ComponentType`, `pinsOf`, `isComponentType`. Adding a part = one entry (see `COMPONENTS.md`).
   - `src/schema/geometry.ts`: `pointSchema`, `rotationSchema`.
   - `src/schema/circuit.ts`: `Circuit`, `Wire`, `PinRef`, `createCircuit`, `FORMAT_ID`, `CURRENT_VERSION` (1 at D1; 11 now, see the later entries).
@@ -10,7 +10,7 @@
   - `src/io/migrations.ts`: `migrate()` plus the `MIGRATIONS` registry (keyed by from-version; empty at D1, six steps now).
   - `src/topology/nets.ts`: `buildNets(circuit)` gives nets (connected pin groups) with `isGround`; `pinKey`.
   - `test/fixtures/voltage-divider.ts`: `voltageDivider()`. Tests mirror `src/` under `test/`.
-- D2 done: `EngineeringCircuit/packages/engine` (`@engineering-circuit/engine`). Public API: `solveDc(circuit)` → `{ ok: true, solution: { pinVoltages, readings, warnings } } | { ok: false, errors }`; issues are `{ componentIds, message }`.
+- D2 done: `OhmWork/packages/engine` (`@engineering-circuit/engine`). Public API: `solveDc(circuit)` → `{ ok: true, solution: { pinVoltages, readings, warnings } } | { ok: false, errors }`; issues are `{ componentIds, message }`.
   - `src/linear/`: `DenseMatrix`, `factorLu` / `solveLinear` (partial pivoting; factor once, solve many, ready for D3).
   - `src/graph/disjoint-sets.ts`: union-find.
   - `src/dc/branches.ts`: `DC_MODELS`, one entry per catalog type (compile error if a type is missing). Parts become `resistor` / `voltage` / `current` branches; closed switch and inductor are 0 V branches, capacitor and open switch add nothing; at D2 diode/LED were `not-simulated` (every part is simulated since D4).
@@ -90,6 +90,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-10 | Claude (Opus) | Code renamed to OhmWork: package scope, MCP id and `OHMWORK_*` settings, app identity, folder `OhmWork/` (format id and browser database name kept); ADR-046. After the folder move, reopen IntelliJ at `circuitProject/OhmWork` and approve the `ohmwork` MCP server once. 651 core + 158 web + 85 e2e + 2 production-build, cargo check, Android debug APK | D18: hosting |
 | 2026-11-10 | Claude (Opus) | Renamed to OhmWork where people read it (owner's choice after a round of names; ADR-045). 651 core + 158 web + 85 e2e + 2 production-build | D18 |
 | 2026-11-10 | Claude (Opus) | D19: five more lessons and challenges (op-amp, flip-flop, 555, 1 Hz, low-pass), checks pin-voltage / frequency / ac-gain, LESSONS.md, agent `lesson_format` / `save_lesson_draft`; ADR-044. 651 core + 158 web + 85 e2e (1 opt-in skip) + 2 production-build | D18 |
 | 2026-11-10 | Claude (Opus) | D17 parts browser: searchable list of every part, "request a part" message for the agent, MCP `part_request_guide` / `save_part_request` (checked draft saved for review); ADR-043. D17 done. 632 core + 158 web + 84 e2e (1 opt-in skip) + 2 production-build | D19 |

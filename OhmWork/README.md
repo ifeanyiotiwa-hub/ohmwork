@@ -5,7 +5,7 @@ Free, open-source circuit simulator for learning and creative building: web, des
 Project docs: `../projectKnowledge/`. License: GPL-2.0-or-later.
 
 ## Use it with an AI agent (MCP)
-The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `ohmwork` server (approve it once). Other MCP clients: run `pnpm --silent --dir apps/mcp start` from this folder (or `--dir EngineeringCircuit/apps/mcp` from `circuitProject/`) as a stdio server.
+The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `ohmwork` server (approve it once). Other MCP clients: run `pnpm --silent --dir apps/mcp start` from this folder (or `--dir OhmWork/apps/mcp` from `circuitProject/`) as a stdio server.
 
 Server settings (environment variables): `OHMWORK_WORKSPACE_DIR` (the folder `open_circuit` / `save_circuit` read and write; default: where it was started), `OHMWORK_HISTORY_LIMIT` (undo steps kept, default 200), `OHMWORK_MAX_FILE_BYTES` (largest circuit file, default 5 MB), `OHMWORK_MAX_TRANSIENT_STEPS` (most steps one `simulate_over_time` call runs, default 200000). The agent's files stay inside the workspace folder.
 

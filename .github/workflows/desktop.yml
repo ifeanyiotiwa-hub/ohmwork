@@ -27,7 +27,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     defaults:
       run:
-        working-directory: EngineeringCircuit
+        working-directory: OhmWork
     steps:
       - uses: actions/checkout@v7
 
@@ -45,7 +45,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: EngineeringCircuit/pnpm-lock.yaml
+          cache-dependency-path: OhmWork/pnpm-lock.yaml
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -53,7 +53,7 @@ jobs:
 
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: EngineeringCircuit/apps/desktop/src-tauri -> target
+          workspaces: OhmWork/apps/desktop/src-tauri -> target
 
       - run: pnpm install --frozen-lockfile
 
@@ -61,7 +61,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: EngineeringCircuit/apps/desktop
+          projectPath: OhmWork/apps/desktop
           tauriScript: pnpm tauri
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: OhmWork ${{ github.ref_name }}

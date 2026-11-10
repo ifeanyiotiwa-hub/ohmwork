@@ -2,7 +2,7 @@
 	"mcpServers": {
 		"ohmwork": {
 			"command": "pnpm",
-			"args": ["--silent", "--dir", "EngineeringCircuit/apps/mcp", "start"]
+			"args": ["--silent", "--dir", "OhmWork/apps/mcp", "start"]
 		}
 	}
 }
