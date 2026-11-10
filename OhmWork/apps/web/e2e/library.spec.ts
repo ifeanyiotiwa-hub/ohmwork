@@ -99,11 +99,11 @@ test("with file dialogs, Save as picks a file, Save writes it again in place, an
 })
 
 test("a saved circuit that no longer opens is explained and kept aside to download, not silently overwritten", async ({ page }) => {
-	const damaged = '{"format": "engineering-circuit", "version": 6, "name": "Half'
+	const damaged = '{"format": "ohmwork", "version": 6, "name": "Half'
 	await page.evaluate(
 		(json) =>
 			new Promise<void>((resolve, reject) => {
-				const request = indexedDB.open("engineering-circuit", 1)
+				const request = indexedDB.open("ohmwork", 1)
 				request.onsuccess = () => {
 					const transaction = request.result.transaction("workspace", "readwrite")
 					transaction.objectStore("workspace").put(json, "current")

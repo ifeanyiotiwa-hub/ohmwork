@@ -1,7 +1,7 @@
 import { type Circuit, CURRENT_VERSION } from "../../src/schema/circuit"
 
 export const voltageDivider = (): Circuit => ({
-	format: "engineering-circuit",
+	format: "ohmwork",
 	version: CURRENT_VERSION,
 	name: "Voltage divider",
 	description: "10 V split by two equal resistors",

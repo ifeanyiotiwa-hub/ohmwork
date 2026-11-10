@@ -2,11 +2,8 @@ import * as z from "zod"
 import { componentSchema } from "./components/catalog"
 import { pointSchema } from "./geometry"
 
-/**
- * Written in every circuit file. Kept from before the app was named OhmWork: changing it would make every saved file
- * fail to open (ADR-046).
- */
-export const FORMAT_ID = "engineering-circuit"
+/** Written in every circuit file: what marks a file as an OhmWork circuit. */
+export const FORMAT_ID = "ohmwork"
 export const CURRENT_VERSION = 11
 
 export const pinRefSchema = z.strictObject({
