@@ -43,11 +43,10 @@
 	}
 }
 
-/* The app icon at the size of the name, so the toolbar and the installed app look the same. */
+/* The tab icon at the size of the name (the full app icon's background parts would be noise at 22 px), so the toolbar, the tab and the installed app look the same. */
 .logo {
 	width: 22px;
 	height: 22px;
-	border-radius: 5px;
 }
 
 app-part-palette {

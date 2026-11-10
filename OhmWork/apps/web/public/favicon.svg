@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+	<!-- The tab-size icon (ADR-048): the monogram alone, with heavier strokes, so it stays crisp at 16 px. -->
+	<rect width="64" height="64" rx="14" fill="#0f1419"/>
+	<circle cx="19" cy="32" r="10.5" fill="none" stroke="#4cc2ff" stroke-width="7"/>
+	<path d="M29.5 32 H33 L37 19 L42 45 L47 19 L51 32 H56" fill="none" stroke="#7ee2a8" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+	<circle cx="56" cy="32" r="4.5" fill="#ffd166"/>
+</svg>
