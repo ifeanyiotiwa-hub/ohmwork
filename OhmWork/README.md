@@ -24,8 +24,10 @@ The link only accepts this computer, the app's own address and the session token
 ## Run the app
 ```
 pnpm install
-pnpm web            # http://localhost:4200
+pnpm web            # http://localhost:4200, reloads as you edit; Ctrl+C stops it
 ```
+- On a phone on the same Wi-Fi: `pnpm --filter @ohmwork/web start --host 0.0.0.0`, then open `http://<this computer's IP>:4200` on the phone.
+- The production build (the only one that works offline; the service worker is off while developing): `pnpm --filter @ohmwork/web build`, then `npx http-server apps/web/dist/web/browser -p 8080` and open http://localhost:8080.
 In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens or saves `.circuit.json` files (in Chrome, Edge and the desktop app, "Save to <file>" writes the opened file again in place; other browsers download); the circuit you are editing is kept across reloads. A production build is an installable app that works offline.
 
 Editing: click a wire while wiring to join it in the middle; Shift-click or Shift-drag to select several parts; Ctrl/⌘ + A, C, V, Z select all, copy, paste and undo; **Library** → Picture (SVG or PNG) saves an image of the circuit.
