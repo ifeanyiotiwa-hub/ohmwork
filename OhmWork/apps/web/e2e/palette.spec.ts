@@ -1,5 +1,5 @@
 import { COMPONENT_CATEGORIES } from "@ohmwork/format"
-import { expect, test } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 import { choosePart } from "./support/parts"
 
 test.beforeEach(async ({ page }) => {
@@ -36,4 +36,63 @@ test("chosen parts drawn side by side (only with PALETTE_SCREENSHOT)", async ({ 
 		await page.keyboard.press("Escape")
 	}
 	await page.screenshot({ path: `${shots}/palette-chosen.png` })
+})
+
+test.describe("the parts panel beside the categories", () => {
+	const panel = (page: Page) => page.locator("[data-parts-panel]")
+
+	test("is hidden until a category is pointed at, and steps aside once a part is chosen", async ({ page }) => {
+		await expect(panel(page)).toBeHidden()
+		await page.locator('[data-category="Passive"]').hover()
+		await expect(panel(page)).toBeVisible()
+		await expect(page.locator('[data-palette="resistor"]')).toBeVisible()
+		await page.locator('[data-palette="resistor"]').click()
+		await expect(panel(page)).toBeHidden()
+		// The category holding the part being placed is marked, as its tile is out of sight.
+		await expect(page.locator('[data-category="Passive"]')).toHaveClass(/holds-active/)
+	})
+
+	test("hides by itself a while after the pointer leaves it", async ({ page }) => {
+		await page.locator('[data-category="Sources"]').click()
+		await expect(panel(page)).toBeVisible()
+		await page.mouse.move(900, 600)
+		await expect(panel(page)).toBeVisible()
+		await expect(panel(page)).toBeHidden({ timeout: 6000 })
+	})
+
+	test("stays open when pinned, until unpinned", async ({ page }) => {
+		await page.locator('[data-category="Sources"]').click()
+		const pin = page.locator("[data-pin-parts]")
+		await pin.click()
+		await expect(pin).toHaveAttribute("aria-pressed", "true")
+		await page.mouse.move(900, 600)
+		await page.waitForTimeout(5000)
+		await expect(panel(page)).toBeVisible()
+		// Choosing a part leaves a pinned panel open too.
+		await page.locator('[data-palette="voltage-source"]').click()
+		await expect(panel(page)).toBeVisible()
+		await pin.click()
+		await expect(pin).toHaveAttribute("aria-pressed", "false")
+		await page.mouse.move(900, 600)
+		await expect(panel(page)).toBeHidden({ timeout: 6000 })
+	})
+
+	test("hides on Escape, with the focus back on its category", async ({ page }) => {
+		const sources = page.locator('[data-category="Sources"]')
+		await sources.focus()
+		await page.keyboard.press("ArrowDown")
+		await expect(panel(page)).toBeVisible()
+		await page.keyboard.press("Tab")
+		await expect(page.locator(".part-button").first()).toBeFocused()
+		await page.keyboard.press("Escape")
+		await expect(panel(page)).toBeHidden()
+		await expect(page.locator('[data-category="Passive"]')).toBeFocused()
+	})
+
+	test("hides when the circuit is clicked", async ({ page }) => {
+		await page.locator('[data-category="Sources"]').click()
+		await expect(panel(page)).toBeVisible()
+		await page.getByRole("application", { name: "Circuit canvas" }).click({ position: { x: 600, y: 500 } })
+		await expect(panel(page)).toBeHidden()
+	})
 })

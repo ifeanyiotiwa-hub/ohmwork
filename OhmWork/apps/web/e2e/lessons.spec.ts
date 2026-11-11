@@ -50,7 +50,7 @@ test("a learner completes 'Light an LED safely', guided by the checks", async ({
 	await resistance.fill("220")
 	await resistance.press("Enter")
 	// Click empty canvas to deselect the resistor and see the lesson card again.
-	await canvas.click({ position: { x: 900, y: 120 } })
+	await canvas.click({ position: { x: 650, y: 120 } })
 	await card.locator("[data-lesson-check]").click()
 	await expect(card.locator("[data-lesson-verdict]")).toHaveText("All checks pass. Well done!")
 })
@@ -107,7 +107,7 @@ test("a challenge has a goal and no steps; a learner's RC filter passes the low-
 	await capacitance.fill("159n")
 	await capacitance.press("Enter")
 	// Escape in a text box is the box's own; clicking empty canvas deselects, bringing the lesson back.
-	await canvas.click({ position: { x: 760, y: 120 } })
+	await canvas.click({ position: { x: 650, y: 120 } })
 
 	await card.locator("[data-lesson-check]").click()
 	await expect(card.locator("[data-lesson-verdict]")).toHaveText("All checks pass. Well done!")

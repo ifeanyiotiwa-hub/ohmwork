@@ -1,5 +1,5 @@
 <nav class="palette" aria-label="Parts">
-	<div class="categories" role="tablist" aria-label="Part categories">
+	<div class="categories" role="tablist" aria-label="Part categories" aria-orientation="vertical">
 		@for (category of categories(); track category.name; let index = $index) {
 			<button
 				type="button"
@@ -8,45 +8,64 @@
 				[id]="'palette-tab-' + category.name"
 				aria-controls="palette-parts"
 				[class.current]="category.name === currentCategory()"
+				[class.shown]="panelOpen() && category.name === currentCategory()"
+				[class.holds-active]="holdsActive(category)"
 				[attr.aria-selected]="category.name === currentCategory()"
 				[attr.tabindex]="category.name === currentCategory() ? 0 : -1"
 				[attr.data-category]="category.name"
 				[attr.data-types]="category.typeList"
-				(click)="currentCategory.set(category.name)"
+				(click)="showCategory(category.name)"
+				(pointerenter)="onCategoryPointerEnter($event, category.name)"
 				(keydown)="onCategoryKey($event, index)"
 			>
-				{{ category.name }}
+				<span class="label">{{ category.name }}</span>
+				<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18" /></svg>
 			</button>
 		}
 	</div>
-	<div class="parts" role="tabpanel" id="palette-parts" [attr.aria-labelledby]="'palette-tab-' + currentCategory()">
-		@for (item of items(); track item.key; let index = $index) {
-			<button
-				type="button"
-				class="part-button"
-				(keydown)="onPartKey($event, index)"
-				[class.active]="isActive(item)"
-				[attr.aria-pressed]="isActive(item)"
-				[attr.data-palette]="item.key"
-				[title]="item.simulated ? 'Add ' + item.name : item.name + ' (shown, not simulated yet)'"
-				(click)="choose.emit(item.placing)"
-			>
-				<svg class="icon" [attr.viewBox]="item.viewBox" aria-hidden="true">
-					@for (d of item.paths; track $index) {
-						<path [attr.d]="d" />
+	<!-- The parts first in the Tab order, after their tab; the title and the pin are drawn above them. -->
+	<div #panel class="panel" data-parts-panel [class.open]="panelOpen()" [style.--panel-room.px]="panelRoom()">
+		<p class="panel-title" aria-hidden="true">{{ currentCategory() }}</p>
+		<div class="parts" role="tabpanel" id="palette-parts" [attr.aria-labelledby]="'palette-tab-' + currentCategory()">
+			@for (item of items(); track item.key; let index = $index) {
+				<button
+					type="button"
+					class="part-button"
+					(keydown)="onPartKey($event, index)"
+					[class.active]="isActive(item)"
+					[attr.aria-pressed]="isActive(item)"
+					[attr.data-palette]="item.key"
+					[title]="item.simulated ? 'Add ' + item.name : item.name + ' (shown, not simulated yet)'"
+					(click)="pick(item)"
+				>
+					<svg class="icon" [attr.viewBox]="item.viewBox" aria-hidden="true">
+						@for (d of item.paths; track $index) {
+							<path [attr.d]="d" />
+						}
+						@for (mark of item.marks; track $index) {
+							<text class="mark" [attr.x]="mark.at.x" [attr.y]="mark.at.y">{{ mark.text }}</text>
+						}
+					</svg>
+					<span class="name">{{ item.name }}</span>
+					@if (!item.simulated) {
+						<span class="badge">soon</span>
 					}
-					@for (mark of item.marks; track $index) {
-						<text class="mark" [attr.x]="mark.at.x" [attr.y]="mark.at.y">{{ mark.text }}</text>
-					}
-				</svg>
-				<span class="name">{{ item.name }}</span>
-				@if (!item.simulated) {
-					<span class="badge">soon</span>
-				}
-			</button>
-		}
-		@if (currentCategory() === chipsCategory && items().length === 0) {
-			<p class="hint" data-chips-hint>Select parts, then Make chip in the inspector: it becomes a part you can place again.</p>
-		}
+				</button>
+			}
+			@if (currentCategory() === chipsCategory && items().length === 0) {
+				<p class="hint" data-chips-hint>Select parts, then Make chip in the inspector: it becomes a part you can place again.</p>
+			}
+		</div>
+		<button
+			type="button"
+			class="pin"
+			data-pin-parts
+			aria-label="Keep the parts open"
+			[title]="pinned() ? 'Let the parts hide when not in use' : 'Keep the parts open'"
+			[attr.aria-pressed]="pinned()"
+			(click)="togglePin()"
+		>
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 H15 L14 10 L17 13 H7 L10 10 Z" /><path d="M12 13 V20" /></svg>
+		</button>
 	</div>
 </nav>

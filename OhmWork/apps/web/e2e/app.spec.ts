@@ -84,7 +84,8 @@ test("a switch flips when clicked and stops the current", async ({ page }) => {
 test("a voltmeter across R2 shows 4 V; an ohmmeter touching nothing reads open", async ({ page }) => {
 	const canvas = page.getByRole("application", { name: "Circuit canvas" })
 	await choosePart(page, "voltmeter")
-	await canvas.click({ position: { x: 800, y: 200 } })
+	// Empty space right of the example circuit (the canvas is about 770 px wide beside the rail).
+	await canvas.click({ position: { x: 650, y: 150 } })
 	await page.locator('[data-pin="VM1:positive"]').click()
 	await page.locator('[data-pin="R2:a"]').click()
 	await page.locator('[data-pin="VM1:negative"]').click()
@@ -92,7 +93,7 @@ test("a voltmeter across R2 shows 4 V; an ohmmeter touching nothing reads open",
 	await expect(canvas.locator(".meter-reading", { hasText: "4 V" })).toBeVisible()
 
 	await choosePart(page, "ohmmeter")
-	await canvas.click({ position: { x: 800, y: 500 } })
+	await canvas.click({ position: { x: 650, y: 500 } })
 	await expect(canvas.locator(".meter-reading", { hasText: "OL (open)" })).toBeVisible()
 })
 

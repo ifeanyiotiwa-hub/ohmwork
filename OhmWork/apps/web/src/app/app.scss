@@ -1,9 +1,16 @@
 @use "shared/surfaces";
 
-/* The layers (ADR-047): a still, softly lit background; the circuit as the bench on it; glass panels around it. */
+/*
+ * The layers (ADR-047): a still, softly lit background; the circuit as the bench on it; glass panels around it. The
+ * rail down the left (ADR-049) gives the circuit the window's full height, which is the scarcer side of a laptop screen.
+ */
 :host {
 	display: grid;
-	grid-template-rows: auto 1fr auto;
+	grid-template-columns: 196px minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr) auto;
+	grid-template-areas:
+		"rail workspace"
+		"rail status";
 	gap: var(--panel-gap);
 	height: 100dvh;
 	padding: var(--panel-gap);
@@ -11,30 +18,30 @@
 }
 
 /*
- * Two rows: the name, the palette's category tabs and the actions; then the parts across the whole width, so no part is
- * cut off. The palette's tabs and parts take the "tabs" and "parts" areas themselves (its elements are display: contents).
+ * The name, the actions under it, then the part categories, whose parts panel floats out beside the rail over the
+ * circuit; above the workspace, so the panel is drawn on top of it.
  */
-.toolbar {
+.rail {
 	@include surfaces.glass-panel;
 
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto;
-	grid-template-areas:
-		"brand tabs actions"
-		"parts parts parts";
-	align-items: center;
-	gap: 4px 16px;
+	grid-area: rail;
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
 	min-width: 0;
-	padding: 6px 12px 2px;
+	min-height: 0;
+	padding: 14px 12px;
 }
 
 .brand {
-	grid-area: brand;
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 	margin: 0;
-	font-size: 15px;
+	padding: 0 4px;
+	font-size: 17px;
 	font-weight: 700;
 	white-space: nowrap;
 
@@ -43,44 +50,75 @@
 	}
 }
 
-/* The tab icon at the size of the name (the full app icon's background parts would be noise at 22 px), so the toolbar, the tab and the installed app look the same. */
+/* The tab icon at the size of the name (the full app icon's background parts would be noise at this size), so the rail, the tab and the installed app look the same. */
 .logo {
-	width: 22px;
-	height: 22px;
+	width: 26px;
+	height: 26px;
 }
 
-app-part-palette {
-	display: contents;
-}
-
-/* Grouped by what they act on, with a hairline between groups; one row that scrolls sideways if the window is narrow. */
-.actions {
-	grid-area: actions;
-	justify-self: end;
+/* Grouped by what they act on, with a hairline between groups. Flat like the categories below them: a list, not a row of keys. */
+.actions,
+.group {
 	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.actions {
 	gap: 8px;
-	max-width: 100%;
-	overflow-x: auto;
-	scrollbar-width: thin;
 }
 
 .group {
-	display: flex;
-	flex-shrink: 0;
-	gap: 4px;
-
 	& + & {
-		padding-left: 8px;
-		border-left: 1px solid var(--glass-edge);
+		padding-top: 8px;
+		border-top: 1px solid var(--glass-edge);
 	}
 
 	button {
-		padding: 3px 10px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 6px 10px;
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+		color: var(--text);
 		font-size: 13px;
+		text-align: left;
+		white-space: nowrap;
+
+		&:hover {
+			border-color: var(--glass-edge);
+			background: var(--surface-hover);
+			box-shadow: none;
+			transform: none;
+		}
+	}
+
+	svg {
+		flex: none;
+		width: 18px;
+		height: 18px;
+		fill: none;
+		stroke: var(--text-muted);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
 }
 
+app-part-palette {
+	flex: 1;
+	padding-top: 12px;
+	border-top: 1px solid var(--glass-edge);
+}
+
+app-sim-status {
+	grid-area: status;
+}
+
 .workspace {
+	grid-area: workspace;
 	display: grid;
 	grid-template-columns: 1fr 280px;
 	gap: var(--panel-gap);
@@ -126,18 +164,62 @@ app-circuit-canvas {
 		--radius-panel: 12px;
 	}
 
-	.toolbar {
-		grid-template-columns: auto minmax(0, 1fr);
+	/* No room for a rail: the name and the actions across the top, the categories under them, the circuit below. */
+	:host {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, 1fr) auto;
 		grid-template-areas:
-			"brand actions"
-			"tabs tabs"
-			"parts parts";
-		column-gap: 10px;
-		padding: 6px 8px 4px;
+			"rail"
+			"workspace"
+			"status";
+	}
+
+	.rail {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 6px 10px;
+		align-items: center;
+		padding: 6px 8px;
+	}
+
+	.brand {
+		padding: 0;
+		font-size: 15px;
+	}
+
+	.logo {
+		width: 22px;
+		height: 22px;
+	}
+
+	.actions,
+	.group {
+		flex-direction: row;
 	}
 
 	.actions {
-		padding-bottom: 2px;
+		overflow-x: auto;
+		scrollbar-width: thin;
+	}
+
+	.group {
+		flex-shrink: 0;
+
+		& + & {
+			padding-top: 0;
+			padding-left: 8px;
+			border-top: none;
+			border-left: 1px solid var(--glass-edge);
+		}
+
+		button {
+			padding: 4px 8px;
+		}
+	}
+
+	app-part-palette {
+		grid-column: 1 / -1;
+		padding-top: 6px;
 	}
 
 	.workspace {

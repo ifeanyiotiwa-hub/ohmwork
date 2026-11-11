@@ -246,6 +246,8 @@ test("parts become a chip: made from a group, placed again from the Chips tab, p
 	await pin.press("Enter")
 	await expect(page.locator('[data-pin="X1:top"]')).toHaveCount(1)
 
+	// Selecting the parts on the circuit put the parts panel away: open the Chips tab again.
+	await chipsTab.click()
 	await page.locator('[data-palette="chip:pair"]').click()
 	await canvas(page).click({ position: { x: 640, y: 480 } })
 	await expect(page.locator('[data-part="X2"]')).toBeVisible()

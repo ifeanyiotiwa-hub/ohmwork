@@ -1,67 +1,230 @@
 /*
- * No box of its own: the tabs and the parts are laid out by the toolbar, in its "tabs" and "parts" areas (app.scss), so the
- * tabs sit beside the name and the parts get the whole width.
+ * The categories fill what the rail leaves under the actions, scrolling if the window is short; the panel floats
+ * beside them, over the circuit (ADR-049). The panel is positioned from this host, which does not scroll, so the
+ * categories' scrolling never clips it.
  */
+:host {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
 .palette {
 	display: contents;
 }
 
-.categories,
-.parts {
+.categories {
 	display: flex;
-	min-width: 0;
-	overflow-x: auto;
+	flex-direction: column;
+	gap: 2px;
+	min-height: 0;
+	overflow-y: auto;
 	scrollbar-width: thin;
 }
 
-.categories {
-	grid-area: tabs;
-	gap: 4px;
-}
-
-.parts {
-	grid-area: parts;
-	gap: 2px;
-	padding-top: 4px;
-	border-top: 1px solid var(--glass-edge);
-}
-
 .category {
-	padding: 2px 8px;
-	border: none;
-	border-radius: 999px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+	padding: 6px 6px 6px 10px;
+	border: 1px solid transparent;
+	border-radius: 9px;
 	background: transparent;
 	box-shadow: none;
 	color: var(--text-muted);
 	font: inherit;
-	font-size: 11px;
+	font-size: 13px;
+	text-align: left;
 	cursor: pointer;
 
 	&:hover {
-		color: var(--text);
+		background: var(--surface-hover);
 		box-shadow: none;
+		color: var(--text);
 	}
 
+	/* The category whose parts are out: lit; the current one with the panel away: only its text. */
 	&.current {
-		background: var(--accent-soft);
-		box-shadow: inset 0 0 0 1px rgb(76 194 255 / 35%);
 		color: var(--text);
 	}
+
+	&.shown {
+		border-color: rgb(76 194 255 / 35%);
+		background: var(--accent-soft);
+	}
+
+	/* The part being placed is in here: a dot, since its tile is usually out of sight. */
+	&.holds-active .label::after {
+		content: "";
+		display: inline-block;
+		width: 6px;
+		height: 6px;
+		margin-left: 6px;
+		border-radius: 50%;
+		background: var(--accent);
+		vertical-align: middle;
+	}
+}
+
+.label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.chevron {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	opacity: 0.5;
+}
+
+/*
+ * Over the circuit, which animates: near-solid glass, no blur (ADR-047). Hidden by visibility, so its parts leave the
+ * Tab order and the accessibility tree; it leaves faster than it arrives.
+ */
+.panel {
+	--tile: 92px;
+
+	position: absolute;
+	z-index: 3;
+	top: 0;
+	/* Past the rail's padding and the gap between the rail and the circuit. */
+	left: calc(100% + 12px + var(--panel-gap));
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr);
+	gap: 6px;
+	width: calc(4 * var(--tile) + 3 * 4px + 2 * 10px);
+	/* Down to the window's bottom edge at most (measured as it opens), so no part is out of reach. */
+	max-height: min(520px, var(--panel-room, 520px));
+	padding: 10px;
+	border: 1px solid var(--glass-edge);
+	border-radius: 14px;
+	/* The glass tint over an opaque surface: the circuit under it would make the part names hard to read. */
+	background: linear-gradient(var(--glass-solid), var(--glass-solid)), var(--surface);
+	box-shadow:
+		var(--glass-highlight),
+		var(--elevation-4);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateX(-12px);
+	pointer-events: none;
+	transition:
+		opacity 140ms ease-in,
+		transform 140ms ease-in,
+		visibility 0s linear 140ms;
+
+	&.open {
+		opacity: 1;
+		visibility: visible;
+		transform: none;
+		pointer-events: auto;
+		transition:
+			opacity 200ms ease-out,
+			transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transform: none;
+		transition: none;
+
+		&.open {
+			transition: none;
+		}
+	}
+
+	@media (prefers-reduced-transparency: reduce) {
+		background: var(--surface);
+	}
+}
+
+.panel-title {
+	margin: 0;
+	/* Clear of the pin in the top-right corner. */
+	padding: 4px 40px 0 4px;
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.pin {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border-color: transparent;
+	border-radius: 9px;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+
+	&:hover {
+		border-color: var(--glass-edge);
+		background: var(--surface-hover);
+		color: var(--text);
+	}
+
+	&[aria-pressed="true"] {
+		border-color: rgb(76 194 255 / 35%);
+		background: var(--accent-soft);
+		color: var(--accent);
+
+		svg {
+			transform: rotate(-20deg);
+		}
+	}
+
+	svg {
+		width: 18px;
+		height: 18px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	@media (pointer: coarse) {
+		top: 4px;
+		right: 4px;
+		width: 44px;
+		height: 44px;
+	}
+}
+
+.parts {
+	display: grid;
+	grid-template-columns: repeat(4, var(--tile));
+	align-content: start;
+	gap: 4px;
+	min-height: 0;
+	overflow-y: auto;
+	scrollbar-width: thin;
 }
 
 .part-button {
 	position: relative;
 	display: grid;
 	justify-items: center;
-	gap: 2px;
-	/* One width for every part, so the tiles form a steady grid and a part keeps its place when you come back to a tab. */
-	flex: 0 0 92px;
 	align-content: start;
-	padding: 3px 6px;
+	gap: 2px;
+	padding: 6px 6px 4px;
 	border: 1px solid transparent;
 	border-radius: 10px;
 	background: transparent;
-	/* Flat at rest, so a row of parts stays calm; lifted on hover; pressed in while placing. */
+	/* Flat at rest, so a grid of parts stays calm; lifted on hover; pressed in while placing. */
 	box-shadow: none;
 	color: var(--text-muted);
 	font: inherit;
@@ -107,7 +270,7 @@
 	}
 }
 
-/* Up to two balanced lines, always two lines tall, so every tile is the same size and the names start on one line. */
+/* Up to two balanced lines, always two lines tall, so every tile is the same size. */
 .name {
 	min-height: 2.4em;
 	line-height: 1.2;
@@ -128,8 +291,46 @@
 
 /* The Chips tab before any chip is made: how to make one. */
 .hint {
+	grid-column: 1 / -1;
 	margin: 0;
 	padding: 8px 4px;
 	font-size: 12px;
 	color: var(--text-muted);
+}
+
+/*
+ * A phone: no room for a rail, so the categories run across the top bar and the panel drops down from them, the full
+ * width of the bar, over the circuit.
+ */
+@media (max-width: 760px) {
+	.categories {
+		flex-direction: row;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+
+	.category {
+		flex: none;
+		width: auto;
+		padding: 4px 10px;
+		border-radius: 999px;
+		font-size: 12px;
+	}
+
+	.chevron {
+		display: none;
+	}
+
+	.panel {
+		top: calc(100% + 8px + var(--panel-gap));
+		right: -8px;
+		left: -8px;
+		width: auto;
+		max-height: 45dvh;
+		transform: translateY(-8px);
+	}
+
+	.parts {
+		grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+	}
 }
