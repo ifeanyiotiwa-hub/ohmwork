@@ -35,7 +35,7 @@ Editing: click a wire while wiring to join it in the middle; Shift-click or Shif
 Keyboard: Tab moves between parts, wires and notes; Enter or Space acts like a click (selects, flips a switch, holds a push button); the arrow keys move the selected part one grid step; Delete removes it, R rotates it, Escape clears the selection.
 
 ## Desktop app (macOS, Windows, Linux)
-Needs Rust (`brew install rustup && rustup default stable`; Homebrew's rustup needs `/opt/homebrew/opt/rustup/bin` on your `PATH`) and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/).
+Needs Rust and the system libraries for your platform: the steps for macOS, Windows and Linux are in the [main README](../README.md#build-it-yourself). Installing the released apps: [Install](../README.md#install).
 ```
 pnpm desktop        # the desktop window, with the web app reloading as you edit
 pnpm desktop:build  # installers in apps/desktop/src-tauri/target/release/bundle
