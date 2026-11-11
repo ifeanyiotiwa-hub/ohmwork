@@ -56,15 +56,34 @@
 	}
 
 	/* The part being placed is in here: a dot, since its tile is usually out of sight. */
-	&.holds-active .label::after {
+	&.holds-active::after {
 		content: "";
-		display: inline-block;
+		position: absolute;
+		top: 5px;
+		right: 5px;
 		width: 6px;
 		height: 6px;
-		margin-left: 6px;
 		border-radius: 50%;
 		background: var(--accent);
-		vertical-align: middle;
+	}
+}
+
+.category {
+	position: relative;
+}
+
+/* The category's best-known part, in the same strokes as the tiles. */
+.icon.category-icon {
+	flex: none;
+	width: 26px;
+	height: 16px;
+
+	path {
+		stroke-width: 3.5;
+	}
+
+	.mark {
+		font-size: 22px;
 	}
 }
 
@@ -298,6 +317,34 @@
 	color: var(--text-muted);
 }
 
+/* The sidebar narrowed to icons (desktop only: a phone has no sidebar). Names stay for screen readers and tooltips. */
+@media (min-width: 761px) {
+	:host(.compact) {
+		.category {
+			justify-content: center;
+			padding: 9px 0;
+		}
+
+		.icon.category-icon {
+			width: 30px;
+			height: 18px;
+		}
+
+		.label {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
+
+		.chevron {
+			display: none;
+		}
+	}
+}
+
 /*
  * A phone: no room for a rail, so the categories run across the top bar and the panel drops down from them, the full
  * width of the bar, over the circuit.
@@ -317,7 +364,8 @@
 		font-size: 12px;
 	}
 
-	.chevron {
+	.chevron,
+	.icon.category-icon {
 		display: none;
 	}
 

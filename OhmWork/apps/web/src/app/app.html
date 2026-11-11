@@ -1,25 +1,36 @@
-<header class="rail">
-	<h1 class="brand"><img class="logo" src="favicon.svg" alt="" /><span><span class="accent">Ohm</span>Work</span></h1>
+<header class="rail" [class.collapsed]="railCollapsed()">
+	<h1 class="brand"><img class="logo" src="favicon.svg" alt="" /><span class="text"><span class="accent">Ohm</span>Work</span></h1>
 	<div class="actions">
 		<div class="group" role="group" aria-label="Browse">
 			<button type="button" data-open-parts (click)="openParts()" title="Find any part, or ask for one the app lacks">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="M16 16 L20 20" /></svg>Find a part
+				<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6" /><path d="M16 16 L20 20" /></svg><span class="text">Find a part</span>
 			</button>
-			<button type="button" (click)="openLessons()">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5 H10 A2 2 0 0 1 12 7 V20 A2 2 0 0 0 10 18 H4 Z M20 5 H14 A2 2 0 0 0 12 7 V20 A2 2 0 0 1 14 18 H20 Z" /></svg>Lessons
+			<button type="button" (click)="openLessons()" title="Lessons">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5 H10 A2 2 0 0 1 12 7 V20 A2 2 0 0 0 10 18 H4 Z M20 5 H14 A2 2 0 0 0 12 7 V20 A2 2 0 0 1 14 18 H20 Z" /></svg><span class="text">Lessons</span>
 			</button>
 			<button type="button" (click)="openLibrary()" title="Save and open circuits (Ctrl/⌘+S)">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6 H9 L11 8 H20 V18 H4 Z" /></svg>Library
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6 H9 L11 8 H20 V18 H4 Z" /></svg><span class="text">Library</span>
 			</button>
 		</div>
 		<div class="group" role="group" aria-label="Start">
-			<button type="button" (click)="store.newCircuit()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5 V19 M5 12 H19" /></svg>New</button>
-			<button type="button" (click)="store.loadExample()">
-				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 H6 L8 8 L11 16 L14 8 L17 16 L19 12 H21" /></svg>Example
+			<button type="button" (click)="store.newCircuit()" title="New circuit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5 V19 M5 12 H19" /></svg><span class="text">New</span></button>
+			<button type="button" (click)="store.loadExample()" title="Open the example circuit">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 H6 L8 8 L11 16 L14 8 L17 16 L19 12 H21" /></svg><span class="text">Example</span>
 			</button>
 		</div>
 	</div>
-	<app-part-palette [active]="store.placing()" [chips]="chips()" (choose)="choosePart($event)" />
+	<app-part-palette [active]="store.placing()" [chips]="chips()" [compact]="railCollapsed()" (choose)="choosePart($event)" />
+	<button
+		type="button"
+		class="rail-toggle"
+		data-rail-toggle
+		[attr.aria-label]="railCollapsed() ? 'Expand the sidebar' : 'Collapse the sidebar'"
+		[title]="(railCollapsed() ? 'Expand the sidebar' : 'Collapse the sidebar') + ' (Ctrl/⌘+B)'"
+		(click)="toggleRail()"
+	>
+		<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6 L8 12 L14 18" /><path d="M20 6 L14 12 L20 18" /></svg>
+		<span class="text">Collapse</span>
+	</button>
 </header>
 <main class="workspace">
 	<div class="stage">

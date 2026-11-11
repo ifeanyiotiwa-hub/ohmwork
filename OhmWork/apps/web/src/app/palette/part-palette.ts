@@ -4,6 +4,7 @@ import { COMPONENT_CATEGORIES, type ComponentType, PIN_OFFSETS } from "@ohmwork/
 import { type Placing, samePlacing } from "../circuit/circuit-store"
 import { PART_NAMES, SYMBOLS, type SymbolShape, chipSymbol } from "../circuit/symbols"
 import { UI_CONFIG } from "../circuit/ui-config"
+import { readRememberedFlag, rememberFlag } from "../shared/remembered-flag"
 
 /** Room around a symbol in its icon. */
 const ICON_MARGIN = 4
@@ -17,62 +18,71 @@ function iconViewBox({ body }: SymbolShape, pins: readonly { x: number; y: numbe
 	return `${left} ${top} ${right - left} ${bottom - top}`
 }
 
-type PaletteItem = {
+type Icon = { paths: string[]; marks: NonNullable<SymbolShape["marks"]>; viewBox: string }
+type PaletteItem = Icon & {
 	/** `data-palette`: the type, or "chip:<id>". */
 	key: string
 	placing: Placing
 	name: string
-	paths: string[]
-	marks: NonNullable<SymbolShape["marks"]>
-	viewBox: string
 	simulated: boolean
 }
-type Category = { name: string; typeList: string; items: PaletteItem[] }
+/** `icon`: the category's best-known part, shown when the sidebar is narrowed to icons. */
+type Category = { name: string; typeList: string; icon: Icon; items: PaletteItem[] }
+
+function typeIcon(type: ComponentType): Icon {
+	return {
+		paths: SYMBOLS[type].paths,
+		marks: SYMBOLS[type].marks ?? [],
+		viewBox: iconViewBox(SYMBOLS[type], Object.values(PIN_OFFSETS[type])),
+	}
+}
+
+/** The part that stands for each category; a category not listed shows its first part. */
+const CATEGORY_ICON_TYPES: Readonly<Record<string, ComponentType>> = {
+	Sources: "voltage-source",
+	Passive: "resistor",
+	Switches: "switch",
+	Semiconductors: "diode",
+	Logic: "and-gate",
+	ICs: "op-amp",
+	Meters: "voltmeter",
+}
+
+const CHIP_ICON_SYMBOL = chipSymbol(["a", "b", "c", "d"])
+const CHIPS_ICON: Icon = { paths: CHIP_ICON_SYMBOL.paths, marks: [], viewBox: iconViewBox(CHIP_ICON_SYMBOL, []) }
 
 /** A chip in the circuit, for the Chips tab. */
 export type PaletteChip = { id: string; name: string; pins: readonly string[] }
 
 const CHIPS_CATEGORY = "Chips"
 
-/** Browser storage key: the parts panel was pinned open (a per-browser convenience, so a missing value means unpinned). */
+/** Remembered in the browser: the parts panel was pinned open. */
 const PINNED_KEY = "ohmwork.parts-panel.pinned"
 
 /** The panel keeps this far (px) from the window's bottom edge, and is never squeezed below this height (it scrolls). */
 const PANEL_WINDOW_MARGIN = 12
 const PANEL_MIN_HEIGHT = 200
 
-function readPinned(): boolean {
-	try {
-		return localStorage.getItem(PINNED_KEY) === "true"
-	} catch {
-		// No storage (private window, blocked site data, prerendering): the panel starts unpinned.
-		return false
-	}
-}
-
-function writePinned(pinned: boolean): void {
-	try {
-		localStorage.setItem(PINNED_KEY, String(pinned))
-	} catch {
-		// Not kept: the pin still holds for this visit.
-	}
-}
-
-const CATEGORIES: Category[] = COMPONENT_CATEGORIES.map((category) => ({
-	name: category.name,
-	typeList: category.types.join(" "),
-	items: category.types.map(
-		(type): PaletteItem => ({
-			key: type,
-			placing: type,
-			name: PART_NAMES[type],
-			paths: SYMBOLS[type].paths,
-			marks: SYMBOLS[type].marks ?? [],
-			viewBox: iconViewBox(SYMBOLS[type], Object.values(PIN_OFFSETS[type])),
-			simulated: isDcSimulated(type),
-		}),
-	),
-}))
+const CATEGORIES: Category[] = COMPONENT_CATEGORIES.flatMap((category) => {
+	const iconType = CATEGORY_ICON_TYPES[category.name] ?? category.types[0]
+	if (!iconType) return []
+	return [
+		{
+			name: category.name,
+			typeList: category.types.join(" "),
+			icon: typeIcon(iconType),
+			items: category.types.map(
+				(type): PaletteItem => ({
+					...typeIcon(type),
+					key: type,
+					placing: type,
+					name: PART_NAMES[type],
+					simulated: isDcSimulated(type),
+				}),
+			),
+		},
+	]
+})
 
 function chipItem(chip: PaletteChip): PaletteItem {
 	const symbol = chipSymbol(chip.pins)
@@ -103,10 +113,13 @@ function chipItem(chip: PaletteChip): PaletteItem {
 		"(focusout)": "onFocusOut($event)",
 		"(keydown.escape)": "hidePanel()",
 		"(document:pointerdown)": "onDocumentPointerDown($event)",
+		"[class.compact]": "compact()",
 	},
 })
 export class PartPalette {
 	readonly active = input<Placing | undefined>(undefined)
+	/** The sidebar is narrowed: the categories show their icons only (names in tooltips and for screen readers). */
+	readonly compact = input(false)
 	/** The circuit's own chips, shown in the Chips tab. */
 	readonly chips = input<readonly PaletteChip[]>([])
 	readonly choose = output<Placing>()
@@ -114,11 +127,11 @@ export class PartPalette {
 	protected readonly chipsCategory = CHIPS_CATEGORY
 	protected readonly categories = computed<Category[]>(() => [
 		...CATEGORIES,
-		{ name: CHIPS_CATEGORY, typeList: "", items: this.chips().map(chipItem) },
+		{ name: CHIPS_CATEGORY, typeList: "", icon: CHIPS_ICON, items: this.chips().map(chipItem) },
 	])
 	protected readonly currentCategory = signal(CATEGORIES[0]?.name ?? "")
 	protected readonly items = computed(() => this.categories().find((category) => category.name === this.currentCategory())?.items ?? [])
-	protected readonly pinned = signal(readPinned())
+	protected readonly pinned = signal(readRememberedFlag(PINNED_KEY))
 	protected readonly panelOpen = signal(this.pinned())
 	/** Height left for the panel between its top (the categories' top) and the window's bottom, measured as it opens. */
 	protected readonly panelRoom = signal<number | undefined>(undefined)
@@ -168,7 +181,7 @@ export class PartPalette {
 	protected togglePin(): void {
 		const pinned = !this.pinned()
 		this.pinned.set(pinned)
-		writePinned(pinned)
+		rememberFlag(PINNED_KEY, pinned)
 		this.scheduleIdleHide()
 	}
 

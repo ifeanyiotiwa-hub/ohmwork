@@ -14,10 +14,19 @@
 				[attr.tabindex]="category.name === currentCategory() ? 0 : -1"
 				[attr.data-category]="category.name"
 				[attr.data-types]="category.typeList"
+				[attr.title]="compact() ? category.name : null"
 				(click)="showCategory(category.name)"
 				(pointerenter)="onCategoryPointerEnter($event, category.name)"
 				(keydown)="onCategoryKey($event, index)"
 			>
+				<svg class="icon category-icon" [attr.viewBox]="category.icon.viewBox" aria-hidden="true">
+					@for (d of category.icon.paths; track $index) {
+						<path [attr.d]="d" />
+					}
+					@for (mark of category.icon.marks; track $index) {
+						<text class="mark" [attr.x]="mark.at.x" [attr.y]="mark.at.y">{{ mark.text }}</text>
+					}
+				</svg>
 				<span class="label">{{ category.name }}</span>
 				<svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 L15 12 L9 18" /></svg>
 			</button>

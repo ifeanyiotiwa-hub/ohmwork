@@ -68,31 +68,31 @@
 	gap: 8px;
 }
 
-.group {
-	& + & {
-		padding-top: 8px;
-		border-top: 1px solid var(--glass-edge);
-	}
+.group + .group {
+	padding-top: 8px;
+	border-top: 1px solid var(--glass-edge);
+}
 
-	button {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 6px 10px;
-		border-color: transparent;
-		background: transparent;
+/* The actions, and the sidebar's own toggle at its foot (in one place whether the rail is wide or narrow). */
+.group button,
+.rail-toggle {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 10px;
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text);
+	font-size: 13px;
+	text-align: left;
+	white-space: nowrap;
+
+	&:hover {
+		border-color: var(--glass-edge);
+		background: var(--surface-hover);
 		box-shadow: none;
-		color: var(--text);
-		font-size: 13px;
-		text-align: left;
-		white-space: nowrap;
-
-		&:hover {
-			border-color: var(--glass-edge);
-			background: var(--surface-hover);
-			box-shadow: none;
-			transform: none;
-		}
+		transform: none;
 	}
 
 	svg {
@@ -107,6 +107,10 @@
 	}
 }
 
+.rail-toggle {
+	color: var(--text-muted);
+}
+
 app-part-palette {
 	flex: 1;
 	padding-top: 12px;
@@ -115,6 +119,49 @@ app-part-palette {
 
 app-sim-status {
 	grid-area: status;
+}
+
+/*
+ * The rail narrowed to icons (ADR-050): the names leave the screen but stay for screen readers, and the buttons show
+ * them as tooltips. Desktop only; a phone has a top bar instead.
+ */
+@media (min-width: 761px) {
+	:host {
+		transition: grid-template-columns 200ms ease-out;
+
+		@media (prefers-reduced-motion: reduce) {
+			transition: none;
+		}
+	}
+
+	:host(.rail-collapsed) {
+		grid-template-columns: 60px minmax(0, 1fr);
+	}
+
+	.rail.collapsed {
+		padding: 14px 8px;
+
+		.brand,
+		.group button,
+		.rail-toggle {
+			justify-content: center;
+			padding-right: 0;
+			padding-left: 0;
+		}
+
+		.text {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
+
+		.rail-toggle svg {
+			transform: rotate(180deg);
+		}
+	}
 }
 
 .workspace {
@@ -220,6 +267,10 @@ app-circuit-canvas {
 	app-part-palette {
 		grid-column: 1 / -1;
 		padding-top: 6px;
+	}
+
+	.rail-toggle {
+		display: none;
 	}
 
 	.workspace {

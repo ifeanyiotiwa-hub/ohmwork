@@ -11,16 +11,20 @@ import { PartInspector } from "./inspector/part-inspector"
 import { PartPalette } from "./palette/part-palette"
 import { PartsBrowser } from "./palette/parts-browser"
 import { ScopeView } from "./scope/scope-view"
+import { readRememberedFlag, rememberFlag } from "./shared/remembered-flag"
 import { SimStatus } from "./status/sim-status"
 
 const TYPING_ELEMENTS = new Set(["INPUT", "SELECT", "TEXTAREA"])
+
+/** Remembered in the browser: the sidebar was narrowed to icons. */
+const RAIL_COLLAPSED_KEY = "ohmwork.rail.collapsed"
 
 @Component({
 	selector: "app-root",
 	imports: [CircuitCanvas, LessonsPanel, LibraryPanel, PartInspector, PartPalette, PartsBrowser, ScopeView, SimStatus],
 	templateUrl: "./app.html",
 	styleUrl: "./app.scss",
-	host: { "(document:keydown)": "onKey($event)" },
+	host: { "(document:keydown)": "onKey($event)", "[class.rail-collapsed]": "railCollapsed()" },
 })
 export class App {
 	protected readonly store = inject(CircuitStore)
@@ -51,6 +55,15 @@ export class App {
 			const timer = setTimeout(() => void this.keep(circuit), this.config.library.autosaveDelayMs)
 			onCleanup(() => clearTimeout(timer))
 		})
+	}
+
+	/** The sidebar narrowed to icons, giving the circuit its width (ADR-050). */
+	protected readonly railCollapsed = signal(readRememberedFlag(RAIL_COLLAPSED_KEY))
+
+	protected toggleRail(): void {
+		const collapsed = !this.railCollapsed()
+		this.railCollapsed.set(collapsed)
+		rememberFlag(RAIL_COLLAPSED_KEY, collapsed)
 	}
 
 	protected openParts(): void {
@@ -121,6 +134,7 @@ export class App {
 				z: () => (event.shiftKey ? this.store.redo() : this.store.undo()),
 				y: () => this.store.redo(),
 				s: () => this.openLibrary(),
+				b: () => this.toggleRail(),
 				a: () => this.store.selectAll(),
 				c: () => this.store.copySelection(),
 				v: () => this.store.paste(),

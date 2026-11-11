@@ -90,6 +90,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-11 | Claude (Opus) | Branch `ui/collapsible-rail` (from `develop`, which now has the glass look, the icon set and the rail): the sidebar narrows to icons (Ctrl/⌘+B, remembered), category icons; ADR-050. 159 web unit + 93 e2e (1 opt-in skip) + 2 production-build | Owner tries it; merge into `develop` when approved; then D18 |
 | 2026-11-11 | Claude (Opus) | Branch `ui/spatial-glass`: glass look (ADR-047), the OW icon set (ADR-048), then a rail down the left with a parts panel that opens beside the categories and steps aside (pin, Escape, click elsewhere, 4 s after the mouse leaves; ADR-049). 159 web unit + 90 e2e (1 opt-in skip; the AC frequency-response test fails only under load, passes alone) + 2 production-build | Owner tries the rail; merge `ui/spatial-glass` into `develop` when approved; then D18 |
 | 2026-11-10 | Claude (Opus) | Code identifiers are OhmWork: package scope, MCP id and `OHMWORK_*` settings, app identity, folder `OhmWork/`, circuit file format id and browser database; ADR-046. After the folder move, reopen IntelliJ at `circuitProject/OhmWork` and approve the `ohmwork` MCP server once. 651 core + 158 web + 85 e2e + 2 production-build, cargo check, Android debug APK | D18: hosting |
 | 2026-11-10 | Claude (Opus) | The app is named OhmWork where people read it (owner's choice after a round of names; ADR-045). 651 core + 158 web + 85 e2e + 2 production-build | D18 |

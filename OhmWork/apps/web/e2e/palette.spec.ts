@@ -96,3 +96,37 @@ test.describe("the parts panel beside the categories", () => {
 		await expect(panel(page)).toBeHidden()
 	})
 })
+
+test.describe("the sidebar", () => {
+	const rail = (page: Page) => page.locator(".rail")
+	const width = async (page: Page) => (await rail(page).boundingBox())?.width ?? 0
+
+	test("narrows to icons and back, and the parts still open from it", async ({ page }) => {
+		const toggle = page.locator("[data-rail-toggle]")
+		await expect(toggle).toHaveAccessibleName("Collapse the sidebar")
+		await toggle.click()
+		await expect(toggle).toHaveAccessibleName("Expand the sidebar")
+		await expect.poll(() => width(page)).toBeLessThan(80)
+		// Icons only, but every button keeps its name.
+		await expect(page.getByRole("button", { name: "Library" })).toBeVisible()
+		await expect(page.locator('[data-category="Passive"]')).toHaveAccessibleName("Passive")
+		await page.locator('[data-category="Passive"]').hover()
+		await expect(page.locator("[data-parts-panel]")).toBeVisible()
+		await page.locator('[data-palette="resistor"]').click()
+		await page.getByRole("application", { name: "Circuit canvas" }).click({ position: { x: 650, y: 560 } })
+		// The circuit is new (beforeEach), so this is its first resistor.
+		await expect(page.locator('[data-part="R1"]')).toBeVisible()
+
+		await toggle.click()
+		await expect.poll(() => width(page)).toBeGreaterThan(150)
+	})
+
+	test("is remembered after a reload, and Ctrl/⌘+B switches it", async ({ page }) => {
+		await page.locator("[data-rail-toggle]").click()
+		await expect.poll(() => width(page)).toBeLessThan(80)
+		await page.reload()
+		await expect.poll(() => width(page)).toBeLessThan(80)
+		await page.keyboard.press("ControlOrMeta+b")
+		await expect.poll(() => width(page)).toBeGreaterThan(150)
+	})
+})
