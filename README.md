@@ -64,11 +64,36 @@ Other distributions: the package names for Fedora, Arch, openSUSE and others are
 
 ### Then, on any system
 ```
+pnpm install
 pnpm desktop        # the desktop window, with the web app reloading as you edit
 pnpm desktop:build  # installers for this system, in apps/desktop/src-tauri/target/release/bundle
 ```
-Each system builds only its own installers; GitHub Actions builds all of them for a release
-(`.github/workflows/desktop.yml`, on a `v*` tag).
+Each system builds only its own installers (Tauri can't reliably build Windows or Linux installers on a Mac):
+
+| Built on | You get |
+|---|---|
+| macOS | `.dmg` and `.app` for that Mac's chip |
+| Windows | `-setup.exe` and `.msi` |
+| Linux | `.deb`, `.rpm` and `.AppImage` |
+
+Both Mac versions from one Mac:
+```
+rustup target add x86_64-apple-darwin                # once (on an Intel Mac: aarch64-apple-darwin)
+pnpm desktop:build --target x86_64-apple-darwin      # into target/x86_64-apple-darwin/release/bundle
+```
+A virtual machine (UTM, Parallels) on an Apple silicon Mac runs ARM Windows and Linux, so it builds ARM installers,
+not the x64 ones most PCs need.
+
+### Every system at once (GitHub Actions)
+`.github/workflows/desktop.yml` builds on GitHub's macOS (both chips), Windows and Linux machines; for a public repo
+this is free. To make a release:
+1. Raise the version in `OhmWork/apps/desktop/src-tauri/tauri.conf.json` and `Cargo.toml` (for example to `0.2.0`)
+   and commit.
+2. Tag and push it: `git tag -a v0.2.0 -m "OhmWork 0.2.0" && git push origin v0.2.0`.
+3. About 6 minutes later a draft release with every installer appears under Releases: check it, add notes, publish.
+
+**Actions → Desktop builds → Run workflow** on a branch builds everything without a release, as a check; its
+installers are not kept.
 
 More for developers (the AI agent server, the live link, Android, tests): [`OhmWork/README.md`](OhmWork/README.md).
 Design notes and decisions: [`projectKnowledge/`](projectKnowledge/).
