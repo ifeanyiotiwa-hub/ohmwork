@@ -1,99 +1,61 @@
 # OhmWork
 
-A free, open-source circuit simulator for learning electronics and building things. Place parts, wire them up and
-watch the current flow; follow lessons; or let an AI agent build and explain circuits with you.
+**A free circuit simulator for learning electronics.** Place parts, wire them up and watch the current flow, follow
+lessons that check your work, or build a circuit together with an AI agent.
 
-- **Use it in the browser:** https://ifeanyiotiwa-hub.github.io/ohmwork/ (it can be installed as an app and then
-  works offline, on iPhone and iPad too).
-- **Desktop app** for macOS, Windows and Linux: see [Install](#install).
-- **Licence:** GPL-2.0-or-later (some of the simulation maths is ported from CircuitJS1).
+**[Open it in your browser](https://ifeanyiotiwa-hub.github.io/ohmwork/)** ·
+**[Download for macOS, Windows or Linux](https://github.com/ifeanyiotiwa-hub/ohmwork/releases/latest)** ·
+**[How-to guides](docs/README.md)**
 
-## Install
-Download the installer for your system from the
-[latest release](https://github.com/ifeanyiotiwa-hub/ohmwork/releases/latest):
+![OhmWork: a battery and two resistors, with the voltage and current of every wire and the selected resistor's readings](docs/images/ohmwork-editor.png)
 
-| System | File |
+## What you can do
+- **Build and simulate.** 73 parts: sources, resistors, capacitors, switches, diodes, LEDs, transistors, logic gates,
+  flip-flops, op-amps, the 555 timer, displays, motors and meters. The circuit responds as you edit it, and current
+  moves visibly through the wires.
+- **See what every part is doing.** Turn a value on a dial, hover a wire for its voltage and current, and watch an
+  overloaded part overheat and smoke.
+- **Measure over time and frequency.** An oscilloscope (with trigger and X-Y mode) and a frequency-response view,
+  checked against ngspice, the standard open-source circuit simulator.
+- **Learn step by step.** Ten lessons, from lighting an LED to a 555 blinker and a low-pass filter. Each one checks
+  that your circuit actually behaves as asked, not just that it looks right.
+- **Work with an AI agent.** Claude or another agent reads the real circuit (every part, wire and reading, not a
+  screenshot), builds and explains it, and tutors you while you both edit the same circuit live.
+- **Build bigger circuits.** Net labels, buses, and your own reusable chips made from a selection.
+- **Use it anywhere.** In the browser, installed as an app that works offline (iPhone and iPad too), or as a desktop
+  app. No account needed; your circuits stay on your device.
+
+## For students and teachers
+- It's free, it needs no sign-up, and once installed it works with no internet.
+- The lessons check the behaviour of the circuit: the LED must light, the filter must cut the high notes.
+- An AI tutor gives one hint at a time and checks your circuit instead of handing you the answer.
+- Circuits save as `.circuit.json` files, so a class can share, hand in and mark them.
+
+Start with [Lessons and the tutor](docs/lessons.md).
+
+## How it's built
+| Part | What it is |
 |---|---|
-| macOS, Apple silicon (M1 and later) | `OhmWork_<version>_aarch64.dmg` |
-| macOS, Intel | `OhmWork_<version>_x64.dmg` |
-| Windows | `OhmWork_<version>_x64-setup.exe` (or the `.msi`) |
-| Linux, Debian or Ubuntu | `OhmWork_<version>_amd64.deb` |
-| Linux, Fedora or openSUSE | `OhmWork-<version>-1.x86_64.rpm` |
-| Linux, any distribution | `OhmWork_<version>_amd64.AppImage` |
+| Simulation engine | TypeScript: modified nodal analysis with Newton–Raphson for diodes and transistors, and digital logic stepped with the analog solve. Results checked against ngspice. |
+| Web app | Angular 22 (signals, zoneless) drawing the circuit in SVG; time-based simulations run in a Web Worker. Installs as an offline app. |
+| Desktop and Android | Tauri 2 around the same web app. |
+| AI agent server | An MCP server with over two dozen tools (build, simulate, explain, check a lesson) and a live link, so the agent and the learner edit one circuit and can undo each other's changes. |
+| Quality | Over 800 unit tests and about 90 browser tests; known-answer circuits for the engine; 50 recorded design decisions. |
+| Releases | GitHub Actions publish the web app on every push and build installers for macOS (both chips), Windows and Linux from a version tag. |
 
-The apps are not code-signed yet, so each system warns the first time you open one:
+The plan, the architecture and every decision with its reasons are in [`projectKnowledge/`](projectKnowledge/).
 
-- **macOS:** open the `.dmg` and drag OhmWork to Applications. Opening it says Apple could not check it: click
-  **Done**, then in **System Settings → Privacy & Security** click **Open Anyway** next to the OhmWork message. If
-  macOS says the app "is damaged", run `xattr -cr /Applications/OhmWork.app` in Terminal once, then open it again.
-- **Windows:** SmartScreen says "Windows protected your PC": click **More info**, then **Run anyway**.
-- **Linux:** `sudo apt install ./OhmWork_<version>_amd64.deb`, `sudo dnf install ./OhmWork-<version>-1.x86_64.rpm`, or
-  `chmod +x OhmWork_<version>_amd64.AppImage` and run it.
+## About the builder
+I'm Ifeanyichukwu Otiwa. I built OhmWork by directing AI coding agents, and I own the product end to end: I set what
+it is and who it's for, broke it into deliverables with acceptance criteria, decided or approved each design choice,
+reviewed and tested what the agents produced, and shipped it as a live web app, desktop installers for three systems
+and a public release.
 
-## Build it yourself
-Everything lives in [`OhmWork/`](OhmWork/); run the commands below from there.
+The agents wrote much of the code, and the way we worked is in the open: [`projectKnowledge/`](projectKnowledge/)
+holds the vision, the deliverables, the decision log and the handover notes each agent session starts from.
 
-### Every system
-- Node.js 24 and pnpm 12: install Node from https://nodejs.org, then `npm install -g pnpm@12`.
-- `pnpm install`, then `pnpm web` runs the web app at http://localhost:4200.
+Get in touch through [GitHub](https://github.com/ifeanyiotiwa-hub).
 
-The desktop app also needs Rust and a few system libraries (the
-[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)):
-
-### macOS
-```
-xcode-select --install                                           # Apple's command line tools
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh  # Rust (or: brew install rustup && rustup default stable)
-```
-Homebrew's rustup is keg-only: add `/opt/homebrew/opt/rustup/bin` to your `PATH`.
-
-### Windows
-1. [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/): choose **Desktop
-   development with C++**.
-2. WebView2: already part of Windows 10 (1803 and later) and 11.
-3. Rust from https://rustup.rs (the default MSVC toolchain).
-
-### Linux (Debian or Ubuntu)
-```
-sudo apt update
-sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev \
-  libayatana-appindicator3-dev librsvg2-dev
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-Other distributions: the package names for Fedora, Arch, openSUSE and others are in the Tauri prerequisites.
-
-### Then, on any system
-```
-pnpm install
-pnpm desktop        # the desktop window, with the web app reloading as you edit
-pnpm desktop:build  # installers for this system, in apps/desktop/src-tauri/target/release/bundle
-```
-Each system builds only its own installers (Tauri can't reliably build Windows or Linux installers on a Mac):
-
-| Built on | You get |
-|---|---|
-| macOS | `.dmg` and `.app` for that Mac's chip |
-| Windows | `-setup.exe` and `.msi` |
-| Linux | `.deb`, `.rpm` and `.AppImage` |
-
-Both Mac versions from one Mac:
-```
-rustup target add x86_64-apple-darwin                # once (on an Intel Mac: aarch64-apple-darwin)
-pnpm desktop:build --target x86_64-apple-darwin      # into target/x86_64-apple-darwin/release/bundle
-```
-A virtual machine (UTM, Parallels) on an Apple silicon Mac runs ARM Windows and Linux, so it builds ARM installers,
-not the x64 ones most PCs need.
-
-### Every system at once (GitHub Actions)
-`.github/workflows/desktop.yml` builds on GitHub's macOS (both chips), Windows and Linux machines; for a public repo
-this is free. To make a release:
-1. Raise the version in `OhmWork/apps/desktop/src-tauri/tauri.conf.json` and `Cargo.toml` (for example to `0.2.0`)
-   and commit.
-2. Tag and push it: `git tag -a v0.2.0 -m "OhmWork 0.2.0" && git push origin v0.2.0`.
-3. About 6 minutes later a draft release with every installer appears under Releases: check it, add notes, publish.
-
-**Actions → Desktop builds → Run workflow** on a branch builds everything without a release, as a check; its
-installers are not kept.
-
-More for developers (the AI agent server, the live link, Android, tests): [`OhmWork/README.md`](OhmWork/README.md).
-Design notes and decisions: [`projectKnowledge/`](projectKnowledge/).
+## Licence and credits
+GPL-2.0-or-later. Some of the simulation maths is ported from [CircuitJS1](https://github.com/pfalstad/circuitjs1) by
+Paul Falstad, which is under the same licence.

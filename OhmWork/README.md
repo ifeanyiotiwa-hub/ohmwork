@@ -1,52 +1,20 @@
 # OhmWork
 
-Free, open-source circuit simulator for learning and creative building: web, desktop, and mobile, with an MCP server for AI agents.
+Free, open-source circuit simulator for learning and creative building: web, desktop and mobile, with an MCP server
+for AI agents. What it is and who it's for: the [main README](../README.md).
 
-Project docs: `../projectKnowledge/`. License: GPL-2.0-or-later.
-
-## Use it with an AI agent (MCP)
-The repo root has `.mcp.json`, so Claude Code opened in `circuitProject/` offers the `ohmwork` server (approve it once). Other MCP clients: run `pnpm --silent --dir apps/mcp start` from this folder (or `--dir OhmWork/apps/mcp` from `circuitProject/`) as a stdio server.
-
-Server settings (environment variables): `OHMWORK_WORKSPACE_DIR` (the folder `open_circuit` / `save_circuit` read and write; default: where it was started), `OHMWORK_HISTORY_LIMIT` (undo steps kept, default 200), `OHMWORK_MAX_FILE_BYTES` (largest circuit file, default 5 MB), `OHMWORK_MAX_TRANSIENT_STEPS` (most steps one `simulate_over_time` call runs, default 200000). The agent's files stay inside the workspace folder.
-
-Try: "Build a 9 V battery with two resistors in series, simulate it, and explain where the voltage goes."
-
-### Learn with a tutor
-Ask the agent "tutor me through light-an-led" (or use the MCP prompt **tutor**). It starts the lesson, lets you build in the app (open the live link below), gives one hint at a time, and checks your circuit with `check_solution`. In the app alone: **Lessons** → Start → build → **Check my circuit**.
-
-### Watch and edit together (live link)
-1. Start the app: `pnpm web`.
-2. Ask the agent: "Give me the link to open this circuit in the app" (it calls `open_in_app`). Open the link.
-3. The status bar shows "Live with agent". What the agent changes appears and glows briefly; what you change, the agent sees (`recent_changes`, `simulate`). Undo works from either side.
-
-The link only accepts this computer, the app's own address and the session token in the link. Settings: `OHMWORK_APP_URL` (default `http://localhost:4200`), `OHMWORK_LIVE_ORIGINS` (extra allowed app addresses, comma-separated), `OHMWORK_LIVE_PORT` (default: any free port), `OHMWORK_LIVE_TOKEN` (default: a new random token each start; at least 16 characters if set). Set the port and the token so the app reconnects by itself after Claude Code restarts; keep the token secret.
-
-## Run the app
 ```
 pnpm install
-pnpm web            # http://localhost:4200, reloads as you edit; Ctrl+C stops it
+pnpm web            # http://localhost:4200
+pnpm test           # unit tests; pnpm test:e2e for the browser tests
 ```
-- On a phone on the same Wi-Fi: `pnpm --filter @ohmwork/web start --host 0.0.0.0`, then open `http://<this computer's IP>:4200` on the phone.
-- The production build (the only one that works offline; the service worker is off while developing): `pnpm --filter @ohmwork/web build`, then `npx http-server apps/web/dist/web/browser -p 8080` and open http://localhost:8080.
-In the app: **Library** (or Ctrl/⌘+S) saves circuits in your browser and opens or saves `.circuit.json` files (in Chrome, Edge and the desktop app, "Save to <file>" writes the opened file again in place; other browsers download); the circuit you are editing is kept across reloads. A production build is an installable app that works offline.
 
-Editing: click a wire while wiring to join it in the middle; Shift-click or Shift-drag to select several parts; Ctrl/⌘ + A, C, V, Z select all, copy, paste and undo; **Library** → Picture (SVG or PNG) saves an image of the circuit.
+| Guide | |
+|---|---|
+| [Build from source](../docs/build-from-source.md) | web, desktop, Android, and the checks |
+| [Working with an AI agent](../docs/ai-agent.md) | the MCP server, the live link and its settings |
+| [Using the app](../docs/using-the-app.md) | editing, keyboard, touch, saving |
+| [Make a release](../docs/releasing.md) | installers for every system through GitHub Actions |
 
-Keyboard: Tab moves between parts, wires and notes; Enter or Space acts like a click (selects, flips a switch, holds a push button); the arrow keys move the selected part one grid step; Delete removes it, R rotates it, Escape clears the selection.
-
-## Desktop app (macOS, Windows, Linux)
-Needs Rust and the system libraries for your platform: the steps for macOS, Windows and Linux are in the [main README](../README.md#build-it-yourself). Installing the released apps: [Install](../README.md#install).
-```
-pnpm desktop        # the desktop window, with the web app reloading as you edit
-pnpm desktop:build  # installers in apps/desktop/src-tauri/target/release/bundle
-```
-Android: also needs the Android SDK with NDK 30 (`sdkmanager "ndk;30.0.16248370"`), `rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`, and `ANDROID_HOME`, `NDK_HOME`, `JAVA_HOME` (JDK 17) set.
-```
-pnpm android        # on a running emulator or a connected phone
-pnpm android:build  # APKs in apps/desktop/src-tauri/gen/android/app/build/outputs/apk
-```
-On a touch screen: one finger pans, two fingers pinch to zoom, press and hold a part (or the background, then drag) to select several; the inspector has Copy, Paste and Delete for them.
-
-Windows and Linux installers are built by GitHub Actions (`.github/workflows/desktop.yml`) on a `v*` tag or by hand.
-
-Checks: `pnpm typecheck` (types + production build), `pnpm test` (all unit tests; `pnpm test:core` for the packages and the MCP server only), `pnpm test:e2e` (browser tests; first run `npx playwright install chromium` in `apps/web`).
+Project docs (start here before changing code): [`../projectKnowledge/`](../projectKnowledge/). License:
+GPL-2.0-or-later.
