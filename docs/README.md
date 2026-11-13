@@ -9,4 +9,6 @@
 | [Build from source](build-from-source.md) | Running and building OhmWork yourself on any system, and the tests |
 | [Make a release](releasing.md) | Publishing new installers for every system through GitHub Actions |
 
+How the hardest parts work, with questions to test yourself: [Learn how OhmWork works](learn/README.md).
+
 How OhmWork is designed, and why: [`projectKnowledge/`](../projectKnowledge/).
