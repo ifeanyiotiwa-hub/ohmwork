@@ -85,9 +85,9 @@ whatever the app is at that point.
 ### D18 Release (new, from the audit; signing, Android release and iOS set aside by the owner, 2026-11-09)
 | Item | How |
 |---|---|
-| Public repo and hosting | A git remote (GitHub), the PWA hosted (static hosting), the licence and contribution notes |
+| ~~Public repo and hosting~~ (done 2026-11-12: GitHub, Pages, README and `docs/`) | A git remote (GitHub), the PWA hosted (static hosting), the licence and contribution notes |
 | ~~Rename the code to OhmWork~~ (done, ADR-046) | Before the first public release, once: the package scope, the folder (CI paths, `.mcp.json`), the MCP server id, the desktop/Android identifier (an installed copy treats a new identifier as a new app, so only before anyone has installed it) and the domain |
-| Desktop CI and signing | Run the existing workflow; macOS notarization and Windows signing when accounts exist |
+| Desktop CI (done, v0.1.0) and signing | ~~Run the existing workflow~~; macOS notarization and Windows signing when accounts exist |
 | Android release | A signed release APK/AAB (key kept outside the repo), store listing |
 | iOS | Needs full Xcode; same Tauri app |
 
@@ -106,6 +106,15 @@ whatever the app is at that point.
 | ~~Redo; group rotate; notes in box select and copy/paste; library delete confirmation; manual Reconnect and telling the learner when offline edits are replaced; palette arrow keys; slider label; PWA manifest `id`, separate maskable icons~~ (done, D16f) | D16 (app items alongside) |
 | AI from the Android app or the desktop app (deep link, remote MCP) | D14 |
 | Accessibility audit with a screen reader; other languages | D18 |
+
+### D18 accessibility findings (2026-11-12, axe passes; these are what axe can't check)
+| Finding | Fix |
+|---|---|
+| A part's accessible name lacks its type and readings; stray SVG text is read out | Name each part "R1, resistor, 1 Ω, 2 V, 2 A"; `aria-hidden` on the drawn labels |
+| Undo, Redo and Pause come after every canvas part in Tab order | Move the controls before the canvas in the DOM |
+| The dial's − and + buttons ignore Space and are 20 px | Native buttons (or handle Space) at least 24 px |
+| Category names in the sidebar are cut short with an ellipsis under larger text spacing | Let them wrap |
+| No real screen-reader pass yet | The owner runs VoiceOver through the main flows |
 
 ### Not planned
 | Item | Why |

@@ -33,6 +33,7 @@
 		"@angular/build": "^22.2.6",
 		"@angular/cli": "^22.2.6",
 		"@angular/compiler-cli": "^22.2.0",
+		"@axe-core/playwright": "^4.14.0",
 		"@modelcontextprotocol/client": "^2.4.0",
 		"@playwright/test": "^1.65.0",
 		"jsdom": "^30.0.0",

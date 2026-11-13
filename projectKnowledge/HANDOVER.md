@@ -1,6 +1,12 @@
 # Handover
 
 ## Current state
+- D18 in progress (2026-11-12):
+  - Public repo https://github.com/ifeanyiotiwa-hub/ohmwork; `develop` is the only published branch and the default.
+  - Web app on GitHub Pages (https://ifeanyiotiwa-hub.github.io/ohmwork/), deployed by `.github/workflows/pages.yml` on every push to `develop`.
+  - Desktop builds: `.github/workflows/desktop.yml` ran on all four targets (macOS arm64 and x64, Windows, Linux) and made the v0.1.0 draft; v0.1.0 is published with 9 installers. Release steps: `docs/releasing.md`.
+  - Repo `README.md` presents the product and its builder; how-to guides in `docs/` (install, using the app, lessons, AI agent, build from source, releasing). `OhmWork/README.md` is a short quick-start pointing to them.
+  - Accessibility, part 1: `apps/web/e2e/accessibility.spec.ts` runs axe (WCAG 2.2 A/AA) over every screen at desktop and phone size, all passing (`@axe-core/playwright`). Findings axe can't see are in `BACKLOG.md` (D18). Still to do: the fixes, a VoiceOver pass by the owner, languages.
 - D0 done: folders, docs, git, pnpm workspace, strict TS 7, Vitest 5.
 - D1 done: `OhmWork/packages/format` (`@ohmwork/format`, zod 4).
   - `src/schema/components/`: one file per category (`sources`, `passives`, `switches`, `semiconductors`) of `defineComponent(type, { pins, params })` entries. `catalog.ts` combines them into `COMPONENT_DEFINITIONS`, `componentSchema`, `Component`, `ComponentType`, `pinsOf`, `isComponentType`. Adding a part = one entry (see `COMPONENTS.md`).
@@ -70,7 +76,7 @@
   - Tests: `apps/mcp/test/live/live-server.test.ts`, MCP tool tests, `packages/editing/test/live-protocol.test.ts`, store specs with a fake `LiveLink`, `apps/web/e2e/live.spec.ts` (spawns the real MCP server over stdio and drives it while Playwright drives the app).
 
 ## Next step
-Owner tries the hands-on features (select a part and turn its dial; hover wires; overload an LED). Next: D18 (public repo + hosted web app; signing and iOS set aside). Optional: D13, D14.
+Owner tries the hands-on features (select a part and turn its dial; hover wires; overload an LED). Next: the D18 accessibility fixes listed in `BACKLOG.md`, then a VoiceOver pass with the owner, then languages. Optional: D13, D14.
 
 ## Blockers / open questions
 - None.
@@ -79,7 +85,7 @@ Owner tries the hands-on features (select a part and turn its dial; hover wires;
 Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 - Newton–Raphson has no gmin or source stepping fallback (no failing circuit found; runaway is diagnosed); transistor junction capacitances and the Early effect are not modelled (ADR-017).
 - Android (D11b): only a debug APK is built (a release needs a signing key); pinch was tested through Chrome touch input, not on the emulator (adb cannot send two fingers); the Android splash screen uses a light theme.
-- Desktop app (D11a): not code-signed or notarized, so macOS and Windows warn on first open; Windows/Linux builds are in CI but have never run (no git remote); the agent's live link opens the browser app, and the desktop app cannot join a live session; "Save to <file>" stays offered after New or opening from the library (the button names the file).
+- Desktop app (D11a): not code-signed or notarized, so macOS and Windows warn on first open; the Windows and Linux builds come only from CI (they ran for v0.1.0); the agent's live link opens the browser app, and the desktop app cannot join a live session; "Save to <file>" stays offered after New or opening from the library (the button names the file).
 - The RGB LED palette icon is cluttered (R/G/B letters at icon size).
 - Time step is fixed (no adaptive stepping, D16); after any switching, ten backward-Euler steps prevent ringing (ADR-023), but square-wave and clock edges on their own don't trigger them.
 - A deleted capacitor's stored charge is reused if a new part later gets the same id during the same run (state is keyed by id). Restart clears it.
@@ -90,6 +96,7 @@ Full list with reasons and plans: `BACKLOG.md` (D15, D16, D17, D11, D14).
 ## Session log (newest first)
 | Date | Agent | Did | Left for next |
 |---|---|---|---|
+| 2026-11-13 | Claude (Opus) | D18: public repo, Pages from `develop`, desktop CI on all four targets, v0.1.0 published; README rewritten (product, students and teachers, how it's built, the builder) with guides in `docs/`; axe accessibility test (13 pass, 1 phone skip) and four findings in BACKLOG. 651 core + 159 web unit | D18 accessibility fixes, VoiceOver pass, languages |
 | 2026-11-11 | Claude (Opus) | Branch `ui/collapsible-rail` (from `develop`, which now has the glass look, the icon set and the rail): the sidebar narrows to icons (Ctrl/⌘+B, remembered), category icons; ADR-050. 159 web unit + 93 e2e (1 opt-in skip) + 2 production-build | Owner tries it; merge into `develop` when approved; then D18 |
 | 2026-11-11 | Claude (Opus) | Branch `ui/spatial-glass`: glass look (ADR-047), the OW icon set (ADR-048), then a rail down the left with a parts panel that opens beside the categories and steps aside (pin, Escape, click elsewhere, 4 s after the mouse leaves; ADR-049). 159 web unit + 90 e2e (1 opt-in skip; the AC frequency-response test fails only under load, passes alone) + 2 production-build | Owner tries the rail; merge `ui/spatial-glass` into `develop` when approved; then D18 |
 | 2026-11-10 | Claude (Opus) | Code identifiers are OhmWork: package scope, MCP id and `OHMWORK_*` settings, app identity, folder `OhmWork/`, circuit file format id and browser database; ADR-046. After the folder move, reopen IntelliJ at `circuitProject/OhmWork` and approve the `ohmwork` MCP server once. 651 core + 158 web + 85 e2e + 2 production-build, cargo check, Android debug APK | D18: hosting |
